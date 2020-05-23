@@ -29,6 +29,16 @@ def thread(x, func):
     return func(x)
 
 
+def boolean(x):
+    if isinstance(x, s.Symbol):
+        if x.name == "True":
+            return True
+        elif x.name == "False":
+            return False
+        return x
+    return False
+
+
 def assumptions(x):
     a = True
     for assumption in x:
@@ -594,10 +604,20 @@ class ReplaceAll(s.Function):
 
 class Factor(s.Function):
     @classmethod
-    def eval(cls, expr, *args):
-        for arg in args:
-            pass
-        return thread(expr, s.factor)
+    def eval(cls, expr, *options):
+        mod = None
+        ext = None
+        gus = None
+        for arg in options:
+            if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ("Modulus", "Extension", "GaussianIntegers"):
+                raise FunctionException(f"Unexpected option {arg.lhs}")
+            if arg.lhs.name == "Modulus":
+                mod = arg.rhs
+            elif arg.lhs.name == "Extension":
+                ext = arg.rhs
+            elif arg.lhs.name == "GaussianIntegers":
+                gus = boolean(arg.rhs)
+        return thread(expr, lambda x: s.factor(x, modulus=mod, extension=ext, gaussian=gus))
 
 
 class nPr(s.Function):
