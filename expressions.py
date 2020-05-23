@@ -69,12 +69,12 @@ def out(n):
 
 def relations(n):
     relation = True
-    for r in range(1, len(n), 2):
-        relation = relation & s.Rel(n[r - 1], n[r + 1], n[r])
+    for x in range(1, len(n), 2):
+        relation = relation & s.Rel(n[x - 1], n[x + 1], n[x])
     return relation
 
 
-def set(n):
+def assign(n):
     for x in n[1:-1]:
         Functions.call("Set", x, n[-1])
     return Functions.call("Set", n[0], n[-1])

@@ -1,5 +1,3 @@
-import sympy
-import references as r
 import expressions as ex
 from lists import List, Rule
 from lark import Lark, Transformer, Tree
@@ -58,7 +56,7 @@ class Parser(Transformer):
         return ex.relations(items)
 
     def set(self, items):
-        return ex.set(items)
+        return ex.assign(items)
 
     def unset(self, items):
         return ex.unset(items)
@@ -83,7 +81,7 @@ class Parser(Transformer):
 
     def parse(self, t):
         parsed = self.parser.parse(t)
-        if type(parsed) is Tree:
+        if isinstance(parsed, Tree):
             return self.transform(parsed)
         return parsed
 

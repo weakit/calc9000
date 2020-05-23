@@ -193,7 +193,7 @@ class Out(s.Function):
 class Dot(s.Function):
     @classmethod
     def eval(cls, m, n):
-        if not ((isinstance(m, s.Tuple) or isinstance(m, s.Matrix)) and (isinstance(n, s.Tuple) or isinstance(n, s.Matrix))):
+        if not isinstance(m, (s.Tuple, s.Matrix, Iterable)) and isinstance(n, (s.Tuple, s.Matrix, Iterable)):
             return None
         m = s.Matrix(m)
         n = s.Matrix(n)
@@ -203,6 +203,7 @@ class Dot(s.Function):
         return m * n
 
     def _pretty(self, printer=None):
+        # TODO: redo pretty formatting
         def dot(p, *others):
             """stolen from stringpict.py"""
             if len(others) == 0:
