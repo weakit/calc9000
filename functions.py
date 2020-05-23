@@ -47,12 +47,23 @@ def assumptions(x):
 
 
 class Exp(s.Function):
+    """
+     Exp [z]
+        Gives the exponential of z.
+    """
     @classmethod
     def eval(cls, z):
         return thread(z, lambda z: pow(s.E, z))
 
 
 class Log(s.Function):
+    """
+    Log [z]
+        Gives the natural logarithm of z (logarithm to base e).
+
+    Log [b, z]
+        Gives the logarithm to base b.
+    """
     @classmethod
     def eval(cls, x, b=None):
         if b is not None:
@@ -61,18 +72,33 @@ class Log(s.Function):
 
 
 class Log2(s.Function):
+    """
+    Log2 [z]
+        Gives the base-2 logarithm of x.
+    """
     @classmethod
     def eval(cls, x):
         return thread(x, lambda a: s.log(a, 2))
 
 
 class Log10(s.Function):
+    """
+    Log10 [z]
+        Gives the base-10 logarithm of x.
+    """
     @classmethod
     def eval(cls, x):
         return thread(x, lambda a: s.log(a, 10))
 
 
 class Round(s.Function):
+    """
+    Round [x]
+        Gives the integer closest to x.
+
+    Round [x,a]
+        Rounds to the nearest multiple of a.
+    """
     @classmethod
     def eval(cls, x, a=None):
         if x.is_number:
@@ -84,6 +110,15 @@ class Round(s.Function):
 
 
 class Floor(s.Function):
+    """
+    Floor [x]
+        Gives the greatest integer less than or equal to x.
+
+    Floor [x,a]
+        Gives the greatest multiple of a less than or equal to x.
+
+    Similar to sympy.floor().
+    """
     @classmethod
     def eval(cls, x, a=None):
         if a is None:
@@ -92,6 +127,15 @@ class Floor(s.Function):
 
 
 class Ceiling(s.Function):
+    """
+    Ceiling [x]
+        Gives the smallest integer greater than or equal to x.
+
+    Ceiling [x,a]
+        Gives the smallest multiple of a greater than or equal to x.
+
+    Similar to sympy.ceiling().
+    """
     @classmethod
     def eval(cls, x, a=None):
         if a is None:
@@ -100,6 +144,10 @@ class Ceiling(s.Function):
 
 
 def Min(*x):
+    """
+    Min [x1, {x2, x3}, x4, ...]
+        Gives the smallest x.
+    """
     temp_list = list()
     for i in x:
         if isinstance(i, (Iterable, s.Matrix, s.Tuple)):
@@ -110,6 +158,10 @@ def Min(*x):
 
 
 def Max(*x):
+    """
+    Max [x1, {x2, x3}, x4, ...]
+        Gives the largest x.
+    """
     temp_list = list()
     for i in x:
         if isinstance(i, (Iterable, s.Matrix, s.Tuple)):
@@ -120,6 +172,10 @@ def Max(*x):
 
 
 class Total(s.Function):
+    """
+    Total [list]
+        Gives the Total Sum of elements in list.
+    """
     @classmethod
     def eval(cls, _list):
         if isinstance(_list, s.Tuple):
@@ -127,6 +183,10 @@ class Total(s.Function):
 
 
 class Mean(s.Function):
+    """
+    Mean [list]
+        Gives the statistical mean of elements in list.
+    """
     @classmethod
     def eval(cls, _list):
         if isinstance(_list, s.Tuple):
@@ -179,6 +239,10 @@ class Rescale(s.Function):
 
 
 class In(s.Function):
+    """
+    In [n]
+        Gives the raw input given in the n-th line.
+    """
     @classmethod
     def eval(cls, n=None):
         if n is None:
@@ -188,6 +252,17 @@ class In(s.Function):
 
 
 class Out(s.Function):
+    """
+    %n
+    Out [n]
+        Gives the output of the n-th line.
+
+    %
+        Gives the last result generated.
+
+    %%
+        Gives the result before last. %%…% (k times) gives the k^(th) previous result.
+    """
     @classmethod
     def eval(cls, n=None):
         out = None
@@ -248,6 +323,10 @@ class Dot(s.Function):
 
 
 class Det(s.Function):
+    """
+    Det [m]
+        Gives the Determinant of Square Matrix m.
+    """
     @classmethod
     def eval(cls, x):
         if isinstance(x, (s.Tuple, s.Matrix)):
@@ -260,6 +339,10 @@ class Det(s.Function):
 
 
 class Inverse(s.Function):
+    """
+    Inverse [m]
+        Gives the Inverse of Square Matrix m.
+    """
     @classmethod
     def eval(cls, x):
         if isinstance(x, (s.Tuple, s.Matrix)):
@@ -267,10 +350,17 @@ class Inverse(s.Function):
                 m = s.Matrix(x)
                 return toList(m.inv())
             except ValueError:
+                # TODO: Warning
                 return None
 
 
 class Transpose(s.Function):
+    """
+    Transpose [m]
+        Gives the Transpose of Matrix m.
+
+    Equivalent to sympy.Matrix.transpose().
+    """
     @classmethod
     def eval(cls, x):
         if isinstance(x, (s.Tuple, s.Matrix)):
@@ -282,21 +372,37 @@ class Transpose(s.Function):
 
 
 class Re(s.Function):
+    """
+    Re [x]
+        Gives the Real part of x.
+
+    Equivalent to sympy.re().
+    """
     @classmethod
     def eval(cls, x):
         return thread(x, s.re)
 
 
-class ReIm(s.Function):
-    @classmethod
-    def eval(cls, x):
-        return thread(x, lambda b: List((s.re(b), s.im(b))))
-
-
 class Im(s.Function):
+    """
+    Im [x]
+        Gives the Imaginary part of x.
+
+    Equivalent to sympy.im().
+    """
     @classmethod
     def eval(cls, x):
         thread(x, s.im)
+
+
+class ReIm(s.Function):
+    """
+    ReIm [x]
+        Gives the list {Re[x], Im[x]} of x.
+    """
+    @classmethod
+    def eval(cls, x):
+        return thread(x, lambda b: List((Re(b), Im(b))))
 
 
 class Plus(s.Function):
@@ -336,36 +442,70 @@ class Divide(s.Function):
 
 
 class Abs(s.Function):
+    """
+    Abs [x]
+        Gives the absolute value of x.
+
+    Equivalent to sympy.Abs().
+    """
     @classmethod
     def eval(cls, x):
         return thread(x, s.Abs)
 
 
 class Arg(s.Function):
+    """
+    Arg [x]
+        Gives the argument of the complex number x.
+
+    Equivalent to sympy.arg().
+    """
     @classmethod
     def eval(cls, x):
         return thread(x, s.arg)
 
 
 class AbsArg(s.Function):
+    """
+    AbsArg [z]
+        Gives the list {Abs[z],Arg[z]} of the number z.
+    """
     @classmethod
     def eval(cls, x):
         return thread(x, lambda y: List((Abs(y), Arg(y))))
 
 
 class Factorial(s.Function):
+    """
+    Factorial [x]
+        Gives the Factorial of x.
+
+    Equivalent to sympy.factorial().
+    """
     @classmethod
     def eval(cls, x):
         return thread(x, s.factorial)
 
 
 class Conjugate(s.Function):
+    """
+    Conjugate [x]
+        Gives the complex conjugate of complex number x.
+
+    Equivalent to sympy.conjugate().
+    """
     @classmethod
     def eval(cls, x):
         return thread(x, s.conjugate)
 
 
 class ConjugateTranspose(s.Function):
+    """
+    ConjugateTranspose [m]
+        Gives the conjugate transpose of .
+
+    Equivalent to Conjugate[Transpose[m]].
+    """
     @classmethod
     def eval(cls, x):
         if isinstance(x, (s.Tuple, s.Matrix)):
@@ -383,7 +523,11 @@ class ComplexExpand(s.Function):
         return thread(x, exp)
 
 
-class LogisticSigmoid(s.Function):
+class LogisticSigmoid(s.Function):  # why is this here?
+    """
+    LogisticSigmoid[z]
+        Gives the logistic sigmoid function.
+    """
     @classmethod
     def eval(cls, z):
         return thread(z, lambda x: 1 / (1 + s.exp(-x)))
@@ -399,6 +543,10 @@ class Unitize(s.Function):
 
 
 class Ramp(s.Function):
+    """
+    Ramp [x]
+        Gives x if x ≥ 0 and 0 otherwise.
+    """
     @classmethod
     def eval(cls, x):
         if isinstance(x, (tuple, s.Tuple, s.Matrix)):
@@ -454,9 +602,19 @@ class Cross(s.Function):
 
 
 class Sign(s.Function):
+    """
+    Sign [x]
+        Gives -1, 0, or 1 depending on whether x is negative, zero, or positive.
+        For nonzero complex numbers z, Sign[z] is defined as z/Abs[z].
+    """
     @classmethod
     def eval(cls, x):
-        return thread(x, s.sign)
+        def sign(n):
+            if n.is_real:
+                return s.sign(n)
+            if n.is_complex:
+                return n / Abs(n)
+        return thread(x, sign)
 
 
 class Series(s.Function):
@@ -467,6 +625,12 @@ class Series(s.Function):
 
 
 class Sqrt(s.Function):
+    """
+    Sqrt [Expr]
+        Gives the Square Root of Expr.
+
+    Equivalent to sympy.sqrt().
+    """
     @classmethod
     def eval(cls, x):
         return thread(x, s.sqrt)
@@ -494,8 +658,18 @@ class QuotientRemainder(s.Function):
 
 
 class GCD(s.Function):
+    """
+    GCD [x1, x2, x3, ...]
+        Gives the GCD of x1, x2, x3, ...
+
+    Works with Numeric and Symbolic expressions.
+
+    Similar to sympy.gcd()
+    """
     @classmethod
     def eval(cls, *n):
+        if len(n) == 1:
+            return n
         gcd = n[0]
         for number in n[1:]:
             gcd = s.gcd(gcd, number)
@@ -503,8 +677,18 @@ class GCD(s.Function):
 
 
 class LCM(s.Function):
+    """
+    LCM [x1, x2, x3, ...]
+        Gives the LCM of x1, x2, x3, ...
+
+    Works with Numeric and Symbolic expressions.
+
+    Similar to sympy.lcm()
+    """
     @classmethod
     def eval(cls, *n):
+        if len(n) == 1:
+            return n
         lcm = n[0]
         for number in n[1:]:
             lcm = s.lcm(lcm, number)
@@ -512,12 +696,20 @@ class LCM(s.Function):
 
 
 class PrimeQ(s.Function):
+    """
+    PrimeQ [x]
+        Returns True if x is Prime.
+    """
     @classmethod
     def eval(cls, n):
         return thread(n, s.isprime)
 
 
 class CompositeQ(s.Function):
+    """
+    CompositeQ [x]
+        Returns True if x is Composite.
+    """
     @classmethod
     def eval(cls, n):
         def comp(x):
@@ -529,8 +721,14 @@ class CompositeQ(s.Function):
 
 
 class Equal(s.Function):
+    """
+    Equal [x1, x2, x3, ...]
+        Gives a condition x1 == x2 == x3 == ...
+    """
     @classmethod
     def eval(cls, *args):
+        if len(args) == 1:
+            return None
         if len(args) == 2:
             return s.Eq(args[0], args[1])
         # TODO: better multiple equality
@@ -538,30 +736,39 @@ class Equal(s.Function):
 
 
 class Set(s.Function):
+    """
+    Set [x, n]
+    x = n
+        Sets a symbol x to have the value n.
+    """
     @classmethod
-    def eval(cls, n, x):
+    def eval(cls, x, n):
         # TODO: Function Assignment
         for ref in [r.refs.Constants, r.refs.Functions]:
-            if str(n) in ref.__dict__:
+            if str(x) in ref.__dict__:
                 # TODO: warning
                 return None
-        if isinstance(n, s.Symbol):
-            if isinstance(x, s.Expr):
-                if n in x.atoms():
+        if isinstance(x, s.Symbol):
+            if isinstance(n, s.Expr):
+                if x in n.atoms():
                     return None
-            r.refs.Symbols.__setattr__(n.name, x)
-            return x
-        elif isinstance(n, (s.Tuple, Sized)):
-            if isinstance(n, (s.Tuple, Sized)) and len(n) == len(x):
-                return List(Set(a, b) for a, b in zip(n, x))
+            r.refs.Symbols.__setattr__(x.name, n)
+            return n
+        elif isinstance(x, (s.Tuple, Sized)):
+            if isinstance(x, (s.Tuple, Sized)) and len(x) == len(n):
+                return List(Set(a, b) for a, b in zip(x, n))
 
 
 class Unset(s.Function):
+    """
+    Unset [x]
+        Deletes a symbol or list of symbols x, if they were previously assigned a value.
+    """
     @classmethod
     def eval(cls, n):
         if isinstance(n, (s.Tuple, Sized)):
             return List(Unset(x) for x in n)
-        if isinstance(n, s.Symbol):
+        if isinstance(n, s.Symbol) and str(n) in r.refs.Symbols.__dict__:
             delattr(r.refs.Symbols, str(n))
             return None
         delattr(r.refs.Symbols, str(n))
@@ -569,6 +776,15 @@ class Unset(s.Function):
 
 
 class Rationalize(s.Function):
+    """
+    Rationalize [x]
+        Converts an approximate number x to a nearby rational with small denominator.
+
+    Rationalize [x, dx]
+        Yields the rational number with smallest denominator that lies within dx of x.
+
+    See https://reference.wolfram.com/language/ref/Rationalize
+    """
     @classmethod
     def eval(cls, x, dx=None):
         if isinstance(x, (s.Tuple, Sized)):
@@ -581,8 +797,16 @@ class Rationalize(s.Function):
 
 
 class Subs(s.Function):
+    """
+    Subs [Expr, Rules]
+        Transforms Expression expr with the given Rule or list of Rules.
+
+    Similar to sympy.subs, but also replaces functions.
+    """
     @classmethod
-    def eval(cls, expr, *replacements):
+    def eval(cls, expr, replacements):
+        if not isinstance(replacements, (s.Tuple, List)):
+            replacements = (replacements,)
         if isinstance(expr, (s.Tuple, List)):
             return List(Subs(x, *replacements) for x in expr)
         if isinstance(expr, s.Expr):
@@ -594,20 +818,16 @@ class Subs(s.Function):
             return expr
 
 
-class ReplaceAll(s.Function):
-    @classmethod
-    def eval(cls, expr, rules):
-        if isinstance(rules, Rule):
-            return Subs(expr, rules)
-        return Subs(expr, *rules)
-
-
 class Factor(s.Function):
+    """
+    Factor [Expr, Modulus -> mod, Extension -> ext, GaussianIntegers -> bool}]
+        Factors an Expression.
+
+    Equivalent to sympy.factor().
+    """
     @classmethod
     def eval(cls, expr, *options):
-        mod = None
-        ext = None
-        gus = None
+        mod = ext = gus = None
         for arg in options:
             if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ("Modulus", "Extension", "GaussianIntegers"):
                 raise FunctionException(f"Unexpected option {arg.lhs}")
@@ -618,6 +838,40 @@ class Factor(s.Function):
             elif arg.lhs.name == "GaussianIntegers":
                 gus = boolean(arg.rhs)
         return thread(expr, lambda x: s.factor(x, modulus=mod, extension=ext, gaussian=gus))
+
+
+class Expand(s.Function):
+    """
+    Expand [Expr, Modulus -> mod]
+        Expands an Expression.
+
+    Equivalent to sympy.expand().
+    """
+
+    @classmethod
+    def eval(cls, expr, *options):
+        mod = None
+        trig = False
+        for arg in options:
+            if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ("Modulus", "Trig"):
+                raise FunctionException(f"Unexpected option {arg.lhs}")
+            if arg.lhs.name == "Modulus":
+                mod = arg.rhs
+            else:
+                trig = boolean(arg.rhs)
+        return thread(expr, lambda x: s.expand(x, modulus=mod, trig=trig))
+
+
+class TrigExpand(s.Function):
+    """
+    TrigExpand [Expr]
+        Expands only Trigonometric Functions.
+
+    Equivalent to sympy.expand_trig().
+    """
+    @classmethod
+    def eval(cls, expr):
+        return thread(expr, lambda x: s.expand_trig(x))
 
 
 class nPr(s.Function):
@@ -691,7 +945,6 @@ class Functions:
     Rationalize = Rationalize
     Re = Re
     ReIm = ReIm
-    ReplaceAll = ReplaceAll
     Rescale = Rescale
     Round = Round
     Set = Set
