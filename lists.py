@@ -18,7 +18,7 @@ class UnequalLengthException(ListException):
 class List(tuple):
     # TODO: Pretty and LaTeX printing
     def __add__(self, other):
-        temp_list = list()
+        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise UnequalLengthException
@@ -32,13 +32,13 @@ class List(tuple):
     __iadd__ = __add__
 
     def __radd__(self, other):
-        temp_list = list()
+        temp_list = []
         for i in range(len(self)):
             temp_list.append(other + self[i])
         return List(temp_list)
 
     def __sub__(self, other):
-        temp_list = list()
+        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise UnequalLengthException
@@ -52,13 +52,13 @@ class List(tuple):
     __isub__ = __sub__
 
     def __rsub__(self, other):
-        temp_list = list()
+        temp_list = []
         for i in range(len(self)):
             temp_list.append(other - self[i])
         return List(temp_list)
 
     def __mul__(self, other):
-        temp_list = list()
+        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise UnequalLengthException
@@ -72,13 +72,13 @@ class List(tuple):
     __imul__ = __mul__
 
     def __rmul__(self, other):
-        temp_list = list()
+        temp_list = []
         for i in range(len(self)):
             temp_list.append(other * self[i])
         return List(temp_list)
 
     def __truediv__(self, other):
-        temp_list = list()
+        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise UnequalLengthException
@@ -92,20 +92,20 @@ class List(tuple):
     __itruediv__ = __truediv__
 
     def __rtruediv__(self, other):
-        temp_list = list()
+        temp_list = []
         for i in range(len(self)):
             temp_list.append(other / self[i])
         return List(temp_list)
 
     def evalf(self, n=15, **options):
-        temp_list = list()
+        temp_list = []
         for item in self:
             temp_list.append(sympy.N(item, n, **options))
         print(temp_list[0])
         return List(temp_list)
 
     def __pow__(self, other, modulo=None):
-        temp_list = list()
+        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise UnequalLengthException
@@ -123,7 +123,7 @@ class List(tuple):
     __ipow__ = __pow__
 
     def __rpow__(self, other):
-        temp_list = list()
+        temp_list = []
         for i in range(len(self)):
             temp_list.append(pow(other, self[i]))
         return List(temp_list)

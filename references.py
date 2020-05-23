@@ -36,8 +36,8 @@ NoCache = [
 
 class References:
     def __init__(self):
-        self.In = list([None])
-        self.Out = list([None])
+        self.In = [None]
+        self.Out = [None]
         self.Symbols = SymbolsClass()
         self.NoCache = NoCache
         self.Functions = FunctionsClass()

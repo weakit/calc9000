@@ -4,7 +4,7 @@ import references as r
 import sympy as s
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from collections.abc import Iterable, Sized
-from lists import *
+from lists import List, Rule
 
 
 class FunctionException(Exception): pass
@@ -200,8 +200,7 @@ class Dot(s.Function):
 
         if m.shape[1] == n.shape[1] == 1:
             return m.dot(n)
-        else:
-            return m * n
+        return m * n
 
     def _pretty(self, printer=None):
         def dot(p, *others):
@@ -395,8 +394,7 @@ class Ramp(s.Function):
             return thread(x, Ramp)
         if s.ask(s.Q.nonnegative(x)):
             return x
-        else:
-            return 0
+        return 0
 
 
 class Cross(s.Function):
@@ -412,7 +410,7 @@ class Cross(s.Function):
 
     def _pretty(self, printer=None):
         def dot(p, *others):
-            """stolen from stringpict.py"""
+            """stolen from stringpict.py."""
             if len(others) == 0:
                 return printer._print_Function(self, func_name='Cross')
             if p.binding > prettyForm.MUL:
@@ -555,9 +553,8 @@ class Unset(s.Function):
         if isinstance(n, s.Symbol):
             delattr(r.refs.Symbols, str(n))
             return None
-        else:
-            delattr(r.refs.Symbols, str(n))
-            return None
+        delattr(r.refs.Symbols, str(n))
+        return None
 
 
 class Rationalize(s.Function):
@@ -681,6 +678,7 @@ class Functions:
     Sqrt = Sqrt
     StieltjesGamma = StieltjesGamma
     Subtract = Subtract
+    Subs = Subs
     Surd = Surd
     Times = Times
     Total = Total
@@ -715,14 +713,12 @@ class Functions:
     ArcSech = s.asech
     ArcCoth = s.acoth
 
-    # Extra functions (start with a lowercase character)
+    # Extra functions
 
     nCr = nCr
     NCr = nCr
     nPr = nPr
     NPr = nPr
-    subs = Subs
-    Subs = Subs
 
     @classmethod
     def call(cls, f, *a):
