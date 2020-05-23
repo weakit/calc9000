@@ -572,26 +572,26 @@ class Rationalize(s.Function):
         return x
 
 
-class subs(s.Function):
+class Subs(s.Function):
     @classmethod
     def eval(cls, expr, *replacements):
         if isinstance(expr, (s.Tuple, List)):
             return List(Subs(x, *replacements) for x in expr)
         if isinstance(expr, s.Expr):
-            expr = expr.subs(replacements)
+            expr = expr.Subs(replacements)
             replacement_dict = {str(k): str(v) for k, v in replacements}
             for func in expr.atoms(s.Function):
                 if func.name in replacement_dict:
                     expr = expr.replace(func, Functions.call(replacement_dict[func.name], *func.args))
-            return expr.subs(replacements)
+            return expr.Subs(replacements)
 
 
 class ReplaceAll(s.Function):
     @classmethod
     def eval(cls, expr, rules):
         if isinstance(rules, Rule):
-            return subs(expr, rules)
-        return subs(expr, *rules)
+            return Subs(expr, rules)
+        return Subs(expr, *rules)
 
 
 class Factor(s.Function):
@@ -721,8 +721,8 @@ class Functions:
     NCr = nCr
     nPr = nPr
     NPr = nPr
-    subs = subs
-    Subs = subs
+    subs = Subs
+    Subs = Subs
 
     @classmethod
     def call(cls, f, *a):
