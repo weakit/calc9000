@@ -576,12 +576,12 @@ class Subs(s.Function):
         if isinstance(expr, (s.Tuple, List)):
             return List(Subs(x, *replacements) for x in expr)
         if isinstance(expr, s.Expr):
-            expr = expr.Subs(replacements)
+            expr = expr.subs(replacements)
             replacement_dict = {str(k): str(v) for k, v in replacements}
             for func in expr.atoms(s.Function):
                 if func.name in replacement_dict:
                     expr = expr.replace(func, Functions.call(replacement_dict[func.name], *func.args))
-            return expr.Subs(replacements)
+            return expr
 
 
 class ReplaceAll(s.Function):
@@ -594,7 +594,9 @@ class ReplaceAll(s.Function):
 
 class Factor(s.Function):
     @classmethod
-    def eval(cls, expr):
+    def eval(cls, expr, *args):
+        for arg in args:
+            pass
         return thread(expr, s.factor)
 
 

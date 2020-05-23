@@ -13,7 +13,7 @@ def symbol(n):
     if n in r.refs.Constants.__dict__:
         return r.refs.Constants.__dict__[n]
     if n not in r.refs.Symbols.__dict__:
-        r.refs.Symbols.__setattr__(n, s.symbols(n))
+        r.refs.Symbols.__setattr__(n, s.Symbol(n))
     ret = r.refs.Symbols.__dict__[n]
     if ret != s.symbols(n) and isinstance(ret, s.Expr):
         ret = ret.subs(vars(r.refs.Symbols))

@@ -129,14 +129,21 @@ class List(tuple):
         return List(temp_list)
 
 
-class Rule(tuple):
+class Rule(sympy.Expr):
     # TODO: Pretty and LaTeX printing
     def __init__(self, a, b):
         self.lhs = a
         self.rhs = b
 
-    def __new__(cls, a, b):
-        return super(Rule, cls).__new__(Rule, (a, b))
+    def __getitem__(self, item):
+        if item == 0:
+            return self.lhs
+        if item == 1:
+            return self.rhs
+        raise RuleException
+
+    def __iter__(self):
+        return (self.lhs, self.rhs).__iter__()
 
     def __repr__(self):
         return f'{self[0]} -> {self[1]}'
