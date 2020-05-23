@@ -234,7 +234,7 @@ class Dot(s.Function):
         return dot(*(printer._print(i) for i in self.args))
 
     def _sympystr(self, printer=None):
-        return ''.join([str(i) + '.' for i in (printer.doprint(i) for i in self.args)])[:-1]
+        return ''.join(str(i) + '.' for i in (printer.doprint(i) for i in self.args))[:-1]
 
 
 class Det(s.Function):
@@ -441,7 +441,7 @@ class Cross(s.Function):
         return dot(*(printer._print(i) for i in self.args))
 
     def _sympystr(self, printer=None):
-        return 'Cross['.join([str(i) + ', ' for i in (printer.doprint(i) for i in self.args)])[:-2] + ']'
+        return 'Cross['.join(str(i) + ', ' for i in (printer.doprint(i) for i in self.args))[:-2] + ']'
 
 
 class Sign(s.Function):
