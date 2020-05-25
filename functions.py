@@ -127,7 +127,7 @@ class Floor(s.Function):
     Floor [x,a]
         Gives the greatest multiple of a less than or equal to x.
 
-    Similar to sympy.floor().
+    Uses sympy.floor().
     """
     @classmethod
     def eval(cls, x, a=None):
@@ -144,7 +144,7 @@ class Ceiling(s.Function):
     Ceiling [x,a]
         Gives the smallest multiple of a greater than or equal to x.
 
-    Similar to sympy.ceiling().
+    Uses sympy.ceiling().
     """
     @classmethod
     def eval(cls, x, a=None):
@@ -251,7 +251,7 @@ class Rescale(s.Function):
 class In(s.Function):
     """
     In [n]
-        Gives the raw input given in the n-th line.
+        Gives the raw input given in the nth line.
     """
     @classmethod
     def eval(cls, n=None):
@@ -265,7 +265,7 @@ class Out(s.Function):
     """
     %n
     Out [n]
-        Gives the output of the n-th line.
+        Gives the output of the nth line.
 
     %
         Gives the last result generated.
@@ -403,7 +403,7 @@ class Im(s.Function):
     """
     @classmethod
     def eval(cls, x):
-        thread(x, s.im)
+        return thread(x, s.im)
 
 
 class ReIm(s.Function):
@@ -513,7 +513,7 @@ class Conjugate(s.Function):
 class ConjugateTranspose(s.Function):
     """
     ConjugateTranspose [m]
-        Gives the conjugate transpose of .
+        Gives the conjugate transpose of m.
 
     Equivalent to Conjugate[Transpose[m]].
     """
@@ -524,6 +524,14 @@ class ConjugateTranspose(s.Function):
 
 
 class ComplexExpand(s.Function):
+    """
+    ComplexExpand[expr]
+        Expands expr assuming that all variables are real.
+
+    ComplexExpand [expr, {x1, x2, …}]
+        Expands expr assuming that variables matching any of the x are complex.
+
+    """
     @classmethod
     def eval(cls, x, complexes=()):
         def exp(expr):
@@ -536,7 +544,7 @@ class ComplexExpand(s.Function):
 
 class LogisticSigmoid(s.Function):  # why is this here?
     """
-    LogisticSigmoid[z]
+    LogisticSigmoid [z]
         Gives the logistic sigmoid function.
     """
     @classmethod
@@ -545,12 +553,17 @@ class LogisticSigmoid(s.Function):  # why is this here?
 
 
 class Unitize(s.Function):
+    """
+    Unitize [x]
+        Gives 0 when x is zero, and 1 when x has any other numerical value.
+    """
     @classmethod
     def eval(cls, x):
         if isinstance(x, iterables):
             return thread(x, Unitize)
-        if s.ask(s.Q.nonzero(x)):
-            return
+        if s.ask(s.Q.zero(x)):
+            return 0
+        return 1
 
 
 class Ramp(s.Function):
@@ -647,19 +660,27 @@ class Sqrt(s.Function):
         return thread(x, s.sqrt)
 
 
-class StieltjesGamma(s.Function):
-    @classmethod
-    def eval(cls, x):
-        return thread(x, s.stieltjes)
+# class StieltjesGamma(s.Function):
+#     @classmethod
+#     def eval(cls, x):
+#         return thread(x, s.stieltjes)
 
 
 class Surd(s.Function):
+    """
+    Surd [x, n]
+        Gives the real-valued nth root of x.
+    """
     @classmethod
     def eval(cls, x, n):
         return thread(x, lambda a: s.real_root(a, n))
 
 
 class QuotientRemainder(s.Function):
+    """
+    QuotientRemainder[m,n]
+        Gives a list of the quotient and remainder from division of m by n.
+    """
     @classmethod
     def eval(cls, m, n):
         if m.is_number and n.is_number:
@@ -675,7 +696,7 @@ class GCD(s.Function):
 
     Works with Numeric and Symbolic expressions.
 
-    Similar to sympy.gcd()
+    Uses sympy.gcd()
     """
     @classmethod
     def eval(cls, *n):
@@ -694,7 +715,7 @@ class LCM(s.Function):
 
     Works with Numeric and Symbolic expressions.
 
-    Similar to sympy.lcm()
+    Uses sympy.lcm()
     """
     @classmethod
     def eval(cls, *n):
@@ -810,7 +831,7 @@ class Subs(s.Function):
     Subs [Expr, Rules]
         Transforms Expression expr with the given Rule or list of Rules.
 
-    Similar to sympy.subs, but also replaces functions.
+    Uses sympy.subs, but also replaces functions.
     """
     @classmethod
     def eval(cls, expr, replacements):
@@ -906,6 +927,24 @@ class N(s.Function):
 
 
 class D(s.Function):
+    """
+    D [f, x]
+        Gives the partial derivative ∂f / ∂x.
+
+    D [f, {x, n}]
+        Gives the multiple derivative ∂^n f / ∂ x^n.
+
+    D [f, x, y, …]
+        Gives the partial derivative (∂ / ∂y) (∂ / ∂x) f.
+
+    D [f, {x, n}, {y, m}, ...]
+        Gives the multiple partial derivative (∂^m / ∂ y^m) (∂^n / ∂ x^n) f.
+
+    D [f, {{x1, x2, ...}}]
+        For a scalar f gives the vector derivative (∂f / ∂x1, ∂f / ∂x2, ...).
+
+    Uses sympy.diff().
+    """
     @classmethod
     def eval(cls, f, *args):
         def threaded_diff(x, *d):
@@ -933,7 +972,7 @@ class Functions:
     # TODO: Move functions into class (?)
 
     # TODO: Solve
-    # TODO: D, Integrate
+    # TODO: Integrate
     # TODO: Simplify
     # TODO: Fractional, Integer Part
     # TODO: Remaining Matrix Operations
@@ -994,7 +1033,7 @@ class Functions:
     Sign = Sign
     Simplify = threaded(s.simplify)
     Sqrt = Sqrt
-    StieltjesGamma = StieltjesGamma
+    # StieltjesGamma = StieltjesGamma
     Subtract = Subtract
     Subs = Subs
     Surd = Surd

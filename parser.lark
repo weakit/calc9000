@@ -4,7 +4,7 @@
       | set
 
 set: (expression "=")+ expression
-// | (CNAME|assign_list|function) ":=" expression -> set_delayed // TODO
+// | expression ":=" expression -> set_delayed // TODO
    | expression "=" "." -> unset
 
 ?expression: rule
