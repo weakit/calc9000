@@ -1,5 +1,6 @@
 import sympy
-# TODO: Dot, Nothing
+from collections.abc import Iterable, Sized
+# TODO: Nothing
 # TODO: check others
 
 
@@ -11,17 +12,27 @@ class ListException(Exception):
     pass
 
 
-class UnequalLengthException(ListException):
-    pass
-
-
-class List(tuple):
+class List:
     # TODO: Pretty and LaTeX printing
+    # is_number = True
+
+    def __init__(self, x):
+        self.value = tuple(x)
+
+    def __getitem__(self, item):
+        return self.value[item]
+
+    def __iter__(self):
+        return self.value.__iter__()
+
+    def __len__(self):
+        return self.value.__len__()
+
     def __add__(self, other):
         temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
-                raise UnequalLengthException
+                raise ListException("Lists are of Unequal Length")
             for i in range(len(self)):
                 temp_list.append(self[i] + other[i])
             return List(temp_list)
@@ -41,7 +52,7 @@ class List(tuple):
         temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
-                raise UnequalLengthException
+                raise ListException("Lists are of Unequal Length")
             for i in range(len(self)):
                 temp_list.append(self[i] - other[i])
             return List(temp_list)
@@ -61,7 +72,7 @@ class List(tuple):
         temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
-                raise UnequalLengthException
+                raise ListException("Lists are of Unequal Length")
             for i in range(len(self)):
                 temp_list.append(self[i] * other[i])
             return List(temp_list)
@@ -81,7 +92,7 @@ class List(tuple):
         temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
-                raise UnequalLengthException
+                raise ListException("Lists are of Unequal Length")
             for i in range(len(self)):
                 temp_list.append(self[i] / other[i])
             return List(temp_list)
@@ -101,14 +112,13 @@ class List(tuple):
         temp_list = []
         for item in self:
             temp_list.append(sympy.N(item, n, **options))
-        print(temp_list[0])
         return List(temp_list)
 
     def __pow__(self, other, modulo=None):
         temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
-                raise UnequalLengthException
+                raise ListException("Lists are of Unequal Length")
             if modulo:
                 for i in range(len(self)):
                     temp_list.append(pow(self[i], other[i]) % modulo)
@@ -127,6 +137,15 @@ class List(tuple):
         for i in range(len(self)):
             temp_list.append(pow(other, self[i]))
         return List(temp_list)
+
+    def __hash__(self):
+        return self.value.__hash__()
+
+    def __repr__(self):
+        return self.value.__repr__()
+
+    def __str__(self):
+        return self.value.__str__()
 
 
 class Rule(sympy.Expr):

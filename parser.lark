@@ -3,7 +3,7 @@
 ?start: expression
       | set
 
-set: ((CNAME|assign_list|function) "=")+ expression
+set: ((assign_atom) "=")+ expression
 // | (CNAME|assign_list|function) ":=" expression -> set_delayed // TODO
    | (CNAME|assign_list|function) "=" "." -> unset
 
@@ -56,6 +56,11 @@ function: atom "[" (expression)? ("," expression)* "]"
 
 
 list: "{" (expression ("," expression)*)? "}"
+
+?assign_atom: function
+            | assign_list
+            | numeric
+            | CNAME
 
 assign_list: "{" (CNAME|assign_list) ("," (CNAME|assign_list))* "}"
 

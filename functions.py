@@ -4,15 +4,19 @@ import references as r
 import sympy as s
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from collections.abc import Iterable, Sized
-from lists import List, Rule
+from lists import List
 
 
-class FunctionException(Exception): pass
+iterables = (s.Tuple, List, Sized, s.Matrix)
+
+
+class FunctionException(Exception):
+    pass
 
 
 # TODO: add warnings
 def toList(m):
-    temp_list = list()
+    temp_list = []
     for row in range(m.rows):
         temp_list.append(List(m.row(row)))
     return List(temp_list)
@@ -21,12 +25,18 @@ def toList(m):
 def thread(x, func):
     if isinstance(x, s.Matrix):
         x = toList(x)
-    if isinstance(x, s.Tuple):
-        temp_list = list()
+    if isinstance(x, iterables):
+        temp_list = []
         for item in x:
             temp_list.append(thread(item, func))
         return List(temp_list)
     return func(x)
+
+
+def threaded(func):
+    def fun(x):
+        return thread(x, func)
+    return fun
 
 
 def boolean(x):
@@ -105,7 +115,7 @@ class Round(s.Function):
             if a is None:
                 return round(x)
             return a * round(x / a)
-        if isinstance(x, (s.Tuple, s.Matrix)):
+        if isinstance(x, iterables):
             return thread(x, Round)
 
 
@@ -148,9 +158,9 @@ def Min(*x):
     Min [x1, {x2, x3}, x4, ...]
         Gives the smallest x.
     """
-    temp_list = list()
+    temp_list = []
     for i in x:
-        if isinstance(i, (Iterable, s.Matrix, s.Tuple)):
+        if isinstance(i, iterables):
             temp_list.append(Min(*i))
         else:
             temp_list.append(i)
@@ -162,9 +172,9 @@ def Max(*x):
     Max [x1, {x2, x3}, x4, ...]
         Gives the largest x.
     """
-    temp_list = list()
+    temp_list = []
     for i in x:
-        if isinstance(i, (Iterable, s.Matrix, s.Tuple)):
+        if isinstance(i, iterables):
             temp_list.append(Max(*i))
         else:
             temp_list.append(i)
@@ -178,7 +188,7 @@ class Total(s.Function):
     """
     @classmethod
     def eval(cls, _list):
-        if isinstance(_list, s.Tuple):
+        if isinstance(_list, iterables):
             return sum(_list)
 
 
@@ -189,7 +199,7 @@ class Mean(s.Function):
     """
     @classmethod
     def eval(cls, _list):
-        if isinstance(_list, s.Tuple):
+        if isinstance(_list, iterables):
             return Total(_list) / len(_list)
 
 
@@ -197,7 +207,7 @@ class Accumulate(s.Function):
     @classmethod
     def eval(cls, _list):
         temp_list = list(_list)
-        if isinstance(_list, s.Tuple):
+        if isinstance(_list, iterables):
             for i in range(1, len(_list)):
                 temp_list[i] += temp_list[i - 1]
             return List(temp_list)
@@ -224,15 +234,15 @@ class Rescale(s.Function):
     # TODO: clean
     @classmethod
     def eval(cls, x, x_range=None, y_range=None):
-        if x_range is None and isinstance(x, s.Tuple):
+        if x_range is None and isinstance(x, iterables):
             x = list(x)
             _min = Min(x)
             _max = Max(x)
             for i in range(len(x)):
                 x[i] = cls.eval(x[i], List([_min, _max]))
             return List(x)
-        elif isinstance(x_range, s.Tuple) and len(x_range) == 2:
-            if y_range is None or (isinstance(y_range, List) and len(y_range) == 2):
+        elif isinstance(x_range, iterables) and len(x_range) == 2:
+            if y_range is None or (isinstance(y_range, iterables) and len(y_range) == 2):
                 if y_range is None:
                     y_range = (0, 1)
                 return ((x - x_range[0]) * y_range[1] + (x_range[1] - x) * y_range[0]) / (x_range[1] - x_range[0])
@@ -278,7 +288,7 @@ class Out(s.Function):
 class Dot(s.Function):
     @classmethod
     def eval(cls, m, n):
-        if not isinstance(m, (s.Tuple, s.Matrix, Iterable)) and isinstance(n, (s.Tuple, s.Matrix, Iterable)):
+        if not isinstance(m, iterables) and isinstance(n, iterables):
             return None
         m = s.Matrix(m)
         n = s.Matrix(n)
@@ -329,12 +339,13 @@ class Det(s.Function):
     """
     @classmethod
     def eval(cls, x):
-        if isinstance(x, (s.Tuple, s.Matrix)):
+        if isinstance(x, iterables):
             try:
                 m = s.Matrix(x)
                 if m.is_square:
                     return m.det()
             except ValueError:
+                # TODO: Warning
                 return None
 
 
@@ -345,7 +356,7 @@ class Inverse(s.Function):
     """
     @classmethod
     def eval(cls, x):
-        if isinstance(x, (s.Tuple, s.Matrix)):
+        if isinstance(x, iterables):
             try:
                 m = s.Matrix(x)
                 return toList(m.inv())
@@ -363,7 +374,7 @@ class Transpose(s.Function):
     """
     @classmethod
     def eval(cls, x):
-        if isinstance(x, (s.Tuple, s.Matrix)):
+        if isinstance(x, iterables):
             try:
                 m = s.Matrix(x)
                 return toList(m.transpose())
@@ -508,17 +519,17 @@ class ConjugateTranspose(s.Function):
     """
     @classmethod
     def eval(cls, x):
-        if isinstance(x, (s.Tuple, s.Matrix)):
+        if isinstance(x, iterables):
             return Transpose(Conjugate(x))
 
 
 class ComplexExpand(s.Function):
     @classmethod
-    def eval(cls, x, complexes=tuple()):
+    def eval(cls, x, complexes=()):
         def exp(expr):
             return s.refine(s.expand_complex(expr),
                             assumptions(s.Q.real(a) for a in expr.atoms(s.Symbol) if a not in complexes))
-        if not isinstance(complexes, (tuple, s.Tuple)):
+        if not isinstance(complexes, iterables):
             complexes = (complexes,)
         return thread(x, exp)
 
@@ -536,7 +547,7 @@ class LogisticSigmoid(s.Function):  # why is this here?
 class Unitize(s.Function):
     @classmethod
     def eval(cls, x):
-        if isinstance(x, (tuple, s.Tuple, s.Matrix)):
+        if isinstance(x, iterables):
             return thread(x, Unitize)
         if s.ask(s.Q.nonzero(x)):
             return
@@ -549,7 +560,7 @@ class Ramp(s.Function):
     """
     @classmethod
     def eval(cls, x):
-        if isinstance(x, (tuple, s.Tuple, s.Matrix)):
+        if isinstance(x, iterables):
             return thread(x, Ramp)
         if s.ask(s.Q.nonnegative(x)):
             return x
@@ -560,10 +571,10 @@ class Cross(s.Function):
     @classmethod
     def eval(cls, *args):
         if len(args) == 1:
-            if isinstance(args[0], (s.Tuple, s.Matrix)) and len(args[0]) == 2:
+            if isinstance(args[0], iterables) and len(args[0]) == 2:
                 return List((args[0][1] * -1, args[0][0]))
         elif len(args) == 2:
-            if isinstance(args[0], (s.Tuple, s.Matrix)) and isinstance(args[1], (s.Tuple, s.Matrix)):
+            if isinstance(args[0], iterables) and isinstance(args[1], iterables):
                 if len(args[0]) == len(args[1]) == 3:
                     return List(s.Matrix(args[0]).cross(s.Matrix(args[1])))
 
@@ -653,7 +664,7 @@ class QuotientRemainder(s.Function):
     def eval(cls, m, n):
         if m.is_number and n.is_number:
             return List((m // n, m % n))
-        if isinstance(m, (tuple, s.Tuple, List)) and isinstance(n, (tuple, s.Tuple, List)):
+        if isinstance(m, iterables) and isinstance(n, iterables):
             return List(QuotientRemainder(*x) for x in zip(m, n))
 
 
@@ -754,8 +765,8 @@ class Set(s.Function):
                     return None
             r.refs.Symbols.__setattr__(x.name, n)
             return n
-        elif isinstance(x, (s.Tuple, Sized)):
-            if isinstance(x, (s.Tuple, Sized)) and len(x) == len(n):
+        elif isinstance(x, iterables):
+            if isinstance(x, iterables) and len(x) == len(n):
                 return List(Set(a, b) for a, b in zip(x, n))
 
 
@@ -766,7 +777,7 @@ class Unset(s.Function):
     """
     @classmethod
     def eval(cls, n):
-        if isinstance(n, (s.Tuple, Sized)):
+        if isinstance(n, iterables):
             return List(Unset(x) for x in n)
         if isinstance(n, s.Symbol) and str(n) in r.refs.Symbols.__dict__:
             delattr(r.refs.Symbols, str(n))
@@ -787,7 +798,7 @@ class Rationalize(s.Function):
     """
     @classmethod
     def eval(cls, x, dx=None):
-        if isinstance(x, (s.Tuple, Sized)):
+        if isinstance(x, iterables):
             return List(Rationalize(n, dx) for n in x)
         if isinstance(x, (int, float, s.Number)):
             rat = s.nsimplify(x, rational=True, tolerance=dx)
@@ -805,9 +816,9 @@ class Subs(s.Function):
     """
     @classmethod
     def eval(cls, expr, replacements):
-        if not isinstance(replacements, (s.Tuple, List)):
+        if not isinstance(replacements, iterables):
             replacements = (replacements,)
-        if isinstance(expr, (s.Tuple, List)):
+        if isinstance(expr, iterables):
             return List(Subs(x, *replacements) for x in expr)
         if isinstance(expr, s.Expr):
             expr = expr.subs(replacements)
@@ -890,10 +901,42 @@ class nCr(s.Function):
         return thread(n, lambda a: ncr(a, l))
 
 
+class N(s.Function):
+    @classmethod
+    def eval(cls, n, *args):
+        return thread(n, lambda x: s.N(x, *args))
+
+
+class D(s.Function):
+    @classmethod
+    def eval(cls, f, *args):
+        def threaded_diff(x, *d):
+            if isinstance(x, iterables):
+                return List(threaded_diff(element, *d) for element in x)
+            return s.diff(x, *d)
+        for arg in args:
+            if isinstance(arg, iterables):
+                if len(arg) == 1 and isinstance(arg[0], iterables):
+                    return List(threaded_diff(f, element) for element in arg[0])
+                if len(arg) == 2:
+                    if isinstance(arg[0], iterables):
+                        f = List(threaded_diff(f, (element, arg[1])) for element in arg[0])
+                    else:
+                        f = threaded_diff(f, (arg[0], arg[1]))
+                else:
+                    # TODO: warning
+                    return None
+            else:
+                f = threaded_diff(f, arg)
+        return f
+
+
 class Functions:
+    # TODO: Move functions into class (?)
+
     # TODO: Solve
     # TODO: D, Integrate
-    # TODO: Simplify, Expand
+    # TODO: Simplify
     # TODO: Fractional, Integer Part
     # TODO: Remaining Matrix Operations
     # TODO: Arithmetic Functions: Ratios, Differences (Low Priority)
@@ -912,11 +955,12 @@ class Functions:
     Conjugate = Conjugate
     ConjugateTranspose = ConjugateTranspose
     Cross = Cross
-    D = s.diff
+    D = D
     Det = Det
     Dot = Dot
     Equal = Equal
     Exp = Exp
+    Expand = Expand
     Factor = Factor
     Factorial = Factorial
     Floor = Floor
@@ -933,7 +977,7 @@ class Functions:
     Mean = Mean
     Min = Min
     Mod = s.Mod
-    N = s.N
+    N = N
     Out = Out
     Plus = Plus
     Power = Power
@@ -950,7 +994,7 @@ class Functions:
     Set = Set
     Series = Series
     Sign = Sign
-    Simplify = s.simplify
+    Simplify = threaded(s.simplify)
     Sqrt = Sqrt
     StieltjesGamma = StieltjesGamma
     Subtract = Subtract
@@ -958,36 +1002,37 @@ class Functions:
     Surd = Surd
     Times = Times
     Total = Total
+    TrigExpand = TrigExpand
     Unitize = Unitize
     Unset = Unset
 
     # Trig Functions
 
-    Sinc = s.sinc
-    Sin = s.sin
-    Cos = s.cos
-    Tan = s.tan
-    Csc = s.csc
-    Sec = s.sec
-    Cot = s.cot
-    Sinh = s.sinh
-    Cosh = s.cosh
-    Tanh = s.tanh
-    Csch = s.csch
-    Sech = s.sech
-    Coth = s.coth
-    ArcSin = s.asin
-    ArcCos = s.acos
-    ArcTan = s.atan
-    ArcCsc = s.acsc
-    ArcSec = s.asec
-    ArcCot = s.acot
-    ArcSinh = s.asinh
-    ArcCosh = s.acosh
-    ArcTanh = s.atanh
-    ArcCsch = s.acsch
-    ArcSech = s.asech
-    ArcCoth = s.acoth
+    Sinc = threaded(s.sinc)
+    Sin = threaded(s.sin)
+    Cos = threaded(s.cos)
+    Tan = threaded(s.tan)
+    Csc = threaded(s.csc)
+    Sec = threaded(s.sec)
+    Cot = threaded(s.cot)
+    Sinh = threaded(s.sinh)
+    Cosh = threaded(s.cosh)
+    Tanh = threaded(s.tanh)
+    Csch = threaded(s.csch)
+    Sech = threaded(s.sech)
+    Coth = threaded(s.coth)
+    ArcSin = threaded(s.asin)
+    ArcCos = threaded(s.acos)
+    ArcTan = threaded(s.atan)
+    ArcCsc = threaded(s.acsc)
+    ArcSec = threaded(s.asec)
+    ArcCot = threaded(s.acot)
+    ArcSinh = threaded(s.asinh)
+    ArcCosh = threaded(s.acosh)
+    ArcTanh = threaded(s.atanh)
+    ArcCsch = threaded(s.acsch)
+    ArcSech = threaded(s.asech)
+    ArcCoth = threaded(s.acoth)
 
     # Extra functions
 

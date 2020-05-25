@@ -1,11 +1,10 @@
 import platform
 import converse as c
-from random import randrange
 import lark
 
 
 def print_info():
-    print(f'--- calc9000 > {randrange(1000, 9000)} [{platform.python_implementation()} {platform.python_version()}]\n')
+    print(f'--- calc9000 [{platform.python_implementation()} {platform.python_version()}]\n')
 
 
 if __name__ == '__main__':
