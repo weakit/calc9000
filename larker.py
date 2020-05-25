@@ -1,15 +1,9 @@
 import expressions as ex
 from lists import List, Rule
-from lark import Lark, Transformer, Tree
+from lark import Lark, Transformer, Tree, Token
 
 
-class Parser(Transformer):
-    def __init__(self):
-        super().__init__()
-        with open("parser.lark", 'r') as f:
-            lark = f.read()
-        self.parser = Lark(lark, start='start', parser="lalr")
-
+class AssignTransformer(Transformer):
     def plus(self, items):
         return ex.plus(items)
 
@@ -46,20 +40,8 @@ class Parser(Transformer):
     def rule(self, items):
         return Rule(*items)
 
-    def assign_list(self, items):
-        return tuple(items)
-
-    def symbolic_list(self, items):
-        return List(items)
-
     def relation(self, items):
         return ex.relations(items)
-
-    def set(self, items):
-        return ex.assign(items)
-
-    def unset(self, items):
-        return ex.unset(items)
 
     def out(self, items):
         return ex.out(items)
@@ -74,17 +56,46 @@ class Parser(Transformer):
         return str(n)
 
     def symbol(self, n):
-        return ex.symbol(n[0])
+        return str(n[0])
 
     def RELATIONAL(self, n):
         return str(n)
 
-    def parse(self, t):
+    def transform(self, tree):
+        if isinstance(tree, Token):
+            return getattr(self, tree.type)(tree)
+        return super().transform(tree)
+
+
+class SymbolTransformer(AssignTransformer):
+    def __init__(self):
+        super().__init__()
+        with open("parser.lark", 'r') as f:
+            lark = f.read()
+        self.parser = Lark(lark, start='start', parser="lalr")
+
+    def symbol(self, n):
+        return ex.symbol(n[0])
+
+    def handle(self, tree: Tree):
+        if tree.data == "set":
+            children = tree.children[:]
+            for x in range(len(children) - 1):
+                children[x] = assigner.transform(children[x])
+            children[-1] = self.transform(children[-1])
+            return ex.assign(children)
+        elif tree.data == "unset":
+            return ex.unset(assigner.transform(tree.children[0]))
+
+    def evaluate(self, t):
         parsed = self.parser.parse(t)
         if isinstance(parsed, Tree):
+            if parsed.data in ["set", "unset"]:
+                return self.handle(parsed)
             return self.transform(parsed)
         return parsed
 
 
 if __name__ == "larker":
-    parser = Parser()
+    assigner = AssignTransformer()
+    parser = SymbolTransformer()

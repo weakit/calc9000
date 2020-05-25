@@ -781,8 +781,6 @@ class Unset(s.Function):
             return List(Unset(x) for x in n)
         if isinstance(n, s.Symbol) and str(n) in r.refs.Symbols.__dict__:
             delattr(r.refs.Symbols, str(n))
-            return None
-        delattr(r.refs.Symbols, str(n))
         return None
 
 

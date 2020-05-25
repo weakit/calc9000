@@ -3,9 +3,9 @@
 ?start: expression
       | set
 
-set: ((assign_atom) "=")+ expression
+set: (expression "=")+ expression
 // | (CNAME|assign_list|function) ":=" expression -> set_delayed // TODO
-   | (CNAME|assign_list|function) "=" "." -> unset
+   | expression "=" "." -> unset
 
 ?expression: rule
 

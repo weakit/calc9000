@@ -13,7 +13,7 @@ if __name__ == '__main__':
         while True:
             i = input(f'IN  {c.current_line()}: ')
             try:
-                out = str(c.process_pretty(i))
+                out = str(c.process(i))
             except KeyboardInterrupt as e:
                 if isinstance(e, lark.exceptions.UnexpectedInput):
                     print(str(e)[:str(e).rindex('Expect')-2])
