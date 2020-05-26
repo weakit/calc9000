@@ -11,7 +11,7 @@ class ListException(Exception):
     pass
 
 
-class List:
+class List(sympy.Basic):  # probably a bad idea
     # TODO: Pretty and LaTeX printing
     # is_number = True
 
@@ -141,10 +141,16 @@ class List:
         return self.value.__hash__()
 
     def __repr__(self):
-        return self.value.__repr__()
+        string = '{' + repr(self.value[0])
+        for value in self.value[1:]:
+            string += ', ' + repr(value)
+        return string + '}'
 
     def __str__(self):
-        return self.value.__str__()
+        string = '{' + str(self.value[0])
+        for value in self.value[1:]:
+            string += ', ' + str(value)
+        return string + '}'
 
 
 class Rule(sympy.Expr):

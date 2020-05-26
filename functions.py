@@ -1063,12 +1063,40 @@ class Simplify(s.Function):
         return thread(expr, s.simplify)
 
 
+class IntegerPart(s.Function):
+    @staticmethod
+    def integer_part(x):
+        def non_complex_integer_part(n):
+            if s.ask(s.Q.nonnegative(n)):
+                return s.floor(n)
+            return s.ceiling(n)
+        if hasattr(x, "is_number") and x.is_number:
+            return non_complex_integer_part(s.re(x)) + non_complex_integer_part(s.im(x)) * s.I
+
+    @classmethod
+    def eval(cls, x):
+        return thread(x, cls.integer_part)
+
+
+class FractionalPart(s.Function):
+    @staticmethod
+    def frac_part(x):
+        if x.is_infinite:
+            if x.is_complex or s.sign(x) > 0:
+                return s.Interval(0, 1, True, True)
+            return s.Interval(-1, 0, True, True)
+        if hasattr(x, "is_number") and x.is_number:
+            return x - IntegerPart.integer_part(x)
+
+    @classmethod
+    def eval(cls, x):
+        return thread(x, cls.frac_part)
+
+
 class Functions:
     # TODO: Move functions into class (?)
 
-    # TODO: Solve, DSolve
-    # TODO: Simplify
-    # TODO: Fractional, Integer Part
+    # TODO: DSolve
     # TODO: Remaining Matrix Operations
     # TODO: Arithmetic Functions: Ratios, Differences (Low Priority)
     # TODO: Booleans, Conditions, Boole (Low Priority)
@@ -1097,10 +1125,12 @@ class Functions:
     Factor = Factor
     Factorial = Factorial
     Floor = Floor
+    FractionalPart = FractionalPart
     GCD = GCD
     Heaviside = HeavisideTheta
     HeavisideTheta = HeavisideTheta
     In = In
+    IntegerPart = IntegerPart
     Integrate = Integrate
     Im = Im
     Inverse = Inverse
