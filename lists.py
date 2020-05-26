@@ -1,5 +1,4 @@
 import sympy
-from collections.abc import Iterable, Sized
 # TODO: Nothing
 # TODO: check others
 

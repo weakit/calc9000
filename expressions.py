@@ -82,3 +82,7 @@ def assign(n):
 
 def unset(n):
     return Functions.call("Unset", n)
+
+
+def And(n):
+    return Functions.call("And", *n)

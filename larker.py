@@ -4,61 +4,84 @@ from lark import Lark, Transformer, Tree, Token
 
 
 class AssignTransformer(Transformer):
-    def plus(self, items):
+    @staticmethod
+    def plus(items):
         return ex.plus(items)
 
-    def subtract(self, items):
+    @staticmethod
+    def subtract(items):
         return ex.subtract(items)
 
-    def times(self, items):
+    @staticmethod
+    def times(items):
         return ex.times(items)
 
-    def dot(self, items):
+    @staticmethod
+    def dot(items):
         return ex.dot(items)
 
-    def positive(self, items):
+    @staticmethod
+    def positive(items):
         return ex.positive(items)
 
-    def negative(self, items):
+    @staticmethod
+    def negative(items):
         return ex.negative(items)
 
-    def divide(self, items):
+    @staticmethod
+    def divide(items):
         return ex.divide(items)
 
-    def power(self, items):
+    @staticmethod
+    def power(items):
         return ex.power(items)
 
-    def factorial(self, items):
+    @staticmethod
+    def factorial(items):
         return ex.factorial(items)
 
-    def function(self, items):
+    @staticmethod
+    def function(items):
         return ex.function(items)
 
-    def list(self, items):
+    @staticmethod
+    def list(items):
         return List(items)
 
-    def rule(self, items):
+    @staticmethod
+    def rule(items):
         return Rule(*items)
 
-    def relation(self, items):
+    @staticmethod
+    def relation(items):
         return ex.relations(items)
 
-    def out(self, items):
+    @staticmethod
+    def _and(items):
+        return ex.And(items)
+
+    @staticmethod
+    def out(items):
         return ex.out(items)
 
-    def INT(self, n):
+    @staticmethod
+    def INT(n):
         return ex.numeric(n)
 
-    def FLOAT(self, n):
+    @staticmethod
+    def FLOAT(n):
         return ex.numeric(n)
 
-    def CNAME(self, n):
+    @staticmethod
+    def CNAME(n):
         return str(n)
 
-    def symbol(self, n):
+    @staticmethod
+    def symbol(n):
         return str(n[0])
 
-    def RELATIONAL(self, n):
+    @staticmethod
+    def RELATIONAL(n):
         return str(n)
 
     def transform(self, tree):
@@ -74,7 +97,8 @@ class SymbolTransformer(AssignTransformer):
             lark = f.read()
         self.parser = Lark(lark, start='start', parser="lalr")
 
-    def symbol(self, n):
+    @staticmethod
+    def symbol(n):
         return ex.symbol(n[0])
 
     def handle(self, tree: Tree):

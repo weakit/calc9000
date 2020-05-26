@@ -3,7 +3,7 @@ from functools import reduce
 import references as r
 import sympy as s
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
-from collections.abc import Iterable, Sized
+from collections.abc import Sized
 from lists import List
 
 
@@ -843,8 +843,9 @@ class Subs(s.Function):
             expr = expr.subs(replacements)
             replacement_dict = {str(k): str(v) for k, v in replacements}
             for func in expr.atoms(s.Function):
-                if func.name in replacement_dict:
-                    expr = expr.replace(func, Functions.call(replacement_dict[func.name], *func.args))
+                # TODO: sympy function replacement
+                if str(func.func) in replacement_dict:
+                    expr = expr.replace(func, Functions.call(replacement_dict[str(func.func)], *func.args))
             return expr
 
 
@@ -906,21 +907,28 @@ class TrigExpand(s.Function):
 
 class nPr(s.Function):
     @classmethod
-    def eval(cls, n, l):
+    def eval(cls, n, m):
         def npr(x, q):
             return Factorial(x) / Factorial(x - q)
-        return thread(n, lambda a: npr(a, l))
+        return thread(n, lambda a: npr(a, m))
 
 
 class nCr(s.Function):
     @classmethod
-    def eval(cls, n, l):
+    def eval(cls, n, m):
         def ncr(x, q):
             return Factorial(x) / (Factorial(x - q) * Factorial(q))
-        return thread(n, lambda a: ncr(a, l))
+        return thread(n, lambda a: ncr(a, m))
 
 
 class N(s.Function):
+    """
+    N [expr]
+        Gives the numerical value of expr.
+
+    N [expr, n]
+        Attempts to give a result with n-digit precision.
+    """
     @classmethod
     def eval(cls, n, *args):
         return thread(n, lambda x: s.N(x, *args))
@@ -951,6 +959,10 @@ class D(s.Function):
             if isinstance(x, iterables):
                 return List(threaded_diff(element, *d) for element in x)
             return s.diff(x, *d)
+
+        if not args:
+            return s.diff(f)
+
         for arg in args:
             if isinstance(arg, iterables):
                 if len(arg) == 1 and isinstance(arg[0], iterables):
@@ -968,11 +980,93 @@ class D(s.Function):
         return f
 
 
+class Integrate(s.Function):
+    # TODO: Doc
+    @classmethod
+    def eval(cls, f, *args):
+        def threaded_int(x, *i):
+            if isinstance(x, iterables):
+                return List(threaded_int(element, *i) for element in x)
+            return s.integrate(x, *i)
+
+        if not args:
+            return s.integrate(f)
+
+        return threaded_int(f, *args)
+
+
+class DiracDelta(s.Function):
+    """
+    DiracDelta [x]
+        represents the Dirac delta function δ(x).
+
+    DiracDelta [x1, x2, ...]
+        Represents the multidimensional Dirac delta function δ(x1, x2, ...).
+
+    Uses sympy.DiracDelta().
+    """
+    @classmethod
+    def eval(cls, *args):
+        return Times(*thread(args, s.DiracDelta))
+
+
+class HeavisideTheta(s.Function):
+    """
+    HeavisideTheta [x]
+        Represents the Heaviside theta function θ(x), equal to 0 for x < 0 and 1 for x > 0.
+
+    Equivalent to sympy.Heaviside().
+    """
+    @classmethod
+    def eval(cls, x):
+        return thread(x, s.Heaviside)
+
+
+class And(s.Function):
+    @classmethod
+    def eval(cls, *args):
+        # TODO: Proper And
+        return s.And(*args)
+
+
+class Solve(s.Function):
+    """
+    Solve [expr, `vars]
+        Attempts to solve the system expr of equations or inequalities for the variables vars.
+    """
+    @classmethod
+    def eval(cls, expr, v, dom=None):
+        # TODO: fix (?)
+        if dom is None:
+            dom = s.Complexes
+        if isinstance(expr, s.And):
+            expr = expr.args
+        # if not isinstance(expr, iterables + (s.core.relational._Inequality,)):
+        #     ret = s.solveset(expr, v, dom)
+        # else:
+        ret = s.solve(expr, v, dict=True)
+        return ret
+
+
+class Simplify(s.Function):
+    @classmethod
+    def eval(cls, expr, assum=None):
+        if assum is not None:
+            raise NotImplementedError("Assumptions not implemented.")
+            # if isinstance(assum, iterables):
+            #     for i in range(len(assum)):
+            #         if isinstance(assum[i], s.core.relational.Relational):
+            #             assum[i] = s.Q.is_true(assum[i])
+            #
+            #     assum = assumptions(assum)
+            #     expr = thread(expr, lambda x: s.refine(x, assum))
+        return thread(expr, s.simplify)
+
+
 class Functions:
     # TODO: Move functions into class (?)
 
-    # TODO: Solve
-    # TODO: Integrate
+    # TODO: Solve, DSolve
     # TODO: Simplify
     # TODO: Fractional, Integer Part
     # TODO: Remaining Matrix Operations
@@ -983,6 +1077,7 @@ class Functions:
 
     Abs = Abs
     AbsArg = AbsArg
+    And = And
     Arg = Arg
     Accumulate = Accumulate
     Clip = Clip
@@ -994,6 +1089,7 @@ class Functions:
     Cross = Cross
     D = D
     Det = Det
+    DiracDelta = DiracDelta
     Dot = Dot
     Equal = Equal
     Exp = Exp
@@ -1002,7 +1098,10 @@ class Functions:
     Factorial = Factorial
     Floor = Floor
     GCD = GCD
+    Heaviside = HeavisideTheta
+    HeavisideTheta = HeavisideTheta
     In = In
+    Integrate = Integrate
     Im = Im
     Inverse = Inverse
     LCM = LCM
@@ -1031,7 +1130,8 @@ class Functions:
     Set = Set
     Series = Series
     Sign = Sign
-    Simplify = threaded(s.simplify)
+    Simplify = Simplify
+    Solve = Solve
     Sqrt = Sqrt
     # StieltjesGamma = StieltjesGamma
     Subtract = Subtract
@@ -1081,7 +1181,7 @@ class Functions:
     @classmethod
     def call(cls, f, *a):
         if f in r.refs.NoCache:
-            s.cache.clear_cache()
+            s.core.cache.clear_cache()
         if f in cls.__dict__:
             if a:
                 return cls.__dict__[f](*a)

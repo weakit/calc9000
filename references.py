@@ -15,6 +15,10 @@ class ConstantsClass:
     Infinity = s.oo
     ComplexInfinity = s.zoo
     Indeterminate = s.nan
+    Complexes = s.Complexes
+    Reals = s.Reals
+    Integers = s.Integers
+    Rationals = s.Rationals
 
 
 class SymbolsClass:
