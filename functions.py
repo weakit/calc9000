@@ -1123,9 +1123,30 @@ class Limit(s.Function):
         return thread(expr, lambda x: Limit.lim(x, lim, d))
 
 
+class Sum(s.Function):
+    @staticmethod
+    def process(i):
+        if isinstance(i, iterables):
+            if not isinstance(i[0], s.Symbol):
+                raise FunctionException("Invalid Limits for Sum")
+            if len(i) == 3:
+                return i
+            if len(i) == 2:
+                return i[0], 1, i[1]
+            raise FunctionException("Invalid Limits for Sum")
+        else:
+            raise NotImplementedError
+
+    @classmethod
+    def eval(cls, f, i, *xi):
+        i = [cls.process(i)] + [cls.process(x) for x in xi]
+        return s.summation(f, *i)
+
+
 class Functions:
     # TODO: Move functions into class (?)
 
+    # TODO: Riemann Zeta
     # TODO: DSolve
     # TODO: Remaining Matrix Operations
     # TODO: Arithmetic Functions: Ratios, Differences (Low Priority)
@@ -1197,6 +1218,7 @@ class Functions:
     # StieltjesGamma = StieltjesGamma
     Subtract = Subtract
     Subs = Subs
+    Sum = Sum
     Surd = Surd
     Times = Times
     Total = Total
