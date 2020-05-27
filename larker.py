@@ -77,6 +77,10 @@ class AssignTransformer(Transformer):
         return str(n)
 
     @staticmethod
+    def ESCAPED_STRING(n):
+        return str(n)[1:-1]
+
+    @staticmethod
     def symbol(n):
         return str(n[0])
 
@@ -108,7 +112,7 @@ class SymbolTransformer(AssignTransformer):
                 children[x] = assigner.transform(children[x])
             children[-1] = self.transform(children[-1])
             return ex.assign(children)
-        elif tree.data == "unset":
+        if tree.data == "unset":
             return ex.unset(assigner.transform(tree.children[0]))
 
     def evaluate(self, t):

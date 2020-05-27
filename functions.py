@@ -43,7 +43,7 @@ def boolean(x):
     if isinstance(x, s.Symbol):
         if x.name == "True":
             return True
-        elif x.name == "False":
+        if x.name == "False":
             return False
         return x
     return False
@@ -54,6 +54,27 @@ def assumptions(x):
     for assumption in x:
         a = a & assumption
     return a
+
+
+def in_options(arg, ops):
+    if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ops:
+        raise FunctionException(f"Unexpected option {arg.lhs}")
+    return True
+
+
+def options(args, ops: dict, defaults=None):
+    ret = {}
+    for arg in args:
+        if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ops:
+            raise FunctionException(f"Unexpected option {arg.lhs}")
+        if str(arg.rhs) in ("True", "False"):
+            arg.rhs = boolean(arg.rhs)
+        ret[ops[arg.lhs.name]] = arg.rhs
+    if defaults is not None:
+        for default in defaults:
+            if default not in ret:
+                ret[default] = defaults[default]
+    return ret
 
 
 class Exp(s.Function):
@@ -241,7 +262,7 @@ class Rescale(s.Function):
             for i in range(len(x)):
                 x[i] = cls.eval(x[i], List([_min, _max]))
             return List(x)
-        elif isinstance(x_range, iterables) and len(x_range) == 2:
+        if isinstance(x_range, iterables) and len(x_range) == 2:
             if y_range is None or (isinstance(y_range, iterables) and len(y_range) == 2):
                 if y_range is None:
                     y_range = (0, 1)
@@ -786,7 +807,7 @@ class Set(s.Function):
                     return None
             r.refs.Symbols.__setattr__(x.name, n)
             return n
-        elif isinstance(x, iterables):
+        if isinstance(x, iterables):
             if isinstance(x, iterables) and len(x) == len(n):
                 return List(Set(a, b) for a, b in zip(x, n))
 
@@ -857,18 +878,11 @@ class Factor(s.Function):
     Equivalent to sympy.factor().
     """
     @classmethod
-    def eval(cls, expr, *options):
-        mod = ext = gus = None
-        for arg in options:
-            if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ("Modulus", "Extension", "GaussianIntegers"):
-                raise FunctionException(f"Unexpected option {arg.lhs}")
-            if arg.lhs.name == "Modulus":
-                mod = arg.rhs
-            elif arg.lhs.name == "Extension":
-                ext = arg.rhs
-            elif arg.lhs.name == "GaussianIntegers":
-                gus = boolean(arg.rhs)
-        return thread(expr, lambda x: s.factor(x, modulus=mod, extension=ext, gaussian=gus))
+    def eval(cls, expr, *args):
+        kws = options(args, {"Modulus": "modulus",
+                             "Extension": "extension",
+                             "GaussianIntegers": "gaussian"})
+        return thread(expr, lambda x: s.factor(x, **kws))
 
 
 class Expand(s.Function):
@@ -880,17 +894,9 @@ class Expand(s.Function):
     """
 
     @classmethod
-    def eval(cls, expr, *options):
-        mod = None
-        trig = False
-        for arg in options:
-            if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ("Modulus", "Trig"):
-                raise FunctionException(f"Unexpected option {arg.lhs}")
-            if arg.lhs.name == "Modulus":
-                mod = arg.rhs
-            else:
-                trig = boolean(arg.rhs)
-        return thread(expr, lambda x: s.expand(x, modulus=mod, trig=trig))
+    def eval(cls, expr, *ops):
+        kws = options(ops, {"Modulus": "modulus", "Trig": "trig"}, {"trig": False})
+        return thread(expr, lambda x: s.expand(x, **kws))
 
 
 class TrigExpand(s.Function):
@@ -902,7 +908,7 @@ class TrigExpand(s.Function):
     """
     @classmethod
     def eval(cls, expr):
-        return thread(expr, lambda x: s.expand_trig(x))
+        return thread(expr, s.expand_trig)
 
 
 class nPr(s.Function):
@@ -1093,6 +1099,30 @@ class FractionalPart(s.Function):
         return thread(x, cls.frac_part)
 
 
+class Limit(s.Function):
+    @staticmethod
+    def lim(expr, lim, d='+-'):
+        try:
+            return s.limit(expr, lim[0],  lim[1], d)
+        except ValueError as e:
+            if e.args[0].startswith("The limit does not exist"):
+                return s.nan
+
+    @classmethod
+    def eval(cls, expr, lim, *args):
+        kws = options(args, {'Direction': 'd'}, {'d': '+-'})
+        d = kws['d']
+        if str(d) in ("Reals", "TwoSided"):
+            d = '+-'
+        elif str(d) in ("FromAbove", "Right") or kws['d'] == -1:
+            d = '+'
+        elif str(d) in ("FromBelow", "Left") or kws['d'] == 1:
+            d = '-'
+        if d not in ('+', '-', '+-'):
+            raise FunctionException("Invalid Limit Direction")
+        return thread(expr, lambda x: Limit.lim(x, lim, d))
+
+
 class Functions:
     # TODO: Move functions into class (?)
 
@@ -1135,6 +1165,7 @@ class Functions:
     Im = Im
     Inverse = Inverse
     LCM = LCM
+    Limit = Limit
     Log = Log
     Log10 = Log10
     Log2 = Log2
