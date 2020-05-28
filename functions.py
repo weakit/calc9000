@@ -80,8 +80,8 @@ def options(args, ops: dict, defaults=None):
 
 class Exp(s.Function):
     """
-     Exp [z]
-        Gives the exponential of z.
+    Exp [z]
+     Gives the exponential of z.
     """
 
     @classmethod
@@ -92,10 +92,10 @@ class Exp(s.Function):
 class Log(s.Function):
     """
     Log [z]
-        Gives the natural logarithm of z (logarithm to base e).
+     Gives the natural logarithm of z (logarithm to base e).
 
     Log [b, z]
-        Gives the logarithm to base b.
+     Gives the logarithm to base b.
     """
 
     @classmethod
@@ -108,7 +108,7 @@ class Log(s.Function):
 class Log2(s.Function):
     """
     Log2 [z]
-        Gives the base-2 logarithm of x.
+     Gives the base-2 logarithm of x.
     """
 
     @classmethod
@@ -119,7 +119,7 @@ class Log2(s.Function):
 class Log10(s.Function):
     """
     Log10 [z]
-        Gives the base-10 logarithm of x.
+     Gives the base-10 logarithm of x.
     """
 
     @classmethod
@@ -130,10 +130,10 @@ class Log10(s.Function):
 class Round(s.Function):
     """
     Round [x]
-        Gives the integer closest to x.
+     Gives the integer closest to x.
 
     Round [x,a]
-        Rounds to the nearest multiple of a.
+     Rounds to the nearest multiple of a.
     """
 
     @classmethod
@@ -149,10 +149,10 @@ class Round(s.Function):
 class Floor(s.Function):
     """
     Floor [x]
-        Gives the greatest integer less than or equal to x.
+     Gives the greatest integer less than or equal to x.
 
     Floor [x,a]
-        Gives the greatest multiple of a less than or equal to x.
+     Gives the greatest multiple of a less than or equal to x.
 
     Uses sympy.floor().
     """
@@ -167,10 +167,10 @@ class Floor(s.Function):
 class Ceiling(s.Function):
     """
     Ceiling [x]
-        Gives the smallest integer greater than or equal to x.
+     Gives the smallest integer greater than or equal to x.
 
-    Ceiling [x,a]
-        Gives the smallest multiple of a greater than or equal to x.
+    Ceiling [x, a]
+     Gives the smallest multiple of a greater than or equal to x.
 
     Uses sympy.ceiling().
     """
@@ -184,8 +184,8 @@ class Ceiling(s.Function):
 
 def Min(*x):
     """
-    Min [x1, {x2, x3}, x4, ...]
-        Gives the smallest x.
+    Min [x1, {x2, x3}, x4, …]
+     Gives the smallest x.
     """
     temp_list = []
     for i in x:
@@ -198,8 +198,8 @@ def Min(*x):
 
 def Max(*x):
     """
-    Max [x1, {x2, x3}, x4, ...]
-        Gives the largest x.
+    Max [x1, {x2, x3}, x4, …]
+     Gives the largest x.
     """
     temp_list = []
     for i in x:
@@ -213,7 +213,7 @@ def Max(*x):
 class Total(s.Function):
     """
     Total [list]
-        Gives the Total Sum of elements in list.
+     Gives the Total Sum of elements in list.
     """
 
     @classmethod
@@ -282,7 +282,7 @@ class Rescale(s.Function):
 class In(s.Function):
     """
     In [n]
-        Gives the raw input given in the nth line.
+     Gives the raw input given in the nth line.
     """
 
     @classmethod
@@ -297,7 +297,7 @@ class Out(s.Function):
     """
     %n
     Out [n]
-        Gives the output of the nth line.
+     Gives the output of the nth line.
 
     %
         Gives the last result generated.
@@ -369,7 +369,7 @@ class Dot(s.Function):
 class Det(s.Function):
     """
     Det [m]
-        Gives the Determinant of Square Matrix m.
+     Gives the Determinant of Square Matrix m.
     """
 
     @classmethod
@@ -387,7 +387,7 @@ class Det(s.Function):
 class Inverse(s.Function):
     """
     Inverse [m]
-        Gives the Inverse of Square Matrix m.
+     Gives the Inverse of Square Matrix m.
     """
 
     @classmethod
@@ -404,7 +404,7 @@ class Inverse(s.Function):
 class Transpose(s.Function):
     """
     Transpose [m]
-        Gives the Transpose of Matrix m.
+     Gives the Transpose of Matrix m.
 
     Equivalent to sympy.Matrix.transpose().
     """
@@ -422,7 +422,7 @@ class Transpose(s.Function):
 class Re(s.Function):
     """
     Re [x]
-        Gives the Real part of x.
+     Gives the Real part of x.
 
     Equivalent to sympy.re().
     """
@@ -435,7 +435,7 @@ class Re(s.Function):
 class Im(s.Function):
     """
     Im [x]
-        Gives the Imaginary part of x.
+     Gives the Imaginary part of x.
 
     Equivalent to sympy.im().
     """
@@ -448,7 +448,7 @@ class Im(s.Function):
 class ReIm(s.Function):
     """
     ReIm [x]
-        Gives the list {Re[x], Im[x]} of x.
+     Gives the list {Re[x], Im[x]} of x.
     """
 
     @classmethod
@@ -495,7 +495,7 @@ class Divide(s.Function):
 class Abs(s.Function):
     """
     Abs [x]
-        Gives the absolute value of x.
+     Gives the absolute value of x.
 
     Equivalent to sympy.Abs().
     """
@@ -508,7 +508,7 @@ class Abs(s.Function):
 class Arg(s.Function):
     """
     Arg [x]
-        Gives the argument of the complex number x.
+     Gives the argument of the complex number x.
 
     Equivalent to sympy.arg().
     """
@@ -521,7 +521,7 @@ class Arg(s.Function):
 class AbsArg(s.Function):
     """
     AbsArg [z]
-        Gives the list {Abs[z],Arg[z]} of the number z.
+     Gives the list {Abs[z],Arg[z]} of the number z.
     """
 
     @classmethod
@@ -532,7 +532,7 @@ class AbsArg(s.Function):
 class Factorial(s.Function):
     """
     Factorial [x]
-        Gives the Factorial of x.
+     Gives the Factorial of x.
 
     Equivalent to sympy.factorial().
     """
@@ -545,7 +545,7 @@ class Factorial(s.Function):
 class Conjugate(s.Function):
     """
     Conjugate [x]
-        Gives the complex conjugate of complex number x.
+     Gives the complex conjugate of complex number x.
 
     Equivalent to sympy.conjugate().
     """
@@ -558,7 +558,7 @@ class Conjugate(s.Function):
 class ConjugateTranspose(s.Function):
     """
     ConjugateTranspose [m]
-        Gives the conjugate transpose of m.
+     Gives the conjugate transpose of m.
 
     Equivalent to Conjugate[Transpose[m]].
     """
@@ -572,10 +572,10 @@ class ConjugateTranspose(s.Function):
 class ComplexExpand(s.Function):
     """
     ComplexExpand[expr]
-        Expands expr assuming that all variables are real.
+     Expands expr assuming that all variables are real.
 
     ComplexExpand [expr, {x1, x2, …}]
-        Expands expr assuming that variables matching any of the x are complex.
+     Expands expr assuming that variables matching any of the x are complex.
 
     """
 
@@ -593,7 +593,7 @@ class ComplexExpand(s.Function):
 class LogisticSigmoid(s.Function):  # why is this here?
     """
     LogisticSigmoid [z]
-        Gives the logistic sigmoid function.
+     Gives the logistic sigmoid function.
     """
 
     @classmethod
@@ -604,7 +604,7 @@ class LogisticSigmoid(s.Function):  # why is this here?
 class Unitize(s.Function):
     """
     Unitize [x]
-        Gives 0 when x is zero, and 1 when x has any other numerical value.
+     Gives 0 when x is zero, and 1 when x has any other numerical value.
     """
 
     @classmethod
@@ -619,7 +619,7 @@ class Unitize(s.Function):
 class Ramp(s.Function):
     """
     Ramp [x]
-        Gives x if x ≥ 0 and 0 otherwise.
+     Gives x if x ≥ 0 and 0 otherwise.
     """
 
     @classmethod
@@ -680,8 +680,9 @@ class Cross(s.Function):
 class Sign(s.Function):
     """
     Sign [x]
-        Gives -1, 0, or 1 depending on whether x is negative, zero, or positive.
-        For nonzero complex numbers z, Sign[z] is defined as z/Abs[z].
+     Gives -1, 0, or 1 depending on whether x is negative, zero, or positive.
+
+    For nonzero complex numbers z, Sign[z] is defined as z/Abs[z].
     """
 
     @classmethod
@@ -695,17 +696,10 @@ class Sign(s.Function):
         return thread(x, sign)
 
 
-class Series(s.Function):
-    # TODO: Series function
-    @classmethod
-    def eval(cls, f, *x):
-        pass
-
-
 class Sqrt(s.Function):
     """
     Sqrt [Expr]
-        Gives the Square Root of Expr.
+     Gives the Square Root of Expr.
 
     Equivalent to sympy.sqrt().
     """
@@ -724,7 +718,9 @@ class Sqrt(s.Function):
 class Surd(s.Function):
     """
     Surd [x, n]
-        Gives the real-valued nth root of x.
+     Gives the real-valued nth root of x.
+
+    Equivalent to sympy.real_root().
     """
 
     @classmethod
@@ -734,8 +730,8 @@ class Surd(s.Function):
 
 class QuotientRemainder(s.Function):
     """
-    QuotientRemainder[m,n]
-        Gives a list of the quotient and remainder from division of m by n.
+    QuotientRemainder [m, n]
+     Gives a list of the quotient and remainder from division of m by n.
     """
 
     @classmethod
@@ -748,12 +744,12 @@ class QuotientRemainder(s.Function):
 
 class GCD(s.Function):
     """
-    GCD [x1, x2, x3, ...]
-        Gives the GCD of x1, x2, x3, ...
+    GCD [x1, x2, x3, …]
+     Gives the GCD of x1, x2, x3, …
 
     Works with Numeric and Symbolic expressions.
 
-    Uses sympy.gcd()
+    Equivalent to sympy.gcd()
     """
 
     @classmethod
@@ -768,12 +764,12 @@ class GCD(s.Function):
 
 class LCM(s.Function):
     """
-    LCM [x1, x2, x3, ...]
-        Gives the LCM of x1, x2, x3, ...
+    LCM [x1, x2, x3, …]
+     Gives the LCM of x1, x2, x3, …
 
     Works with Numeric and Symbolic expressions.
 
-    Uses sympy.lcm()
+    Equivalent to sympy.lcm()
     """
 
     @classmethod
@@ -789,7 +785,9 @@ class LCM(s.Function):
 class PrimeQ(s.Function):
     """
     PrimeQ [x]
-        Returns True if x is Prime.
+     Returns True if x is Prime.
+
+    Equivalent to sympy.isprime().
     """
 
     @classmethod
@@ -800,7 +798,7 @@ class PrimeQ(s.Function):
 class CompositeQ(s.Function):
     """
     CompositeQ [x]
-        Returns True if x is Composite.
+     Returns True if x is Composite.
     """
 
     @classmethod
@@ -816,8 +814,8 @@ class CompositeQ(s.Function):
 
 class Equal(s.Function):
     """
-    Equal [x1, x2, x3, ...]
-        Gives a condition x1 == x2 == x3 == ...
+    Equal [x1, x2, x3, …]
+     Gives a condition x1 == x2 == x3 == …
     """
 
     @classmethod
@@ -858,6 +856,7 @@ class Set(s.Function):
 class Unset(s.Function):
     """
     Unset [x]
+    x =.
         Deletes a symbol or list of symbols x, if they were previously assigned a value.
     """
 
@@ -873,11 +872,12 @@ class Unset(s.Function):
 class Rationalize(s.Function):
     """
     Rationalize [x]
-        Converts an approximate number x to a nearby rational with small denominator.
+     Converts an approximate number x to a nearby rational with small denominator.
 
     Rationalize [x, dx]
-        Yields the rational number with smallest denominator that lies within dx of x.
+     Yields the rational number with smallest denominator that lies within dx of x.
 
+    Uses sympy.nsimplify().
     See https://reference.wolfram.com/language/ref/Rationalize
     """
 
@@ -895,9 +895,7 @@ class Rationalize(s.Function):
 class Subs(s.Function):
     """
     Subs [Expr, Rules]
-        Transforms Expression expr with the given Rule or list of Rules.
-
-    Uses sympy.subs, but also replaces functions.
+     Transforms Expression expr with the given Rule or list of Rules.
     """
 
     @classmethod
@@ -919,7 +917,7 @@ class Subs(s.Function):
 class Factor(s.Function):
     """
     Factor [Expr, Modulus -> mod, Extension -> ext, GaussianIntegers -> bool}]
-        Factors an Expression.
+     Factors an Expression.
 
     Equivalent to sympy.factor().
     """
@@ -935,7 +933,7 @@ class Factor(s.Function):
 class Expand(s.Function):
     """
     Expand [Expr, Modulus -> mod]
-        Expands an Expression.
+     Expands an Expression.
 
     Equivalent to sympy.expand().
     """
@@ -949,7 +947,7 @@ class Expand(s.Function):
 class TrigExpand(s.Function):
     """
     TrigExpand [Expr]
-        Expands only Trigonometric Functions.
+     Expands only Trigonometric Functions.
 
     Equivalent to sympy.expand_trig().
     """
@@ -962,7 +960,7 @@ class TrigExpand(s.Function):
 class nPr(s.Function):
     """
     nPr [n, r]
-        Gives number of possibilities for choosing an ordered set of r objects from n objects.
+     Gives number of possibilities for choosing an ordered set of r objects from n objects.
     """
 
     @staticmethod
@@ -977,7 +975,7 @@ class nPr(s.Function):
 class nCr(s.Function):
     """
     nCr [n, r]
-        Gives The number of different, unordered combinations of r objects from n objects.
+     Gives The number of different, unordered combinations of r objects from n objects.
     """
 
     @staticmethod
@@ -986,16 +984,16 @@ class nCr(s.Function):
 
     @classmethod
     def eval(cls, n, m):
-        return thread(n, lambda a: ncr(a, m))
+        return thread(n, lambda a: cls.ncr(a, m))
 
 
 class N(s.Function):
     """
     N [expr]
-        Gives the numerical value of expr.
+     Gives the numerical value of expr.
 
     N [expr, n]
-        Attempts to give a result with n-digit precision.
+     Attempts to give a result with n-digit precision.
     """
 
     @classmethod
@@ -1006,19 +1004,19 @@ class N(s.Function):
 class D(s.Function):
     """
     D [f, x]
-        Gives the partial derivative ∂f / ∂x.
+     Gives the partial derivative ∂f / ∂x.
 
     D [f, {x, n}]
-        Gives the multiple derivative ∂^n f / ∂ x^n.
+     Gives the multiple derivative ∂^n f / ∂ x^n.
 
     D [f, x, y, …]
-        Gives the partial derivative (∂ / ∂y) (∂ / ∂x) f.
+     Gives the partial derivative (∂ / ∂y) (∂ / ∂x) f.
 
-    D [f, {x, n}, {y, m}, ...]
-        Gives the multiple partial derivative (∂^m / ∂ y^m) (∂^n / ∂ x^n) f.
+    D [f, {x, n}, {y, m}, …]
+     Gives the multiple partial derivative (∂^m / ∂ y^m) (∂^n / ∂ x^n) f.
 
-    D [f, {{x1, x2, ...}}]
-        For a scalar f gives the vector derivative (∂f / ∂x1, ∂f / ∂x2, ...).
+    D [f, {{x1, x2, …}}]
+     For a scalar f gives the vector derivative (∂f / ∂x1, ∂f / ∂x2, …).
 
     Uses sympy.diff().
     """
@@ -1068,10 +1066,10 @@ class Integrate(s.Function):
 class DiracDelta(s.Function):
     """
     DiracDelta [x]
-        represents the Dirac delta function δ(x).
+     represents the Dirac delta function δ(x).
 
-    DiracDelta [x1, x2, ...]
-        Represents the multidimensional Dirac delta function δ(x1, x2, ...).
+    DiracDelta [x1, x2, …]
+     Represents the multidimensional Dirac delta function δ(x1, x2, …).
 
     Uses sympy.DiracDelta().
     """
@@ -1084,7 +1082,7 @@ class DiracDelta(s.Function):
 class HeavisideTheta(s.Function):
     """
     HeavisideTheta [x]
-        Represents the Heaviside theta function θ(x), equal to 0 for x < 0 and 1 for x > 0.
+     Represents the Heaviside theta function θ(x), equal to 0 for x < 0 and 1 for x > 0.
 
     Equivalent to sympy.Heaviside().
     """
@@ -1103,10 +1101,11 @@ class And(s.Function):
 
 class Solve(s.Function):
     """
-    Solve [expr, `vars]
-        Attempts to solve the system expr of equations or inequalities for the variables vars.
-    """
+    Solve [expr, vars]
+     Attempts to solve the system expr of equations or inequalities for the variables vars.
 
+    Uses sympy.solve().
+    """
     @classmethod
     def eval(cls, expr, v, dom=None):
         # TODO: fix (?)
@@ -1122,6 +1121,12 @@ class Solve(s.Function):
 
 
 class Simplify(s.Function):
+    """
+    Simplify [expr]
+     Attempts to simplify the expression expr.
+
+    Equivalent to sympy.simplify().
+    """
     @classmethod
     def eval(cls, expr, assum=None):
         if assum is not None:
@@ -1211,7 +1216,32 @@ class Sum(s.Function):
         return s.summation(f, *i)
 
 
+class Zeta(s.Function):
+    """
+    Zeta [s]
+     Gives the Riemann zeta function ζ(s).
+
+    Zeta [s, a]
+     Gives the Generalized (Hurwitz) Riemann zeta function ζ(s, a).
+
+    Equivalent to sympy.zeta().
+    """
+    @classmethod
+    def eval(cls, n, a=1):
+        return thread(n, lambda x: s.zeta(x, a))
+
+
 class Range(s.Function):
+    """
+    Range [i]
+     Generates the list {1, 2, …, i}.
+
+    Range [a, b]
+     Generates the list {a, …, b}.
+
+    Range[a, b, di]
+     Uses step di.
+    """
     @classmethod
     def eval(cls, i, n=None, di=1):
         ret = List()
@@ -1229,7 +1259,18 @@ class Range(s.Function):
 
 
 class Permutations(s.Function):
+    """
+    Permutations [list]
+     Generates a list of all possible permutations of the elements in list.
 
+    Permutations [list, n]
+     Gives all permutations containing at most n elements.
+
+    Permutations [list, {n}]
+     Gives all permutations containing exactly n elements.
+
+    Uses itertools.permutations().
+    """
     @classmethod
     def eval(cls, li, n=None):
         if n is not None:
@@ -1251,7 +1292,7 @@ class Permutations(s.Function):
 class Functions:
     # TODO: Move functions into class (?)
 
-    # TODO: Riemann Zeta
+    # TODO: Series
     # TODO: DSolve
     # TODO: Remaining Matrix Operations
     # TODO: Arithmetic Functions: Ratios, Differences (Low Priority)
@@ -1317,7 +1358,6 @@ class Functions:
     Rescale = Rescale
     Round = Round
     Set = Set
-    Series = Series
     Sign = Sign
     Simplify = Simplify
     Solve = Solve
