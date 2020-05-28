@@ -3,9 +3,9 @@ from functools import reduce
 import references as r
 import sympy as s
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
+from itertools import permutations
 from collections.abc import Sized
 from lists import List
-
 
 iterables = (s.Tuple, List, Sized, s.Matrix)
 
@@ -36,6 +36,7 @@ def thread(x, func):
 def threaded(func):
     def fun(x):
         return thread(x, func)
+
     return fun
 
 
@@ -82,6 +83,7 @@ class Exp(s.Function):
      Exp [z]
         Gives the exponential of z.
     """
+
     @classmethod
     def eval(cls, z):
         return thread(z, lambda z: pow(s.E, z))
@@ -95,6 +97,7 @@ class Log(s.Function):
     Log [b, z]
         Gives the logarithm to base b.
     """
+
     @classmethod
     def eval(cls, x, b=None):
         if b is not None:
@@ -107,6 +110,7 @@ class Log2(s.Function):
     Log2 [z]
         Gives the base-2 logarithm of x.
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, lambda a: s.log(a, 2))
@@ -117,6 +121,7 @@ class Log10(s.Function):
     Log10 [z]
         Gives the base-10 logarithm of x.
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, lambda a: s.log(a, 10))
@@ -130,6 +135,7 @@ class Round(s.Function):
     Round [x,a]
         Rounds to the nearest multiple of a.
     """
+
     @classmethod
     def eval(cls, x, a=None):
         if x.is_number:
@@ -150,6 +156,7 @@ class Floor(s.Function):
 
     Uses sympy.floor().
     """
+
     @classmethod
     def eval(cls, x, a=None):
         if a is None:
@@ -167,6 +174,7 @@ class Ceiling(s.Function):
 
     Uses sympy.ceiling().
     """
+
     @classmethod
     def eval(cls, x, a=None):
         if a is None:
@@ -207,6 +215,7 @@ class Total(s.Function):
     Total [list]
         Gives the Total Sum of elements in list.
     """
+
     @classmethod
     def eval(cls, _list):
         if isinstance(_list, iterables):
@@ -218,6 +227,7 @@ class Mean(s.Function):
     Mean [list]
         Gives the statistical mean of elements in list.
     """
+
     @classmethod
     def eval(cls, _list):
         if isinstance(_list, iterables):
@@ -274,6 +284,7 @@ class In(s.Function):
     In [n]
         Gives the raw input given in the nth line.
     """
+
     @classmethod
     def eval(cls, n=None):
         if n is None:
@@ -294,6 +305,7 @@ class Out(s.Function):
     %%
         Gives the result before last. %%…% (k times) gives the k^(th) previous result.
     """
+
     @classmethod
     def eval(cls, n=None):
         out = None
@@ -347,6 +359,7 @@ class Dot(s.Function):
             else:
                 bin = prettyForm.MUL
             return prettyForm(binding=bin, *stringPict.next(*result))
+
         return dot(*(printer._print(i) for i in self.args))
 
     def _sympystr(self, printer=None):
@@ -358,6 +371,7 @@ class Det(s.Function):
     Det [m]
         Gives the Determinant of Square Matrix m.
     """
+
     @classmethod
     def eval(cls, x):
         if isinstance(x, iterables):
@@ -375,6 +389,7 @@ class Inverse(s.Function):
     Inverse [m]
         Gives the Inverse of Square Matrix m.
     """
+
     @classmethod
     def eval(cls, x):
         if isinstance(x, iterables):
@@ -393,6 +408,7 @@ class Transpose(s.Function):
 
     Equivalent to sympy.Matrix.transpose().
     """
+
     @classmethod
     def eval(cls, x):
         if isinstance(x, iterables):
@@ -410,6 +426,7 @@ class Re(s.Function):
 
     Equivalent to sympy.re().
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, s.re)
@@ -422,6 +439,7 @@ class Im(s.Function):
 
     Equivalent to sympy.im().
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, s.im)
@@ -432,6 +450,7 @@ class ReIm(s.Function):
     ReIm [x]
         Gives the list {Re[x], Im[x]} of x.
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, lambda b: List((Re(b), Im(b))))
@@ -480,6 +499,7 @@ class Abs(s.Function):
 
     Equivalent to sympy.Abs().
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, s.Abs)
@@ -492,6 +512,7 @@ class Arg(s.Function):
 
     Equivalent to sympy.arg().
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, s.arg)
@@ -502,6 +523,7 @@ class AbsArg(s.Function):
     AbsArg [z]
         Gives the list {Abs[z],Arg[z]} of the number z.
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, lambda y: List((Abs(y), Arg(y))))
@@ -514,6 +536,7 @@ class Factorial(s.Function):
 
     Equivalent to sympy.factorial().
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, s.factorial)
@@ -526,6 +549,7 @@ class Conjugate(s.Function):
 
     Equivalent to sympy.conjugate().
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, s.conjugate)
@@ -538,6 +562,7 @@ class ConjugateTranspose(s.Function):
 
     Equivalent to Conjugate[Transpose[m]].
     """
+
     @classmethod
     def eval(cls, x):
         if isinstance(x, iterables):
@@ -553,11 +578,13 @@ class ComplexExpand(s.Function):
         Expands expr assuming that variables matching any of the x are complex.
 
     """
+
     @classmethod
     def eval(cls, x, complexes=()):
         def exp(expr):
             return s.refine(s.expand_complex(expr),
                             assumptions(s.Q.real(a) for a in expr.atoms(s.Symbol) if a not in complexes))
+
         if not isinstance(complexes, iterables):
             complexes = (complexes,)
         return thread(x, exp)
@@ -568,6 +595,7 @@ class LogisticSigmoid(s.Function):  # why is this here?
     LogisticSigmoid [z]
         Gives the logistic sigmoid function.
     """
+
     @classmethod
     def eval(cls, z):
         return thread(z, lambda x: 1 / (1 + s.exp(-x)))
@@ -578,6 +606,7 @@ class Unitize(s.Function):
     Unitize [x]
         Gives 0 when x is zero, and 1 when x has any other numerical value.
     """
+
     @classmethod
     def eval(cls, x):
         if isinstance(x, iterables):
@@ -592,6 +621,7 @@ class Ramp(s.Function):
     Ramp [x]
         Gives x if x ≥ 0 and 0 otherwise.
     """
+
     @classmethod
     def eval(cls, x):
         if isinstance(x, iterables):
@@ -640,6 +670,7 @@ class Cross(s.Function):
             else:
                 bin = prettyForm.MUL
             return prettyForm(binding=bin, *stringPict.next(*result))
+
         return dot(*(printer._print(i) for i in self.args))
 
     def _sympystr(self, printer=None):
@@ -652,6 +683,7 @@ class Sign(s.Function):
         Gives -1, 0, or 1 depending on whether x is negative, zero, or positive.
         For nonzero complex numbers z, Sign[z] is defined as z/Abs[z].
     """
+
     @classmethod
     def eval(cls, x):
         def sign(n):
@@ -659,6 +691,7 @@ class Sign(s.Function):
                 return s.sign(n)
             if n.is_complex:
                 return n / Abs(n)
+
         return thread(x, sign)
 
 
@@ -676,6 +709,7 @@ class Sqrt(s.Function):
 
     Equivalent to sympy.sqrt().
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, s.sqrt)
@@ -692,6 +726,7 @@ class Surd(s.Function):
     Surd [x, n]
         Gives the real-valued nth root of x.
     """
+
     @classmethod
     def eval(cls, x, n):
         return thread(x, lambda a: s.real_root(a, n))
@@ -702,6 +737,7 @@ class QuotientRemainder(s.Function):
     QuotientRemainder[m,n]
         Gives a list of the quotient and remainder from division of m by n.
     """
+
     @classmethod
     def eval(cls, m, n):
         if m.is_number and n.is_number:
@@ -719,6 +755,7 @@ class GCD(s.Function):
 
     Uses sympy.gcd()
     """
+
     @classmethod
     def eval(cls, *n):
         if len(n) == 1:
@@ -738,6 +775,7 @@ class LCM(s.Function):
 
     Uses sympy.lcm()
     """
+
     @classmethod
     def eval(cls, *n):
         if len(n) == 1:
@@ -753,6 +791,7 @@ class PrimeQ(s.Function):
     PrimeQ [x]
         Returns True if x is Prime.
     """
+
     @classmethod
     def eval(cls, n):
         return thread(n, s.isprime)
@@ -763,6 +802,7 @@ class CompositeQ(s.Function):
     CompositeQ [x]
         Returns True if x is Composite.
     """
+
     @classmethod
     def eval(cls, n):
         def comp(x):
@@ -770,6 +810,7 @@ class CompositeQ(s.Function):
                 if x.is_composite:
                     return True
                 return False
+
         return thread(n, comp)
 
 
@@ -778,6 +819,7 @@ class Equal(s.Function):
     Equal [x1, x2, x3, ...]
         Gives a condition x1 == x2 == x3 == ...
     """
+
     @classmethod
     def eval(cls, *args):
         if len(args) == 1:
@@ -794,6 +836,7 @@ class Set(s.Function):
     x = n
         Sets a symbol x to have the value n.
     """
+
     @classmethod
     def eval(cls, x, n):
         # TODO: Function Assignment
@@ -817,6 +860,7 @@ class Unset(s.Function):
     Unset [x]
         Deletes a symbol or list of symbols x, if they were previously assigned a value.
     """
+
     @classmethod
     def eval(cls, n):
         if isinstance(n, iterables):
@@ -836,13 +880,14 @@ class Rationalize(s.Function):
 
     See https://reference.wolfram.com/language/ref/Rationalize
     """
+
     @classmethod
     def eval(cls, x, dx=None):
         if isinstance(x, iterables):
             return List(Rationalize(n, dx) for n in x)
         if isinstance(x, (int, float, s.Number)):
             rat = s.nsimplify(x, rational=True, tolerance=dx)
-            if 1 / (10**4 * s.denom(rat)) > s.Abs(rat - x):
+            if 1 / (10 ** 4 * s.denom(rat)) > s.Abs(rat - x):
                 return rat
         return x
 
@@ -854,6 +899,7 @@ class Subs(s.Function):
 
     Uses sympy.subs, but also replaces functions.
     """
+
     @classmethod
     def eval(cls, expr, replacements):
         if not isinstance(replacements, iterables):
@@ -877,6 +923,7 @@ class Factor(s.Function):
 
     Equivalent to sympy.factor().
     """
+
     @classmethod
     def eval(cls, expr, *args):
         kws = options(args, {"Modulus": "modulus",
@@ -906,24 +953,39 @@ class TrigExpand(s.Function):
 
     Equivalent to sympy.expand_trig().
     """
+
     @classmethod
     def eval(cls, expr):
         return thread(expr, s.expand_trig)
 
 
 class nPr(s.Function):
+    """
+    nPr [n, r]
+        Gives number of possibilities for choosing an ordered set of r objects from n objects.
+    """
+
+    @staticmethod
+    def npr(x, q):
+        return Factorial(x) / Factorial(x - q)
+
     @classmethod
     def eval(cls, n, m):
-        def npr(x, q):
-            return Factorial(x) / Factorial(x - q)
-        return thread(n, lambda a: npr(a, m))
+        return thread(n, lambda a: cls.npr(a, m))
 
 
 class nCr(s.Function):
+    """
+    nCr [n, r]
+        Gives The number of different, unordered combinations of r objects from n objects.
+    """
+
+    @staticmethod
+    def ncr(x, q):
+        return Factorial(x) / (Factorial(x - q) * Factorial(q))
+
     @classmethod
     def eval(cls, n, m):
-        def ncr(x, q):
-            return Factorial(x) / (Factorial(x - q) * Factorial(q))
         return thread(n, lambda a: ncr(a, m))
 
 
@@ -935,6 +997,7 @@ class N(s.Function):
     N [expr, n]
         Attempts to give a result with n-digit precision.
     """
+
     @classmethod
     def eval(cls, n, *args):
         return thread(n, lambda x: s.N(x, *args))
@@ -959,6 +1022,7 @@ class D(s.Function):
 
     Uses sympy.diff().
     """
+
     @classmethod
     def eval(cls, f, *args):
         def threaded_diff(x, *d):
@@ -1011,6 +1075,7 @@ class DiracDelta(s.Function):
 
     Uses sympy.DiracDelta().
     """
+
     @classmethod
     def eval(cls, *args):
         return Times(*thread(args, s.DiracDelta))
@@ -1023,6 +1088,7 @@ class HeavisideTheta(s.Function):
 
     Equivalent to sympy.Heaviside().
     """
+
     @classmethod
     def eval(cls, x):
         return thread(x, s.Heaviside)
@@ -1040,6 +1106,7 @@ class Solve(s.Function):
     Solve [expr, `vars]
         Attempts to solve the system expr of equations or inequalities for the variables vars.
     """
+
     @classmethod
     def eval(cls, expr, v, dom=None):
         # TODO: fix (?)
@@ -1076,6 +1143,7 @@ class IntegerPart(s.Function):
             if s.ask(s.Q.nonnegative(n)):
                 return s.floor(n)
             return s.ceiling(n)
+
         if hasattr(x, "is_number") and x.is_number:
             return non_complex_integer_part(s.re(x)) + non_complex_integer_part(s.im(x)) * s.I
 
@@ -1103,7 +1171,7 @@ class Limit(s.Function):
     @staticmethod
     def lim(expr, lim, d='+-'):
         try:
-            return s.limit(expr, lim[0],  lim[1], d)
+            return s.limit(expr, lim[0], lim[1], d)
         except ValueError as e:
             if e.args[0].startswith("The limit does not exist"):
                 return s.nan
@@ -1141,6 +1209,43 @@ class Sum(s.Function):
     def eval(cls, f, i, *xi):
         i = [cls.process(i)] + [cls.process(x) for x in xi]
         return s.summation(f, *i)
+
+
+class Range(s.Function):
+    @classmethod
+    def eval(cls, i, n=None, di=1):
+        ret = List()
+        if n is None:
+            n = i
+            i = 1
+        try:
+            while (n - i) / di >= 0:
+                ret.append(i)
+                i += di
+        except TypeError as e:
+            if e.args[0].startswith('cannot determine truth value'):
+                raise FunctionException('Invalid/Unsupported Range bounds.')
+        return ret
+
+
+class Permutations(s.Function):
+
+    @classmethod
+    def eval(cls, li, n=None):
+        if n is not None:
+            if isinstance(n, iterables):
+                n = Range(*n)
+            else:
+                if not s.Number(n).is_integer:
+                    raise FunctionException("n should be an integer.")
+                n = List(range(int(n) + 1))
+        if isinstance(n, iterables):
+            # TODO: manually remove duplicates
+            ret = List()
+            for i in n:
+                ret = List.concat(ret, List(List(x) for x in set(permutations(li, int(i)))))
+            return ret
+        return List(List(x) for x in set(permutations(li, n)))
 
 
 class Functions:
@@ -1197,12 +1302,14 @@ class Functions:
     Mod = s.Mod
     N = N
     Out = Out
+    Permutations = Permutations
     Plus = Plus
     Power = Power
     PowerMod = PowerMod
     PrimeQ = PrimeQ
     Quotient = Quotient
     QuotientRemainder = QuotientRemainder
+    Range = Range
     Ramp = Ramp
     Rationalize = Rationalize
     Re = Re

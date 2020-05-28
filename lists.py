@@ -15,11 +15,11 @@ class List(sympy.Basic):  # probably a bad idea
     # TODO: Pretty and LaTeX printing
     # is_number = True
 
-    def __init__(self, x):
+    def __init__(self, x=()):
         self.value = tuple(x)
 
-    def __getitem__(self, item):
-        return self.value[item]
+    def __getitem__(self, x):
+        return self.value.__getitem__(x)
 
     def __iter__(self):
         return self.value.__iter__()
@@ -141,16 +141,31 @@ class List(sympy.Basic):  # probably a bad idea
         return self.value.__hash__()
 
     def __repr__(self):
+        if not self.value:
+            return '{}'
         string = '{' + repr(self.value[0])
         for value in self.value[1:]:
             string += ', ' + repr(value)
         return string + '}'
 
     def __str__(self):
+        if not self.value:
+            return '{}'
         string = '{' + str(self.value[0])
         for value in self.value[1:]:
             string += ', ' + str(value)
         return string + '}'
+
+    @classmethod
+    def concat(cls, x, y):
+        if isinstance(x, List):
+            x = x.value
+        if isinstance(y, List):
+            y = y.value
+        return List(tuple(x) + tuple(y))
+
+    def append(self, x):
+        self.value += (x,)
 
 
 class Rule(sympy.Expr):
