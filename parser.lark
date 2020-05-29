@@ -49,8 +49,11 @@ function: atom "[" (expression)? ("," expression)* "]"
 ?unary: factorial
       | atom
 
+part: atom "[" "[" expression "]" "]" 
+
 ?atom: "(" expression ")"
      | execute
+     | part
      | list
      | numeric 
      | symbol

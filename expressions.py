@@ -37,7 +37,7 @@ def times(n):
 
 
 def dot(n):
-    return Functions.call("Dot", *n)
+    return Functions.call('Dot', *n)
 
 
 def divide(n):
@@ -45,7 +45,7 @@ def divide(n):
 
 
 def factorial(n):
-    return Functions.call("Factorial", n[0])
+    return Functions.call('Factorial', n[0])
 
 
 def power(n):
@@ -62,9 +62,9 @@ def negative(n):
 
 def out(n):
     try:
-        return Functions.call("Out", int(n[-1]))
+        return Functions.call('Out', int(n[-1]))
     except ValueError:
-        return Functions.call("Out", r.refs.Line - len(n))
+        return Functions.call('Out', r.refs.Line - len(n))
 
 
 def relations(n):
@@ -76,13 +76,17 @@ def relations(n):
 
 def assign(n):
     for x in n[1:-1]:
-        Functions.call("Set", x, n[-1])
-    return Functions.call("Set", n[0], n[-1])
+        Functions.call('Set', x, n[-1])
+    return Functions.call('Set', n[0], n[-1])
 
 
 def unset(n):
-    return Functions.call("Unset", n)
+    return Functions.call('Unset', n)
 
 
 def And(n):
-    return Functions.call("And", *n)
+    return Functions.call('And', *n)
+
+
+def part(n):
+    return Functions.call('Part', *n)

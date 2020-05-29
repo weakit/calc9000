@@ -65,6 +65,10 @@ class AssignTransformer(Transformer):
         return ex.out(items)
 
     @staticmethod
+    def part(items):
+        return ex.part(items)
+
+    @staticmethod
     def INT(n):
         return ex.numeric(n)
 

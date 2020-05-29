@@ -1289,9 +1289,38 @@ class Permutations(s.Function):
         return List(List(x) for x in set(permutations(li, n)))
 
 
+class Part(s.Function):
+    @staticmethod
+    def get_part(expr, n):
+        if n.is_integer:
+            try:
+                if n > 0:
+                    return expr[n - 1]
+                return expr[n]
+            except IndexError:
+                raise FunctionException(f'Part {n} of {expr} does not exist.')
+        raise FunctionException(f'{n} is not a valid Part specification.')
+
+    @classmethod
+    def eval(cls, expr, *args):
+        if not args:
+            return expr
+        if hasattr(expr, '__getitem__'):
+            part = expr
+        elif hasattr(expr, 'args'):
+            part = expr.args
+        if len(args) == 1:
+            if args[0] == s.S.Zero:
+                return type(expr).__name__
+            return thread(args[0], lambda x: cls.get_part(part, x))
+
+
 class Functions:
     # TODO: Move functions into class (?)
 
+    # TODO: Part, Span
+    # TODO: List Functions
+    # TODO: Logical Or, semicolon
     # TODO: Series
     # TODO: DSolve
     # TODO: Remaining Matrix Operations
@@ -1343,6 +1372,7 @@ class Functions:
     Mod = s.Mod
     N = N
     Out = Out
+    Part = Part
     Permutations = Permutations
     Plus = Plus
     Power = Power
