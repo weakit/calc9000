@@ -15,6 +15,10 @@ class List(sympy.Basic):  # probably a bad idea
     # TODO: Pretty and LaTeX printing
     # is_number = True
 
+    @staticmethod
+    def create(*args):
+        return List(args)
+
     def __init__(self, x=()):
         self.value = tuple(x)
 

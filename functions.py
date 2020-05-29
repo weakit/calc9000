@@ -5,7 +5,7 @@ import sympy as s
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from itertools import permutations
 from collections.abc import Sized
-from lists import List
+from lists import List, Rule
 
 iterables = (s.Tuple, List, Sized, s.Matrix)
 
@@ -1303,6 +1303,7 @@ class Part(s.Function):
 
     @classmethod
     def eval(cls, expr, *args):
+        part = None
         if not args:
             return expr
         if hasattr(expr, '__getitem__'):
@@ -1311,8 +1312,50 @@ class Part(s.Function):
             part = expr.args
         if len(args) == 1:
             if args[0] == s.S.Zero:
-                return type(expr).__name__
+                return s.Symbol(type(expr).__name__)
+            if not part:
+                raise FunctionException(f'{expr} does not have Part {args[0]}')
             return thread(args[0], lambda x: cls.get_part(part, x))
+
+
+class Table(s.Function):
+    @staticmethod
+    def _table(expr, repl, args):
+        li = List()
+        for arg in args:
+            li.append(Subs(expr, Rule(repl, arg)))
+        return li
+
+    @staticmethod
+    def _range_parse(expr, arg):
+        if arg.is_number:
+            return List((expr,) * arg)
+        if len(arg) == 2 and isinstance(arg[1], iterables):
+            args = arg[1]
+        elif len(arg) >= 2:
+            args = Range(*arg[1:])
+        else:
+            raise FunctionException('Invalid Bounds.')  # TODO: Warning
+        if not isinstance(arg[0], s.Symbol):
+            raise FunctionException(f'Cannot use {arg[0]} as an Iterator.')
+        return Table._table(expr, arg[0], args)
+
+    @classmethod
+    def eval(cls, expr, *args):
+        if not args:
+            return expr
+
+        if len(args) == 1:
+            return cls._range_parse(expr, args[0])
+
+        li = List()
+        for expr, specs in zip(
+            cls._range_parse(expr, args[0]),
+            cls._range_parse(args[1:], args[0])
+        ):
+            li.append(Table(expr, *specs))
+
+        return li
 
 
 class Functions:
@@ -1362,6 +1405,7 @@ class Functions:
     Inverse = Inverse
     LCM = LCM
     Limit = Limit
+    List = List.create
     Log = Log
     Log10 = Log10
     Log2 = Log2
@@ -1397,6 +1441,7 @@ class Functions:
     Subs = Subs
     Sum = Sum
     Surd = Surd
+    Table = Table
     Times = Times
     Total = Total
     TrigExpand = TrigExpand
@@ -1443,9 +1488,5 @@ class Functions:
         if f in r.refs.NoCache:
             s.core.cache.clear_cache()
         if f in cls.__dict__:
-            if a:
-                return cls.__dict__[f](*a)
-            return cls.__dict__[f]
-        if a:
-            return s.Function(f)(*a)
-        return s.Function(f)
+            return cls.__dict__[f](*a)
+        return s.Function(f)(*a)
