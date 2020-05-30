@@ -1,14 +1,11 @@
 import platform
-import converse as c
-import lark
-
-
-def print_info():
-    print(f'--- calc9000 [{platform.python_implementation()} {platform.python_version()}]\n')
 
 
 if __name__ == '__main__':
-    print_info()
+    print(f'\n--- calc9000 [running on {platform.python_implementation()} {platform.python_version()}] ', end='')
+    import converse as c
+    import lark
+    print(f'\b\b, using sympy {c.s.__version__}]\n')
     try:
         while True:
             i = input(f'IN  {c.current_line()}: ')
@@ -28,5 +25,5 @@ if __name__ == '__main__':
             else:
                 print(f'OUT {c.previous_line()}: {out}\n')
     except KeyboardInterrupt:
-        print('\n\nexiting.\n')
+        print('\n\n--- Have a nice day!\n')
         exit(0)

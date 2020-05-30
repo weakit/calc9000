@@ -838,10 +838,9 @@ class Set(s.Function):
     @classmethod
     def eval(cls, x, n):
         # TODO: Function Assignment
-        for ref in [r.refs.Constants, r.refs.Functions]:
+        for ref in [r.refs.Constants, r.refs.Functions, r.refs.Protected]:
             if str(x) in ref.__dict__:
-                # TODO: warning
-                return None
+                raise FunctionException(f'Symbol {x} cannot be Assigned to.')
         if isinstance(x, s.Symbol):
             if isinstance(n, s.Expr):
                 if x in n.atoms():
@@ -1319,6 +1318,25 @@ class Part(s.Function):
 
 
 class Table(s.Function):
+    """
+    Table [expr, n]
+     Generates a list of n copies of expr.
+
+    Table [expr, {i, imax}]
+     Generates a list of the values of expr when i runs from 1 to imax.
+
+    Table [expr, {i, imin, imax}]
+     Starts with i = imin.
+
+    Table [expr, {i, imin, imax, di}]
+     Uses steps di.
+
+    Table [expr, {i, {i1, i2, …}}]
+     Uses the successive values i1, i2, ….
+    
+    Table [expr, {i, imin, imax}, {j, jmin, jmax}, …]
+     Gives a nested list. The list associated with i is outermost.
+    """
     @staticmethod
     def _table(expr, repl, args):
         li = List()
@@ -1358,12 +1376,54 @@ class Table(s.Function):
         return li
 
 
+class Subdivide(s.Function):
+    """
+    Subdivide [n]
+     Generates the list {0, 1/n, 2/n, …, 1}.
+
+    Subdivide [xmax, n]
+     Generates the list of values obtained by subdividing the interval 0 to xmax into n equal parts.
+
+    Subdivide [xmin, xmax, n]
+     Generates the list of values from subdividing the interval xmin to xmax.
+    """
+    @classmethod
+    def eval(cls, one, two=None, three=None):
+        if three is None:
+            if two is None:
+                div = one
+                x_min = 0
+                x_max = 1
+            else:
+                x_min = 0
+                x_max = one
+                div = two
+        else:
+            x_min = one
+            x_max = two
+            div = three
+
+        if div != int(div):
+            raise FunctionException("Number of Subdivisions should be an Integer.")
+
+        div = int(div)
+
+        step = (x_max - x_min) / div
+        li = List((x_min,))
+
+        for x in range(int(div)):
+            li.append(li[-1] + step)
+
+        return li
+
+
 class Functions:
     # TODO: Move functions into class (?)
 
     # TODO: Part, Span
     # TODO: List Functions
     # TODO: Logical Or, semicolon
+    # TODO: Proper printer for Dot and Cross
     # TODO: Series
     # TODO: DSolve
     # TODO: Remaining Matrix Operations
@@ -1437,6 +1497,7 @@ class Functions:
     Solve = Solve
     Sqrt = Sqrt
     # StieltjesGamma = StieltjesGamma
+    Subdivide = Subdivide
     Subtract = Subtract
     Subs = Subs
     Sum = Sum

@@ -1,4 +1,4 @@
-import sympy
+import sympy as s
 import larker
 import references as r
 
@@ -17,7 +17,7 @@ def process(input_text: str):
 
 def process_pretty(input_text):
     raw = process(input_text)
-    return sympy.pretty(raw)
+    return s.pretty(raw)
 
 
 def current_line():

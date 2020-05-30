@@ -1,6 +1,12 @@
 import sympy as s
 
 
+class ProtectedClass:
+    Symbol = None
+    Rule = None
+    List = None
+
+
 class ConstantsClass:
     # Caveats: pi
     # TODO: Degrees, Nothing and other constants
@@ -46,6 +52,7 @@ class References:
         self.NoCache = NoCache
         self.Functions = FunctionsClass()
         self.Constants = ConstantsClass
+        self.Protected = ProtectedClass
         self.Line = 1
         self.Parser = None
 
