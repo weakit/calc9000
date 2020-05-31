@@ -3,7 +3,7 @@ from functools import reduce
 import references as r
 import sympy as s
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
-from itertools import permutations, combinations, chain
+from itertools import permutations, combinations
 from collections.abc import Sized
 from lists import List, Rule
 
@@ -334,7 +334,7 @@ class Out(s.Function):
     """
 
     @staticmethod
-    def _out(cls, n):
+    def out(n):
         out = None
         if n is None:
             out = r.refs.get_out()
@@ -346,7 +346,7 @@ class Out(s.Function):
 
     @classmethod
     def eval(cls, n=None):
-        return thread(cls._out, n)
+        return thread(cls.out, n)
 
 
 class Dot(s.Function):
@@ -1243,8 +1243,7 @@ class Sum(s.Function):
             if len(i) == 2:
                 return i[0], 1, i[1]
             raise FunctionException("Invalid Limits for Sum")
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
 
     @classmethod
     def eval(cls, f, i, *xi):
@@ -1408,11 +1407,11 @@ class Table(s.Function):
             return cls._range_parse(expr, args[0])
 
         li = List()
-        for expr, specs in zip(
+        for expr_, specs in zip(
             cls._range_parse(expr, args[0]),
             cls._range_parse(args[1:], args[0])
         ):
-            li.append(Table(expr, *specs))
+            li.append(Table(expr_, *specs))
 
         return li
 
@@ -1452,7 +1451,7 @@ class Subdivide(s.Function):
         step = (x_max - x_min) / div
         li = List((x_min,))
 
-        for x in range(int(div)):
+        for _ in range(int(div)):
             li.append(li[-1] + step)
         return li
 
