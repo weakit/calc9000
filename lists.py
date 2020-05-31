@@ -19,11 +19,17 @@ class List(sympy.Basic):  # probably a bad idea
     def create(*args):
         return List(args)
 
-    def __init__(self, x=()):
-        self.value = tuple(x)
+    def __init__(self, x=None):
+        if x is None:
+            self.value = []
+        else:
+            self.value = list(x)
 
     def __getitem__(self, x):
         return self.value.__getitem__(x)
+
+    def __setitem__(self, key, value):
+        self.value[key] = value
 
     def __iter__(self):
         return self.value.__iter__()
@@ -32,117 +38,92 @@ class List(sympy.Basic):  # probably a bad idea
         return self.value.__len__()
 
     def __add__(self, other):
-        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise ListException("Lists are of Unequal Length")
             for i in range(len(self)):
-                temp_list.append(self[i] + other[i])
-            return List(temp_list)
+                self[i] = self[i] + other[i]
+            return self
         for i in range(len(self)):
-            temp_list.append(self[i] + other)
-        return List(temp_list)
-
-    __iadd__ = __add__
+            self[i] = self[i] + other
+        return self
 
     def __radd__(self, other):
-        temp_list = []
         for i in range(len(self)):
-            temp_list.append(other + self[i])
-        return List(temp_list)
+            self[i] = other + self[i]
+        return self
 
     def __sub__(self, other):
-        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise ListException("Lists are of Unequal Length")
             for i in range(len(self)):
-                temp_list.append(self[i] - other[i])
-            return List(temp_list)
+                self[i] = self[i] - other[i]
+            return self
         for i in range(len(self)):
-            temp_list.append(self[i] - other)
-        return List(temp_list)
-
-    __isub__ = __sub__
+            self[i] = self[i] - other
+        return self
 
     def __rsub__(self, other):
-        temp_list = []
         for i in range(len(self)):
-            temp_list.append(other - self[i])
-        return List(temp_list)
+            self[i] = other - self[i]
+        return self
 
     def __mul__(self, other):
-        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise ListException("Lists are of Unequal Length")
             for i in range(len(self)):
-                temp_list.append(self[i] * other[i])
-            return List(temp_list)
+                self[i] = self[i] * other[i]
+            return self
         for i in range(len(self)):
-            temp_list.append(self[i] * other)
-        return List(temp_list)
-
-    __imul__ = __mul__
+            self[i] = self[i] * other
+        return self
 
     def __rmul__(self, other):
-        temp_list = []
         for i in range(len(self)):
-            temp_list.append(other * self[i])
-        return List(temp_list)
+            self[i] = other * self[i]
+        return self
 
     def __truediv__(self, other):
-        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise ListException("Lists are of Unequal Length")
             for i in range(len(self)):
-                temp_list.append(self[i] / other[i])
-            return List(temp_list)
+                self[i] = self[i] / other[i]
+            return self
         for i in range(len(self)):
-            temp_list.append(self[i] / other)
-        return List(temp_list)
-
-    __itruediv__ = __truediv__
+            self[i] = self[i] / other
+        return self
 
     def __rtruediv__(self, other):
-        temp_list = []
         for i in range(len(self)):
-            temp_list.append(other / self[i])
-        return List(temp_list)
+            self[i] = other / self[i]
+        return self
 
     def evalf(self, n=15, **options):
-        temp_list = []
-        for item in self:
-            temp_list.append(sympy.N(item, n, **options))
-        return List(temp_list)
+        for i in range(len(self)):
+            self[i] = sympy.N(self[i], n, **options)
+        return self
 
     def __pow__(self, other, modulo=None):
-        temp_list = []
         if isinstance(other, List):
             if len(other) != len(self):
                 raise ListException("Lists are of Unequal Length")
-            if modulo:
-                for i in range(len(self)):
-                    temp_list.append(pow(self[i], other[i]) % modulo)
-            else:
-                for i in range(len(self)):
-                    temp_list.append(pow(self[i], other[i]))
-            return List(temp_list)
+            for i in range(len(self)):
+                self[i] = pow(self[i], other[i]) % modulo
+            return self
         for i in range(len(self)):
-            temp_list.append(pow(self[i], other))
-        return List(temp_list)
-
-    __ipow__ = __pow__
+            self[i] = pow(self[i], other) % modulo
+        return self
 
     def __rpow__(self, other):
-        temp_list = []
         for i in range(len(self)):
-            temp_list.append(pow(other, self[i]))
-        return List(temp_list)
+            self[i] = pow(other, self[i])
+        return self
 
     def __hash__(self):
-        return self.value.__hash__()
+        return tuple(self.value).__hash__()
 
     def __repr__(self):
         if not self.value:
@@ -166,10 +147,10 @@ class List(sympy.Basic):  # probably a bad idea
             x = x.value
         if isinstance(y, List):
             y = y.value
-        return List(tuple(x) + tuple(y))
+        return List(list(x) + list(y))
 
-    def append(self, x):
-        self.value += (x,)
+    def append(self, *x):
+        self.value += list(x)
 
 
 class Rule(sympy.Expr):
