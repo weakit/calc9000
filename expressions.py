@@ -90,3 +90,7 @@ def And(n):
 
 def part(n):
     return Functions.call('Part', *n)
+
+
+def replace(n):
+    return Functions.call('Subs', *n)

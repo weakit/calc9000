@@ -748,7 +748,7 @@ class Sqrt(s.Function):
 # class StieltjesGamma(s.Function):
 #     @classmethod
 #     def eval(cls, x):
-#         return thread(x, s.stieltjes)
+#         return thread(s.stieltjes, )
 
 
 class Surd(s.Function):
@@ -923,7 +923,7 @@ class Rationalize(s.Function):
             return List(Rationalize(n, dx) for n in x)
         if isinstance(x, (int, float, s.Number)):
             rat = s.nsimplify(x, rational=True, tolerance=dx)
-            if 1 / (10 ** 4 * s.denom(rat)) > s.Abs(rat - x):
+            if dx or 1 / (10 ** 4 * s.denom(rat)) > s.Abs(rat - x):
                 return rat
         return x
 
@@ -1173,8 +1173,8 @@ class Simplify(s.Function):
             #             assum[i] = s.Q.is_true(assum[i])
             #
             #     assum = assumptions(assum)
-            #     expr = thread(expr, lambda x: s.refine(x, assum))
-        return thread(expr, s.simplify)
+            #     expr = thread(lambda x: s.refine(x, assum), expr)
+        return thread(s.simplify, expr)
 
 
 class IntegerPart(s.Function):
@@ -1354,7 +1354,7 @@ class Part(s.Function):
                 return s.Symbol(type(expr).__name__)
             if not part:
                 raise FunctionException(f'{expr} does not have Part {args[0]}')
-            return thread(args[0], lambda x: cls.get_part(part, x))
+            return thread(cls.get_part, part, args[0])
 
 
 class Table(s.Function):
@@ -1606,6 +1606,8 @@ class Functions:
     ArcCsch = threaded(s.acsch)
     ArcSech = threaded(s.asech)
     ArcCoth = threaded(s.acoth)
+
+
 
     # Extra functions
 

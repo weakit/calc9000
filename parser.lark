@@ -1,7 +1,10 @@
 // calc9000 Parser Grammar
 
 ?start: expression
+      | replace
       | set
+
+replace: expression "/." expression
 
 set: (expression "=")+ expression
 // | expression ":=" expression -> set_delayed // TODO
@@ -10,10 +13,13 @@ set: (expression "=")+ expression
 ?expression: logic
 
 ?logic: rule
-      | logic ("&&" rule)+ -> _and
+      | logic ("&&" rule)+ -> and_
 
 ?rule: relation "->" rule
      | relation
+
+// rule_: expression "->" expression
+//      | "{" rule_ ("," rule)* "}" -> list
 
 ?relation: addsub
          | relation (RELATIONAL addsub)+

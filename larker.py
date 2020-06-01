@@ -53,11 +53,15 @@ class AssignTransformer(Transformer):
         return Rule(*items)
 
     @staticmethod
+    def rule_(items):
+        return Rule(*items)
+
+    @staticmethod
     def relation(items):
         return ex.relations(items)
 
     @staticmethod
-    def _and(items):
+    def and_(items):
         return ex.And(items)
 
     @staticmethod
@@ -67,6 +71,10 @@ class AssignTransformer(Transformer):
     @staticmethod
     def part(items):
         return ex.part(items)
+
+    @staticmethod
+    def replace(items):
+        return ex.replace(items)
 
     @staticmethod
     def INT(n):
