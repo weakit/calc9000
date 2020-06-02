@@ -930,16 +930,18 @@ class Rationalize(s.Function):
 
 class Subs(s.Function):
     """
-    Subs [Expr, Rules]
-     Transforms Expression expr with the given Rule or list of Rules.
-    """
+    Subs [Expr, Rule]
+     Transforms Expression expr with the given Rule.
 
+    Subs [Expr, {Rule1, Rule2, …}]
+     Transforms Expression expr with the given Rules.
+    """
     @classmethod
     def eval(cls, expr, replacements):
         if not isinstance(replacements, iterables):
             replacements = (replacements,)
         if isinstance(expr, iterables):
-            return List(Subs(x, *replacements) for x in expr)
+            return List(Subs(x, replacements) for x in expr)
         if isinstance(expr, s.Expr):
             expr = expr.subs(replacements)
             replacement_dict = {str(k): str(v) for k, v in replacements}
@@ -1233,22 +1235,47 @@ class Limit(s.Function):
 
 
 class Sum(s.Function):
-    @staticmethod
-    def process(i):
+    @classmethod
+    def limits(cls, a, b):
+        if isinstance(a, s.Symbol) or (isinstance(b, s.Symbol) and a.is_integer):
+            return a, b
+        return a, b - s.Mod(b - a, 1)
+
+    @classmethod
+    def process_skip(cls, s_, i):
+        return s_.subs(i[0], i[0] * i[3]),  (i[0], *cls.limits(i[1] / i[3], i[2] / i[3]))
+
+    @classmethod
+    def process(cls, s_, i):
         if isinstance(i, iterables):
             if not isinstance(i[0], s.Symbol):
-                raise FunctionException("Invalid Limits for Sum")
-            if len(i) == 3:
-                return i
+                raise FunctionException("Invalid Limits.")
             if len(i) == 2:
-                return i[0], 1, i[1]
-            raise FunctionException("Invalid Limits for Sum")
+                return s_, (i[0], *cls.limits(1, i[1]))
+            if len(i) == 3:
+                return s_, (i[0], *cls.limits(i[1], i[2]))
+            if len(i) == 4:
+                return cls.process_skip(s_, i)
+            raise FunctionException("Invalid Limits.")
         raise NotImplementedError
 
     @classmethod
     def eval(cls, f, i, *xi):
-        i = [cls.process(i)] + [cls.process(x) for x in xi]
-        return thread(lambda x: s.summation(x, *i), f)
+        i = (i,) + xi
+        sum_ = f
+        for limit in reversed(i):
+            sum_ = thread(lambda s_: s.summation(*cls.process(s_, limit)), sum_)
+        return sum_
+
+
+class Product(Sum):
+    @classmethod
+    def eval(cls, f, i, *xi):
+        i = (i,) + xi
+        product = f
+        for limit in reversed(i):
+            product = s.product(*cls.process(product, limit))
+        return product
 
 
 class Zeta(s.Function):
@@ -1489,17 +1516,41 @@ class Subsets(s.Function):
 class Functions:
     # TODO: Move functions into class (?)
 
+    # TODO: Subs List replacement
+
     # TODO: Part, Span
-    # TODO: List Functions
-    # TODO: Logical Or, semicolon
-    # TODO: Proper printer for Dot and Cross
+    # TODO: Semicolon
+    # TODO: Logical Or
+
+    # TODO: Polar Complex Number Representation
     # TODO: Series
     # TODO: DSolve
+    # TODO: Series
+    # TODO: Random Functions
+
+    # TODO: Simple List Functions
+    # TODO: Nothing (Lists)
+
+    # TODO: Matrix Representation
+    # TODO: Matrix Row Operations
     # TODO: Remaining Matrix Operations
-    # TODO: Arithmetic Functions: Ratios, Differences (Low Priority)
-    # TODO: Booleans, Conditions, Boole (Low Priority)
-    # TODO: Cross of > 3 dimensional vectors (Low Priority)
-    # TODO: Implement Fully: Total, Clip, Quotient, Mod, Factor (Low Priority)
+
+    # TODO: Warnings
+
+    # TODO: Function Assisgnment
+    # TODO: Subs Function Replacement
+
+    # TODO: Latex Printer
+    # TODO: References Storage
+
+    # Low Priority
+
+    # TODO: Map, Apply
+    # TODO: Pretty Printer Fixes for Dot, Cross
+    # TODO: Arithmetic Functions: Ratios, Differences
+    # TODO: Booleans, Conditions, Boole
+    # TODO: Cross of > 3 dimensional vectors
+    # TODO: Implement Fully: Total, Clip, Quotient, Mod, Factor
 
     Abs = Abs
     AbsArg = AbsArg
@@ -1551,6 +1602,7 @@ class Functions:
     Power = Power
     PowerMod = PowerMod
     PrimeQ = PrimeQ
+    Product = Product
     Quotient = Quotient
     QuotientRemainder = QuotientRemainder
     Range = Range

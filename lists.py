@@ -1,4 +1,4 @@
-import sympy
+import sympy as s
 # TODO: Nothing
 # TODO: check others
 
@@ -11,10 +11,8 @@ class ListException(Exception):
     pass
 
 
-class List(sympy.Basic):  # probably a bad idea
+class List(s.Basic):  # probably a bad idea
     # TODO: Pretty and LaTeX printing
-    # is_number = True
-
     @staticmethod
     def create(*args):
         return List(args)
@@ -103,7 +101,7 @@ class List(sympy.Basic):  # probably a bad idea
 
     def evalf(self, n=15, **options):
         for i in range(len(self)):
-            self[i] = sympy.N(self[i], n, **options)
+            self[i] = s.N(self[i], n, **options)
         return self
 
     def __pow__(self, other, modulo=None):
@@ -153,7 +151,7 @@ class List(sympy.Basic):  # probably a bad idea
         self.value += list(x)
 
 
-class Rule(sympy.Expr):
+class Rule(s.AtomicExpr):
     # TODO: Pretty and LaTeX printing
     def __init__(self, a, b):
         self.lhs = a
