@@ -58,10 +58,10 @@ def thread(func, *args, **kwargs):
     # return func(x)
 
 
-def threaded(func):
+def threaded(name, func):
     def fun(x):
         return thread(func, x)
-    return fun
+    return type(name, (s.Function,), {'eval': fun})
 
 
 def boolean(x):
@@ -100,6 +100,42 @@ def options(args, ops: dict, defaults=None):
             if default not in ret:
                 ret[default] = defaults[default]
     return ret
+
+
+# Trig Functions
+
+Sinc = threaded('Sinc', s.sinc)
+Sin = threaded('Sin', s.sin)
+Cos = threaded('Cos', s.cos)
+Tan = threaded('Tan', s.tan)
+Csc = threaded('Csc', s.csc)
+Sec = threaded('Sec', s.sec)
+Cot = threaded('Cot', s.cot)
+Sinh = threaded('Sinh', s.sinh)
+Cosh = threaded('Cosh', s.cosh)
+Tanh = threaded('Tanh', s.tanh)
+Csch = threaded('Csch', s.csch)
+Sech = threaded('Sech', s.sech)
+Coth = threaded('Coth', s.coth)
+ArcSin = threaded('ArcSin', s.asin)
+ArcCos = threaded('ArcCos', s.acos)
+ArcCsc = threaded('ArcCsc', s.acsc)
+ArcSec = threaded('ArcSec', s.asec)
+ArcCot = threaded('ArcCot', s.acot)
+ArcSinh = threaded('ArcSinh', s.asinh)
+ArcCosh = threaded('ArcCosh', s.acosh)
+ArcTanh = threaded('ArcTanh', s.atanh)
+ArcCsch = threaded('ArcCsch', s.acsch)
+ArcSech = threaded('ArcSech', s.asech)
+ArcCoth = threaded('ArcCoth', s.acoth)
+
+
+class ArcTan(s.Function):
+    @classmethod
+    def eval(cls, y, x=None):
+        if x is None:
+            return thread(s.atan, y)
+        return thread(s.atan2, x, y)
 
 
 class Exp(s.Function):
@@ -1251,20 +1287,23 @@ class Sum(s.Function):
             if not isinstance(i[0], s.Symbol):
                 raise FunctionException("Invalid Limits.")
             if len(i) == 2:
-                return s_, (i[0], *cls.limits(1, i[1]))
+                return s_, (i[0], *cls.limits(s.S.One, i[1]))
             if len(i) == 3:
                 return s_, (i[0], *cls.limits(i[1], i[2]))
             if len(i) == 4:
                 return cls.process_skip(s_, i)
-            raise FunctionException("Invalid Limits.")
-        raise NotImplementedError
+        raise FunctionException("Invalid Limits.")
 
     @classmethod
     def eval(cls, f, i, *xi):
         i = (i,) + xi
         sum_ = f
         for limit in reversed(i):
-            sum_ = thread(lambda s_: s.summation(*cls.process(s_, limit)), sum_)
+            if isinstance(limit, iterables):
+                sum_ = thread(lambda s_: s.summation(*cls.process(s_, limit)), sum_)
+            else:
+                # sum_ = thread(s.concrete.gosper.gosper_sum, sum_, limit)
+                raise NotImplementedError  # raze hell
         return sum_
 
 
@@ -1274,7 +1313,10 @@ class Product(Sum):
         i = (i,) + xi
         product = f
         for limit in reversed(i):
-            product = s.product(*cls.process(product, limit))
+            if isinstance(limit, iterables):
+                product = s.product(*cls.process(product, limit))
+            else:
+                raise NotImplementedError  # be nicer
         return product
 
 
@@ -1513,8 +1555,52 @@ class Subsets(s.Function):
         return subsets
 
 
+class FromPolarCoordinates(s.Function):
+    """
+    FromPolarCoordinates[{r, θ}]
+     Gives the {x, y} Cartesian coordinates corresponding to the polar coordinates {r, θ}.
+
+    FromPolarCoordinates[{r, θ1, …, θn - 2, ϕ}]
+     Gives the coordinates corresponding to the hyperspherical coordinates {r, θ1, …, θn - 2, ϕ}
+    """
+    @classmethod
+    def eval(cls, list_):
+        # TODO: Thread
+        length = len(list_)
+        if length == 1:
+            raise FunctionException('Polar Coordinates can only be defined for dimesions of 2 and greater.')
+        ret = List(list_[:1] * length)
+        for pos, angle in enumerate(list_[1:]):
+            ret[pos] *= s.cos(angle)
+            for x in range(pos + 1, length):
+                ret[x] *= s.sin(angle)
+        return ret
+
+
+class ToPolarCoordinates(s.Function):
+    """
+    ToPolarCoordinates[{x, y}]
+     Gives the {r, θ} polar coordinates corresponding to the Cartesian coordinates {x, y}.
+
+    ToPolarCoordinates[{x1, x2, …, xn}]
+     Gives the hyperspherical coordinates corresponding to the Cartesian coordinates {x1, x2, …, xn}.
+    """
+    @classmethod
+    def eval(cls, list_):
+        # TODO: Thread
+        list_ = List(list_)
+        length = len(list_)
+        if length == 1:
+            raise FunctionException('Polar Coordinates can only be defined for dimesions of 2 and greater.')
+        ret = List.create(Sqrt(Total(list_ ** 2)))
+        for x in range(length - 2):
+            ret.append(s.acos(list_[x] / Sqrt(Total(list_[x:] ** 2))))
+        ret.append(ArcTan(list_[-2], list_[-1]))
+        return ret
+
+
 class Functions:
-    # TODO: Move functions into class (?)
+    # TODO: Move functions into class (not doing that/finding a better solution was naive)
 
     # TODO: Subs List replacement
 
@@ -1552,126 +1638,13 @@ class Functions:
     # TODO: Cross of > 3 dimensional vectors
     # TODO: Implement Fully: Total, Clip, Quotient, Mod, Factor
 
-    Abs = Abs
-    AbsArg = AbsArg
-    And = And
-    Arg = Arg
-    Accumulate = Accumulate
-    Clip = Clip
-    Ceiling = Ceiling
-    ComplexExpand = ComplexExpand
-    CompositeQ = CompositeQ
-    Conjugate = Conjugate
-    ConjugateTranspose = ConjugateTranspose
-    Cross = Cross
-    D = D
-    Det = Det
-    DiracDelta = DiracDelta
-    Dot = Dot
-    Equal = Equal
-    Exp = Exp
-    Expand = Expand
-    Factor = Factor
-    Factorial = Factorial
-    Floor = Floor
-    FractionalPart = FractionalPart
-    GCD = GCD
-    Heaviside = HeavisideTheta
-    HeavisideTheta = HeavisideTheta
-    In = In
-    IntegerPart = IntegerPart
-    Integrate = Integrate
-    Im = Im
-    Inverse = Inverse
-    LCM = LCM
-    Limit = Limit
-    List = List.create
-    Log = Log
-    Log10 = Log10
-    Log2 = Log2
-    LogisticSigmoid = LogisticSigmoid
-    Max = Max
-    Mean = Mean
-    Min = Min
-    Mod = s.Mod
-    N = N
-    Out = Out
-    Part = Part
-    Permutations = Permutations
-    Plus = Plus
-    Power = Power
-    PowerMod = PowerMod
-    PrimeQ = PrimeQ
-    Product = Product
-    Quotient = Quotient
-    QuotientRemainder = QuotientRemainder
-    Range = Range
-    Ramp = Ramp
-    Rationalize = Rationalize
-    Re = Re
-    ReIm = ReIm
-    Rescale = Rescale
-    Round = Round
-    Set = Set
-    Sign = Sign
-    Simplify = Simplify
-    Solve = Solve
-    Sqrt = Sqrt
-    # StieltjesGamma = StieltjesGamma
-    Subdivide = Subdivide
-    Subsets = Subsets
-    Subtract = Subtract
-    Subs = Subs
-    Sum = Sum
-    Surd = Surd
-    Table = Table
-    Times = Times
-    Total = Total
-    TrigExpand = TrigExpand
-    Unitize = Unitize
-    Unset = Unset
-
-    # Trig Functions
-
-    Sinc = threaded(s.sinc)
-    Sin = threaded(s.sin)
-    Cos = threaded(s.cos)
-    Tan = threaded(s.tan)
-    Csc = threaded(s.csc)
-    Sec = threaded(s.sec)
-    Cot = threaded(s.cot)
-    Sinh = threaded(s.sinh)
-    Cosh = threaded(s.cosh)
-    Tanh = threaded(s.tanh)
-    Csch = threaded(s.csch)
-    Sech = threaded(s.sech)
-    Coth = threaded(s.coth)
-    ArcSin = threaded(s.asin)
-    ArcCos = threaded(s.acos)
-    ArcTan = threaded(s.atan)
-    ArcCsc = threaded(s.acsc)
-    ArcSec = threaded(s.asec)
-    ArcCot = threaded(s.acot)
-    ArcSinh = threaded(s.asinh)
-    ArcCosh = threaded(s.acosh)
-    ArcTanh = threaded(s.atanh)
-    ArcCsch = threaded(s.acsch)
-    ArcSech = threaded(s.asech)
-    ArcCoth = threaded(s.acoth)
-
-
-
-    # Extra functions
-
-    nCr = nCr
-    NCr = nCr
-    nPr = nPr
-    NPr = nPr
+    # for now, until I find something better
+    Functions = {k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)}
 
     @classmethod
     def call(cls, f, *a):
         if f in r.refs.NoCache:
             s.core.cache.clear_cache()
-        if f in cls.__dict__:
-            return cls.__dict__[f](*a)
+        if f in cls.Functions:
+            return cls.Functions[f](*a)
         return s.Function(f)(*a)
