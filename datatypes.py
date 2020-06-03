@@ -25,7 +25,7 @@ class List(s.Basic):  # probably a bad idea
 
     def __getitem__(self, x):
         if isinstance(x, slice):
-            return List(self.value.__getitem__(x))
+            return List(*self.value.__getitem__(x))
         else:
             return self.value.__getitem__(x)
 
@@ -45,16 +45,16 @@ class List(s.Basic):  # probably a bad idea
                 raise ListException("Lists are of Unequal Length")
             for i in range(len(new)):
                 new[i] = new[i] + other[i]
-            return List(new)
+            return List(*new)
         for i in range(len(new)):
             new[i] = new[i] + other
-        return List(new)
+        return List(*new)
 
     def __radd__(self, other):
         new = list(self)
         for i in range(len(new)):
             new[i] = other + new[i]
-        return List(new)
+        return List(*new)
 
     def __sub__(self, other):
         new = list(self)
@@ -63,16 +63,16 @@ class List(s.Basic):  # probably a bad idea
                 raise ListException("Lists are of Unequal Length")
             for i in range(len(new)):
                 new[i] = new[i] - other[i]
-            return List(new)
+            return List(*new)
         for i in range(len(new)):
             new[i] = new[i] - other
-        return List(new)
+        return List(*new)
 
     def __rsub__(self, other):
         new = list(self)
         for i in range(len(new)):
             new[i] = other - new[i]
-        return List(new)
+        return List(*new)
 
     def __mul__(self, other):
         new = list(self)
@@ -81,16 +81,16 @@ class List(s.Basic):  # probably a bad idea
                 raise ListException("Lists are of Unequal Length")
             for i in range(len(new)):
                 new[i] = new[i] * other[i]
-            return List(new)
+            return List(*new)
         for i in range(len(new)):
             new[i] = new[i] * other
-        return List(new)
+        return List(*new)
 
     def __rmul__(self, other):
         new = list(self)
         for i in range(len(new)):
             new[i] = other * new[i]
-        return List(new)
+        return List(*new)
 
     def __truediv__(self, other):
         new = list(self)
@@ -99,22 +99,22 @@ class List(s.Basic):  # probably a bad idea
                 raise ListException("Lists are of Unequal Length")
             for i in range(len(new)):
                 new[i] = new[i] / other[i]
-            return List(new)
+            return List(*new)
         for i in range(len(new)):
             new[i] = new[i] / other
-        return List(new)
+        return List(*new)
 
     def __rtruediv__(self, other):
         new = list(self)
         for i in range(len(new)):
             new[i] = other / new[i]
-        return List(new)
+        return List(*new)
 
     def evalf(self, n=15, **options):
         new = list(self)
         for i in range(len(new)):
             new[i] = s.N(new[i], n, **options)
-        return List(new)
+        return List(*new)
 
     def __pow__(self, other):
         new = list(self)
@@ -123,16 +123,16 @@ class List(s.Basic):  # probably a bad idea
                 raise ListException("Lists are of Unequal Length")
             for i in range(len(new)):
                 new[i] = pow(new[i], other[i])
-            return List(new)
+            return List(*new)
         for i in range(len(new)):
             new[i] = pow(new[i], other)
-        return List(new)
+        return List(*new)
 
     def __rpow__(self, other):
         new = list(self)
         for i in range(len(new)):
             new[i] = pow(other, new[i])
-        return List(new)
+        return List(*new)
 
     def __hash__(self):
         return tuple(self.value).__hash__()
@@ -159,7 +159,7 @@ class List(s.Basic):  # probably a bad idea
             x = x.value
         if isinstance(y, List):
             y = y.value
-        return List(list(x) + list(y))
+        return List.create(list(x) + list(y))
 
     def append(self, *x):
         self.value += list(x)
