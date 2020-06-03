@@ -1,13 +1,13 @@
 import sympy as s
 
 
-class ProtectedClass:
+class Protected:
     Symbol = None
     Rule = None
     List = None
 
 
-class ConstantsClass:
+class Constants:
     # Caveats: pi
     # TODO: Degrees, Nothing and other constants
     # Progress: Elementary Functions, Numerical Functions
@@ -25,13 +25,14 @@ class ConstantsClass:
     Reals = s.Reals
     Integers = s.Integers
     Rationals = s.Rationals
+    All = s.Symbol('All')
 
 
-class SymbolsClass:
+class Symbols:
     pass
 
 
-class FunctionsClass:
+class Functions:
     pass
 
 
@@ -48,11 +49,11 @@ class References:
     def __init__(self):
         self.In = [None]
         self.Out = [None]
-        self.Symbols = SymbolsClass()
+        self.Symbols = Symbols()
         self.NoCache = NoCache
-        self.Functions = FunctionsClass()
-        self.Constants = ConstantsClass
-        self.Protected = ProtectedClass
+        self.Functions = Functions()
+        self.Constants = Constants
+        self.Protected = Protected
         self.Line = 1
         self.Parser = None
 

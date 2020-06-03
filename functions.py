@@ -5,7 +5,7 @@ import sympy as s
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from itertools import permutations, combinations
 from collections.abc import Sized
-from lists import List, Rule
+from datatypes import List, Rule
 
 iterables = (s.Tuple, List, Sized, s.Matrix)
 
@@ -18,7 +18,7 @@ class FunctionException(Exception):
 def toList(m):
     temp_list = List()
     for row in range(m.rows):
-        temp_list.append(List(m.row(row)))
+        temp_list.append(List(*m.row(row)))
     return temp_list
 
 
@@ -48,7 +48,7 @@ def thread(func, *args, **kwargs):
         if not isinstance(chained[i], iterables):
             chained[i] = (chained[i],) * length
 
-    return List(func(*z) for z in zip(*chained))
+    return List.create(func(*z) for z in zip(*chained))
 
     # if isinstance(x, iterables):
     #     temp_list = List()
@@ -100,6 +100,18 @@ def options(args, ops: dict, defaults=None):
             if default not in ret:
                 ret[default] = defaults[default]
     return ret
+
+
+def is_integer(n):
+    if hasattr(n, 'is_integer'):
+        return bool(n.is_integer)
+    if hasattr(n, 'is_Integer'):
+        return bool(n.is_integer)
+    if isinstance(n, int):
+        return True
+    if isinstance(n, float):
+        return int(n) == n
+    return False
 
 
 # Trig Functions
@@ -301,7 +313,7 @@ class Accumulate(s.Function):
         if isinstance(_list, iterables):
             for i in range(1, len(_list)):
                 temp_list[i] += temp_list[i - 1]
-            return List(temp_list)
+            return List(*temp_list)
 
 
 class Clip(s.Function):
@@ -330,8 +342,8 @@ class Rescale(s.Function):
             _min = Min(x)
             _max = Max(x)
             for i in range(len(x)):
-                x[i] = cls.eval(x[i], List([_min, _max]))
-            return List(x)
+                x[i] = cls.eval(x[i], List(_min, _max))
+            return List(*x)
         if isinstance(x_range, iterables) and len(x_range) == 2:
             if y_range is None or (isinstance(y_range, iterables) and len(y_range) == 2):
                 if y_range is None:
@@ -348,7 +360,7 @@ class In(s.Function):
     def _in(n):
         if n is None:
             return r.refs.get_in()
-        if n.is_Integer and 0 < n < r.refs.Line:
+        if is_integer(n) and 0 < n < r.refs.Line:
             return r.refs.get_in(n)
 
     @classmethod
@@ -520,7 +532,7 @@ class ReIm(s.Function):
 
     @classmethod
     def eval(cls, x):
-        return thread(lambda b: List.create(Re(b), Im(b)), x)
+        return thread(lambda b: List(Re(b), Im(b)), x)
 
 
 class Plus(s.Function):
@@ -593,7 +605,7 @@ class AbsArg(s.Function):
 
     @classmethod
     def eval(cls, x):
-        return thread(lambda y: List.create(s.Abs(y), s.arg(y)), x)
+        return thread(lambda y: List(s.Abs(y), s.arg(y)), x)
 
 
 class Factorial(s.Function):
@@ -707,11 +719,11 @@ class Cross(s.Function):
     def eval(cls, *args):
         if len(args) == 1:
             if isinstance(args[0], iterables) and len(args[0]) == 2:
-                return List((args[0][1] * -1, args[0][0]))
+                return List(args[0][1] * -1, args[0][0])
         elif len(args) == 2:
             if isinstance(args[0], iterables) and isinstance(args[1], iterables):
                 if len(args[0]) == len(args[1]) == 3:
-                    return List(s.Matrix(args[0]).cross(s.Matrix(args[1])))
+                    return List.create(s.Matrix(args[0]).cross(s.Matrix(args[1])))
 
     def _pretty(self, printer=None):
         def dot(p, *others):
@@ -807,7 +819,7 @@ class QuotientRemainder(s.Function):
     """
     @staticmethod
     def _qr(m, n):
-        return List.create(m // n, m % n)
+        return List(m // n, m % n)
 
     @classmethod
     def eval(cls, m, n):
@@ -922,7 +934,7 @@ class Set(s.Function):
             return n
         if isinstance(x, iterables):
             if isinstance(x, iterables) and len(x) == len(n):
-                return List(Set(a, b) for a, b in zip(x, n))
+                return List.create(Set(a, b) for a, b in zip(x, n))
 
 
 class Unset(s.Function):
@@ -935,7 +947,7 @@ class Unset(s.Function):
     @classmethod
     def eval(cls, n):
         if isinstance(n, iterables):
-            return List(Unset(x) for x in n)
+            return List.create(Unset(x) for x in n)
         if isinstance(n, s.Symbol) and str(n) in r.refs.Symbols.__dict__:
             delattr(r.refs.Symbols, str(n))
         return None
@@ -956,7 +968,7 @@ class Rationalize(s.Function):
     @classmethod
     def eval(cls, x, dx=None):
         if isinstance(x, iterables):
-            return List(Rationalize(n, dx) for n in x)
+            return List.create(Rationalize(n, dx) for n in x)
         if isinstance(x, (int, float, s.Number)):
             rat = s.nsimplify(x, rational=True, tolerance=dx)
             if dx or 1 / (10 ** 4 * s.denom(rat)) > s.Abs(rat - x):
@@ -977,7 +989,7 @@ class Subs(s.Function):
         if not isinstance(replacements, iterables):
             replacements = (replacements,)
         if isinstance(expr, iterables):
-            return List(Subs(x, replacements) for x in expr)
+            return List.create(Subs(x, replacements) for x in expr)
         if isinstance(expr, s.Expr):
             expr = expr.subs(replacements)
             replacement_dict = {str(k): str(v) for k, v in replacements}
@@ -1099,7 +1111,7 @@ class D(s.Function):
     def eval(cls, f, *args):
         def threaded_diff(x, *d):
             if isinstance(x, iterables):
-                return List(threaded_diff(element, *d) for element in x)
+                return List.create(threaded_diff(element, *d) for element in x)
             return s.diff(x, *d)
 
         if not args:
@@ -1108,10 +1120,10 @@ class D(s.Function):
         for arg in args:
             if isinstance(arg, iterables):
                 if len(arg) == 1 and isinstance(arg[0], iterables):
-                    return List(threaded_diff(f, element) for element in arg[0])
+                    return List.create(threaded_diff(f, element) for element in arg[0])
                 if len(arg) == 2:
                     if isinstance(arg[0], iterables):
-                        f = List(threaded_diff(f, (element, arg[1])) for element in arg[0])
+                        f = List.create(threaded_diff(f, (element, arg[1])) for element in arg[0])
                     else:
                         f = threaded_diff(f, (arg[0], arg[1]))
                 else:
@@ -1128,7 +1140,7 @@ class Integrate(s.Function):
     def eval(cls, f, *args):
         def threaded_int(x, *i):
             if isinstance(x, iterables):
-                return List(threaded_int(element, *i) for element in x)
+                return List.create(threaded_int(element, *i) for element in x)
             return s.integrate(x, *i)
 
         if not args:
@@ -1273,7 +1285,7 @@ class Limit(s.Function):
 class Sum(s.Function):
     @classmethod
     def limits(cls, a, b):
-        if isinstance(a, s.Symbol) or (isinstance(b, s.Symbol) and a.is_integer):
+        if isinstance(a, s.Symbol) or (isinstance(b, s.Symbol) and is_integer(a)):
             return a, b
         return a, b - s.Mod(b - a, 1)
 
@@ -1385,45 +1397,16 @@ class Permutations(s.Function):
             if isinstance(n, iterables):
                 n = Range(*n)
             else:
-                if not s.Number(n).is_integer:
+                if not is_integer(n):
                     raise FunctionException("n should be an integer.")
-                n = List(range(int(n) + 1))
+                n = List.create(range(int(n) + 1))
         if isinstance(n, iterables):
             # TODO: manually remove duplicates
             ret = List()
             for i in n:
-                ret = List.concat(ret, List(List(x) for x in set(permutations(li, int(i)))))
+                ret = List.concat(ret, List.create(List.create(x) for x in set(permutations(li, int(i)))))
             return ret
-        return List(List(x) for x in set(permutations(li, n)))
-
-
-class Part(s.Function):
-    @staticmethod
-    def get_part(expr, n):
-        if n.is_integer:
-            try:
-                if n > 0:
-                    return expr[n - 1]
-                return expr[n]
-            except IndexError:
-                raise FunctionException(f'Part {n} of {expr} does not exist.')
-        raise FunctionException(f'{n} is not a valid Part specification.')
-
-    @classmethod
-    def eval(cls, expr, *args):
-        part = None
-        if not args:
-            return expr
-        if hasattr(expr, '__getitem__'):
-            part = expr
-        elif hasattr(expr, 'args'):
-            part = expr.args
-        if len(args) == 1:
-            if args[0] == s.S.Zero:
-                return s.Symbol(type(expr).__name__)
-            if not part:
-                raise FunctionException(f'{expr} does not have Part {args[0]}')
-            return thread(cls.get_part, part, args[0])
+        return List.create(List.create(x) for x in set(permutations(li, n)))
 
 
 class Table(s.Function):
@@ -1456,7 +1439,7 @@ class Table(s.Function):
     @staticmethod
     def _range_parse(expr, arg):
         if arg.is_number:
-            return List((expr,) * arg)
+            return List.create((expr,) * arg)
         if len(arg) == 2 and isinstance(arg[1], iterables):
             args = arg[1]
         elif len(arg) >= 2:
@@ -1512,13 +1495,13 @@ class Subdivide(s.Function):
             x_max = two
             div = three
 
-        if div != int(div):
+        if not is_integer(div):
             raise FunctionException("Number of Subdivisions should be an Integer.")
 
         div = s.Number(int(div))
 
         step = (x_max - x_min) / div
-        li = List((x_min,))
+        li = List(x_min)
 
         for _ in range(int(div)):
             li.append(li[-1] + step)
@@ -1543,14 +1526,14 @@ class Subsets(s.Function):
         if n_spec is None:
             n_spec = range(len(li) + 1)
         elif n_spec.is_number:
-            if not n_spec.is_integer:
+            if not is_integer(n_spec):
                 raise FunctionException(f'{n_spec} is not an integer.')
             n_spec = range(int(n_spec) + 1)
         else:
             n_spec = Range(*n_spec)
 
         for spec in n_spec:
-            subsets.append(*(List(x) for x in combinations(li, spec)))
+            subsets.append(*(List.create(x) for x in combinations(li, spec)))
 
         return subsets
 
@@ -1569,7 +1552,7 @@ class FromPolarCoordinates(s.Function):
         length = len(list_)
         if length == 1:
             raise FunctionException('Polar Coordinates can only be defined for dimesions of 2 and greater.')
-        ret = List(list_[:1] * length)
+        ret = List.create(list_[:1] * length)
         for pos, angle in enumerate(list_[1:]):
             ret[pos] *= s.cos(angle)
             for x in range(pos + 1, length):
@@ -1588,15 +1571,103 @@ class ToPolarCoordinates(s.Function):
     @classmethod
     def eval(cls, list_):
         # TODO: Thread
-        list_ = List(list_)
+        list_ = List(*list_)
         length = len(list_)
         if length == 1:
             raise FunctionException('Polar Coordinates can only be defined for dimesions of 2 and greater.')
-        ret = List.create(Sqrt(Total(list_ ** 2)))
+        ret = List(Sqrt(Total(list_ ** 2)))
         for x in range(length - 2):
             ret.append(s.acos(list_[x] / Sqrt(Total(list_[x:] ** 2))))
         ret.append(ArcTan(list_[-2], list_[-1]))
         return ret
+
+
+class Part(s.Function):
+    @staticmethod
+    def get_part(expr, n):
+        if not isinstance(expr, iterables):
+            # TODO: Associations and other Heads
+            raise NotImplementedError
+        if is_integer(n):
+            try:
+                if n > 0:
+                    return expr[int(n - 1)]
+                return expr[int(n)]
+            except IndexError:
+                raise FunctionException(f'Part {n} of {expr} does not exist.')
+        raise FunctionException(f'{n} is not a valid Part specification.')
+
+    @classmethod
+    def eval(cls, expr, *args):
+        part = None
+        if not args:
+            return expr
+        if hasattr(expr, 'args'):
+            part = expr.args
+        elif hasattr(expr, '__getitem__'):
+            part = expr
+        arg = args[0]
+        if arg == s.S.Zero:
+            return s.Symbol(type(expr).__name__)
+        if not part:
+            raise FunctionException(f'{expr} does not have Part {arg}')
+        if arg == r.refs.Constants.All:
+            arg = Range(len(expr))
+        if isinstance(arg, iterables):
+            return List.create(Part(cls.get_part(part, x), *args[1:]) for x in arg)
+        return Part(cls.get_part(part, arg), *args[1:])
+
+
+class Take(s.Function):
+    @staticmethod
+    def ul(upper, lower):
+        # I don't know how to do this better
+        if lower > 0:
+            lower -= 1
+        if upper < 0:
+            upper += 1
+        if upper == 0:
+            upper = None
+        if lower == 0:
+            lower = None
+        return upper, lower
+
+    @classmethod
+    def eval(cls, expr, *seqs):
+        take = head = None
+
+        if not seqs:
+            return expr
+        if hasattr(expr, 'args'):
+            take = expr.args
+            head = expr.__class__
+        elif hasattr(expr, '__getitem__'):
+            take = expr
+            head = List
+
+        for seq in seqs:
+            if isinstance(seq, iterables):
+                if len(seq) == 1:
+                    return Part(take, seq)
+                lower = seq[0]
+                upper = seq[1]
+                step = 1
+                if 0 in (lower, upper, step) or not (is_integer(lower) and is_integer(upper) and is_integer(step)):
+                    raise FunctionException('Invalid Bounds for Take.')
+                if len(seq) == 3:
+                    step = seq[2]
+                if step > 0:
+                    upper, lower = cls.ul(upper, lower)
+                else:
+                    upper -= 1
+                    lower, upper = cls.ul(lower, upper)
+                return head(*take[lower:upper:step])
+            if is_integer(seq):
+                if seq > 0:
+                    return head(*take[:seq])
+                return head(*take[seq:])
+            else:
+                raise FunctionException(f'{seq} is not a valid Take specification.')
 
 
 class Functions:
@@ -1605,11 +1676,13 @@ class Functions:
     # TODO: Subs List replacement
 
     # TODO: Part, Span
+    # TODO: Part, Assignment
     # TODO: Semicolon
     # TODO: Logical Or
 
     # TODO: Polar Complex Number Representation
     # TODO: Series
+    # TODO: Solve output
     # TODO: DSolve
     # TODO: Series
     # TODO: Random Functions
@@ -1617,6 +1690,7 @@ class Functions:
     # TODO: Simple List Functions
     # TODO: Nothing (Lists)
 
+    # TODO: Make Matrix Functions use List
     # TODO: Matrix Representation
     # TODO: Matrix Row Operations
     # TODO: Remaining Matrix Operations

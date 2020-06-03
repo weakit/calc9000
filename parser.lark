@@ -48,18 +48,16 @@ RELATIONAL: "=="
       | unary ("^" prefix)+
 
 ?execute: function
+        | atom "[" "[" (expression)? ("," expression)* "]" "]" -> part
 
 function: atom "[" (expression)? ("," expression)* "]"
 // TODO | function "[" (expression)? ("," expression)* "]"
 
 ?unary: factorial
-      | atom
-
-part: atom "[" "[" expression "]" "]" 
+      | atom 
 
 ?atom: "(" expression ")"
      | execute
-     | part
      | list
      | numeric 
      | symbol

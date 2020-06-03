@@ -1,5 +1,5 @@
 import expressions as ex
-from lists import List, Rule
+from datatypes import List, Rule
 from lark import Lark, Transformer, Tree, Token
 
 
@@ -46,7 +46,7 @@ class AssignTransformer(Transformer):
 
     @staticmethod
     def list(items):
-        return List(items)
+        return List(*items)
 
     @staticmethod
     def rule(items):
