@@ -2,7 +2,10 @@ import sympy as s
 import references as r
 from functools import reduce
 import operator
-from functions import Functions
+import functions
+
+
+Functions = functions.Functions
 
 
 def numeric(n):
@@ -22,6 +25,10 @@ def symbol(n):
 
 def function(n):
     return Functions.call(str(n[0]), *n[1:])
+
+
+def unset_function(n):
+    return s.Function(str(n[0]))(*n[1:])
 
 
 def plus(n):
@@ -94,3 +101,7 @@ def part(n):
 
 def replace(n):
     return Functions.call('Subs', *n)
+
+
+def delayed(n, f):
+    return functions.DelayedSet(f, *n)

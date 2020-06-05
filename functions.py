@@ -7,7 +7,7 @@ from itertools import permutations, combinations
 from collections.abc import Sized
 from datatypes import List, Rule
 
-iterables = (s.Tuple, List, Sized, s.Matrix)
+iterables = (s.Tuple, List, Sized, s.Matrix, list, tuple)
 
 
 class FunctionException(Exception):
@@ -916,25 +916,83 @@ class Equal(s.Function):
 class Set(s.Function):
     """
     Set [x, n]
-    x = n
-        Sets a symbol x to have the value n.
+     x = n
+     Sets a symbol x to have the value n.
     """
 
     @classmethod
     def eval(cls, x, n):
-        # TODO: Function Assignment
-        for ref in [r.refs.Constants, r.refs.Functions, r.refs.Protected]:
-            if str(x) in ref.__dict__:
+        refs = r.refs
+        for ref in [
+            refs.Constants.__dict__,
+            refs.BuiltIns,
+            refs.Protected.__dict__
+        ]:
+            if str(x) in ref:
                 raise FunctionException(f'Symbol {x} cannot be Assigned to.')
         if isinstance(x, s.Symbol):
             if isinstance(n, s.Expr):
                 if x in n.atoms():
                     return None
-            r.refs.Symbols.__setattr__(x.name, n)
+            refs.Symbols.__setattr__(x.name, n)
+            return n
+        if isinstance(x, s.Function):
+            list_ = []
+            name = type(x).__name__
+            expr = n
+            num = 1
+            for arg in x.args:
+                if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
+                    expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
+                    list_.append(s.Symbol(f'*{num}'))
+                    num += 1
+                else:
+                    list_.append(arg)
+            if name not in refs.Functions:
+                refs.Functions[name] = {tuple(list_): (expr, ())}
+            else:
+                refs.Functions[name].update({tuple(list_): (expr, ())})
             return n
         if isinstance(x, iterables):
             if isinstance(x, iterables) and len(x) == len(n):
                 return List.create(Set(a, b) for a, b in zip(x, n))
+
+
+def DelayedSet(f, x, n):
+    refs = r.refs
+    for ref in [
+        refs.Constants.__dict__,
+        refs.BuiltIns,
+        refs.Protected.__dict__
+    ]:
+        if str(x) in ref:
+            raise FunctionException(f'Symbol {x} cannot be Assigned to.')
+    if isinstance(x, s.Symbol):
+        if isinstance(n, s.Expr):
+            if x in n.atoms():
+                return None
+        refs.Symbols.__setattr__(x.name, n)
+        return n
+    if isinstance(x, s.Function):
+        list_ = []
+        name = type(x).__name__
+        expr = n
+        num = 1
+        for arg in x.args:
+            if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
+                expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
+                list_.append(s.Symbol(f'*{num}'))
+                num += 1
+            else:
+                list_.append(arg)
+        if name not in refs.Functions:
+            refs.Functions[name] = {tuple(list_): (expr, f)}
+        else:
+            refs.Functions[name].update({tuple(list_): (expr, f)})
+        return n
+    if isinstance(x, iterables):
+        if isinstance(x, iterables) and len(x) == len(n):
+            return List.create(DelayedSet(f, a, b) for a, b in zip(x, n))
 
 
 class Unset(s.Function):
@@ -1582,6 +1640,18 @@ class ToPolarCoordinates(s.Function):
         return ret
 
 
+class Together(s.Function):
+    @classmethod
+    def eval(cls, expr):
+        return thread(lambda x: s.simplify(s.together(x)), expr)
+
+
+class Apart(s.Function):
+    @classmethod
+    def eval(cls, expr, x=None):
+        return thread(s.apart, expr, x)
+
+
 class Part(s.Function):
     @staticmethod
     def get_part(expr, n):
@@ -1675,7 +1745,9 @@ class Functions:
 
     # TODO: Subs List replacement
 
-    # TODO: Part, Span
+    # TODO: Collect
+    # TODO: Span
+    # TODO: Prime Notation
     # TODO: Part, Assignment
     # TODO: Semicolon
     # TODO: Logical Or
@@ -1683,9 +1755,11 @@ class Functions:
     # TODO: Polar Complex Number Representation
     # TODO: Series
     # TODO: Solve output
-    # TODO: DSolve
+    # TODO: NSolve, DSolve
+    # TODO: Roots (Solve)
     # TODO: Series
     # TODO: Random Functions
+    # TODO: Unit Conversions
 
     # TODO: Simple List Functions
     # TODO: Nothing (Lists)
@@ -1697,7 +1771,7 @@ class Functions:
 
     # TODO: Warnings
 
-    # TODO: Function Assisgnment
+    # TODO: Clear Function from References
     # TODO: Subs Function Replacement
 
     # TODO: Latex Printer
@@ -1713,12 +1787,39 @@ class Functions:
     # TODO: Implement Fully: Total, Clip, Quotient, Mod, Factor
 
     # for now, until I find something better
-    Functions = {k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)}
+    r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)})
 
     @classmethod
     def call(cls, f, *a):
-        if f in r.refs.NoCache:
+        refs = r.refs
+        if f in refs.NoCache:
             s.core.cache.clear_cache()
-        if f in cls.Functions:
-            return cls.Functions[f](*a)
+        if f in refs.BuiltIns:
+            return refs.BuiltIns[f](*a)
+        if f in refs.Functions:
+            priority = {}
+            for header in list(refs.Functions[f])[::-1]:
+                match = True
+                matches = 0
+                if len(a) != len(header):
+                    continue
+                for ar, br in zip(a, header):
+                    if ar == br:
+                        matches += 1
+                        continue
+                    elif isinstance(br, s.Symbol) and br.name.startswith('*'):
+                        continue
+                    else:
+                        match = False
+                        break
+                if match:
+                    priority[matches] = header
+            if priority:
+                header = priority[max(priority)]
+                expr = refs.Functions[f][header][0]
+                reps = refs.Functions[f][header][1]
+                for ar, br in zip(a, header):
+                    if isinstance(br, s.Symbol) and br.name.startswith('*'):
+                        expr = Subs(expr, Rule(br, ar))
+                return Subs(expr, Rule.from_dict(vars(r.refs.Symbols)) + Rule.from_dict({x: x for x in reps}))
         return s.Function(f)(*a)

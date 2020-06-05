@@ -2,13 +2,17 @@
 
 ?start: expression
       | replace
-      | set
+      | assign
 
 replace: expression "/." expression
 
+?assign: set
+       | set_delayed
+       | unset
+
 set: (expression "=")+ expression
-// | expression ":=" expression -> set_delayed // TODO
-   | expression "=" "." -> unset
+set_delayed: expression ":=" expression
+unset: expression "=" "."
 
 ?expression: logic
 

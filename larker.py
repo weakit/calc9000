@@ -1,4 +1,5 @@
 import expressions as ex
+import sympy as s
 from datatypes import List, Rule
 from lark import Lark, Transformer, Tree, Token
 
@@ -42,7 +43,7 @@ class AssignTransformer(Transformer):
 
     @staticmethod
     def function(items):
-        return ex.function(items)
+        return ex.unset_function(items)
 
     @staticmethod
     def list(items):
@@ -106,6 +107,20 @@ class AssignTransformer(Transformer):
         return super().transform(tree)
 
 
+class DelayedAssignTransformer(AssignTransformer):
+    def __init__(self, funcs):
+        self.funcs = funcs
+        super().__init__()
+
+    @staticmethod
+    def symbol(n):
+        return s.Symbol(str(n[0]))
+
+    def function(self, items):
+        self.funcs.append(items[0])
+        return ex.unset_function(items)
+
+
 class SymbolTransformer(AssignTransformer):
     def __init__(self):
         super().__init__()
@@ -117,6 +132,10 @@ class SymbolTransformer(AssignTransformer):
     def symbol(n):
         return ex.symbol(n[0])
 
+    @staticmethod
+    def function(items):
+        return ex.function(items)
+
     def handle(self, tree: Tree):
         if tree.data == "set":
             children = tree.children[:]
@@ -126,11 +145,18 @@ class SymbolTransformer(AssignTransformer):
             return ex.assign(children)
         if tree.data == "unset":
             return ex.unset(assigner.transform(tree.children[0]))
+        if tree.data == "set_delayed":
+            f = []
+            transformer = DelayedAssignTransformer(f)
+            children = tree.children[:]
+            for x in range(len(children)):
+                children[x] = transformer.transform(children[x])
+            return ex.delayed(children, list(transformer.funcs))
 
     def evaluate(self, t):
         parsed = self.parser.parse(t)
         if isinstance(parsed, Tree):
-            if parsed.data in ["set", "unset"]:
+            if parsed.data in ["set", "unset", "set_delayed"]:
                 return self.handle(parsed)
             return self.transform(parsed)
         return parsed

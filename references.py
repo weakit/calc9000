@@ -9,7 +9,7 @@ class Protected:
 
 class Constants:
     # Caveats: pi
-    # TODO: Degrees, Nothing and other constants
+    # TODO: Nothing and other constants
     # Progress: Elementary Functions, Numerical Functions
     Pi = s.pi
     pi = Pi
@@ -26,13 +26,14 @@ class Constants:
     Integers = s.Integers
     Rationals = s.Rationals
     All = s.Symbol('All')
+    Degree = Pi / 180
 
 
 class Symbols:
     pass
 
 
-class Functions:
+class Functions(dict):
     pass
 
 
@@ -51,6 +52,7 @@ class References:
         self.Out = [None]
         self.Symbols = Symbols()
         self.NoCache = NoCache
+        self.BuiltIns = Functions()
         self.Functions = Functions()
         self.Constants = Constants
         self.Protected = Protected

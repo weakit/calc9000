@@ -187,3 +187,7 @@ class Rule(s.AtomicExpr):
 
     def __str__(self):
         return self.__repr__()
+
+    @classmethod
+    def from_dict(cls, d):
+        return tuple(Rule(x, d[x]) for x in d)
