@@ -1,4 +1,4 @@
-import operator
+import operator as op
 from functools import reduce
 import references as r
 import sympy as s
@@ -12,6 +12,37 @@ iterables = (s.Tuple, List, Sized, s.Matrix, list, tuple)
 
 class FunctionException(Exception):
     pass
+
+
+class NormalFunction(s.Function):
+    """
+    Ordinary Function Class
+    Works for most Functions.
+    """
+    @staticmethod
+    def _make_replacements(x: s.Basic):
+        # if hasattr(x, 'subs'):
+        #     return x.subs(r.refs.Symbols)
+        return x
+
+    @classmethod
+    def eval(cls, *args):
+        return cls.Eval(*(cls._make_replacements(x) for x in args))
+
+
+class PilotFunction(s.Function):
+    """
+    Placeholder Function Class.
+    Acts as an Unevaluated Function.
+    """
+    @staticmethod
+    def land_in(expr):
+        for x in expr.atoms(PilotFunction)[:]:
+            expr = expr.subs(x, x.land())
+        return expr
+
+    def land(self):
+        return Functions.call(type(self).__name__, *self.args)
 
 
 # TODO: add warnings
@@ -61,7 +92,7 @@ def thread(func, *args, **kwargs):
 def threaded(name, func):
     def fun(x):
         return thread(func, x)
-    return type(name, (s.Function,), {'eval': fun})
+    return type(name, (NormalFunction,), {'eval': fun})
 
 
 def boolean(x):
@@ -74,10 +105,10 @@ def boolean(x):
     return False
 
 
-def assumptions(x):
+def ands(x):
     a = True
-    for assumption in x:
-        a = a & assumption
+    for and_ in x:
+        a = a & and_
     return a
 
 
@@ -142,26 +173,26 @@ ArcSech = threaded('ArcSech', s.asech)
 ArcCoth = threaded('ArcCoth', s.acoth)
 
 
-class ArcTan(s.Function):
+class ArcTan(NormalFunction):
     @classmethod
-    def eval(cls, y, x=None):
+    def Eval(cls, y, x=None):
         if x is None:
             return thread(s.atan, y)
         return thread(s.atan2, x, y)
 
 
-class Exp(s.Function):
+class Exp(NormalFunction):
     """
     Exp [z]
      Gives the exponential of z.
     """
 
     @classmethod
-    def eval(cls, z):
+    def Eval(cls, z):
         return thread(Power, s.E, z)
 
 
-class Log(s.Function):
+class Log(NormalFunction):
     """
     Log [z]
      Gives the natural logarithm of z (logarithm to base e).
@@ -171,35 +202,35 @@ class Log(s.Function):
     """
 
     @classmethod
-    def eval(cls, x, b=None):
+    def Eval(cls, x, b=None):
         if b is not None:
             return thread(s.log, b, x)
         return thread(s.log, x)
 
 
-class Log2(s.Function):
+class Log2(NormalFunction):
     """
     Log2 [z]
      Gives the base-2 logarithm of x.
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.log, x, 2)
 
 
-class Log10(s.Function):
+class Log10(NormalFunction):
     """
     Log10 [z]
      Gives the base-10 logarithm of x.
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.log, x, 10)
 
 
-class Round(s.Function):
+class Round(NormalFunction):
     """
     Round [x]
      Gives the integer closest to x.
@@ -209,7 +240,7 @@ class Round(s.Function):
     """
 
     @classmethod
-    def eval(cls, x, a=None):
+    def Eval(cls, x, a=None):
         if x.is_number:
             if a is None:
                 return round(x)
@@ -218,7 +249,7 @@ class Round(s.Function):
             return thread(Round, x)
 
 
-class Floor(s.Function):
+class Floor(NormalFunction):
     """
     Floor [x]
      Gives the greatest integer less than or equal to x.
@@ -230,13 +261,13 @@ class Floor(s.Function):
     """
 
     @classmethod
-    def eval(cls, x, a=None):
+    def Eval(cls, x, a=None):
         if a is None:
             return thread(s.floor, x)
         return thread(lambda y: a * s.floor(y / a), x)
 
 
-class Ceiling(s.Function):
+class Ceiling(NormalFunction):
     """
     Ceiling [x]
      Gives the smallest integer greater than or equal to x.
@@ -248,67 +279,71 @@ class Ceiling(s.Function):
     """
 
     @classmethod
-    def eval(cls, x, a=None):
+    def Eval(cls, x, a=None):
         if a is None:
             return thread(s.ceiling, x)
         return thread(lambda y: a * s.ceiling(y / a), x)
 
 
-def Min(*x):
+class Min(NormalFunction):
     """
     Min [x1, {x2, x3}, x4, …]
      Gives the smallest x.
     """
-    temp_list = List()
-    for i in x:
-        if isinstance(i, iterables):
-            temp_list.append(Min(*i))
-        else:
-            temp_list.append(i)
-    return s.Min(*temp_list)
+    @classmethod
+    def Eval(cls, *x):
+        temp_list = List()
+        for i in x:
+            if isinstance(i, iterables):
+                temp_list.append(Min(*i))
+            else:
+                temp_list.append(i)
+        return s.Min(*temp_list)
 
 
-def Max(*x):
+class Max(NormalFunction):
     """
     Max [x1, {x2, x3}, x4, …]
      Gives the largest x.
     """
-    temp_list = List()
-    for i in x:
-        if isinstance(i, iterables):
-            temp_list.append(Max(*i))
-        else:
-            temp_list.append(i)
-    return s.Max(*temp_list)
+    @classmethod
+    def Eval(cls, *x):
+        temp_list = List()
+        for i in x:
+            if isinstance(i, iterables):
+                temp_list.append(Max(*i))
+            else:
+                temp_list.append(i)
+        return s.Max(*temp_list)
 
 
-class Total(s.Function):
+class Total(NormalFunction):
     """
     Total [list]
      Gives the Total Sum of elements in list.
     """
 
     @classmethod
-    def eval(cls, _list):
+    def Eval(cls, _list):
         if isinstance(_list, iterables):
             return sum(_list)
 
 
-class Mean(s.Function):
+class Mean(NormalFunction):
     """
     Mean [list]
         Gives the statistical mean of elements in list.
     """
 
     @classmethod
-    def eval(cls, _list):
+    def Eval(cls, _list):
         if isinstance(_list, iterables):
             return Total(_list) / len(_list)
 
 
-class Accumulate(s.Function):
+class Accumulate(NormalFunction):
     @classmethod
-    def eval(cls, _list):
+    def Eval(cls, _list):
         temp_list = list(_list)
         if isinstance(_list, iterables):
             for i in range(1, len(_list)):
@@ -316,16 +351,16 @@ class Accumulate(s.Function):
             return List(*temp_list)
 
 
-class Clip(s.Function):
+class Clip(NormalFunction):
     @classmethod
-    def eval(cls, x, limits=(-1, 1)):
+    def Eval(cls, x, limits=(-1, 1)):
         if x.is_number:
             return s.Max(s.Min(x, limits[1]), limits[0])
 
 
-class Quotient(s.Function):
+class Quotient(NormalFunction):
     @classmethod
-    def eval(cls, m, n):
+    def Eval(cls, m, n):
         if m.is_number and n.is_number:
             return m // n
 
@@ -333,10 +368,10 @@ class Quotient(s.Function):
         return self.args[0].is_real and self.args[1].is_real
 
 
-class Rescale(s.Function):
+class Rescale(NormalFunction):
     # TODO: clean
     @classmethod
-    def eval(cls, x, x_range=None, y_range=None):
+    def Eval(cls, x, x_range=None, y_range=None):
         if x_range is None and isinstance(x, iterables):
             x = list(x)
             _min = Min(x)
@@ -351,7 +386,7 @@ class Rescale(s.Function):
                 return ((x - x_range[0]) * y_range[1] + (x_range[1] - x) * y_range[0]) / (x_range[1] - x_range[0])
 
 
-class In(s.Function):
+class In(NormalFunction):
     """
     In [n]
      Gives the raw input given in the nth line.
@@ -364,11 +399,11 @@ class In(s.Function):
             return r.refs.get_in(n)
 
     @classmethod
-    def eval(cls, n=None):
+    def Eval(cls, n=None):
         return thread(cls._in, n)
 
 
-class Out(s.Function):
+class Out(NormalFunction):
     """
     %n
     Out [n]
@@ -389,17 +424,17 @@ class Out(s.Function):
         if isinstance(n, (s.Number, int, float)) and 0 < n < r.refs.Line:
             out = r.refs.get_out(n)
         if isinstance(out, s.Expr):  # TODO: Replace with Subs func.
-            out = out.subs(vars(r.refs.Symbols))
+            out = out.subs(r.refs.Symbols)
         return out
 
     @classmethod
-    def eval(cls, n=None):
+    def Eval(cls, n=None):
         return thread(cls.out, n)
 
 
-class Dot(s.Function):
+class Dot(NormalFunction):
     @classmethod
-    def eval(cls, m, n):
+    def Eval(cls, m, n):
         if not isinstance(m, iterables) and isinstance(n, iterables):
             return None
         m = s.Matrix(m)
@@ -445,14 +480,14 @@ class Dot(s.Function):
         return ''.join(str(i) + '.' for i in (printer.doprint(i) for i in self.args))[:-1]
 
 
-class Det(s.Function):
+class Det(NormalFunction):
     """
     Det [m]
      Gives the Determinant of Square Matrix m.
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         if isinstance(x, iterables):
             try:
                 m = s.Matrix(x)
@@ -463,14 +498,14 @@ class Det(s.Function):
                 return None
 
 
-class Inverse(s.Function):
+class Inverse(NormalFunction):
     """
     Inverse [m]
      Gives the Inverse of Square Matrix m.
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         if isinstance(x, iterables):
             try:
                 m = s.Matrix(x)
@@ -480,7 +515,7 @@ class Inverse(s.Function):
                 return None
 
 
-class Transpose(s.Function):
+class Transpose(NormalFunction):
     """
     Transpose [m]
      Gives the Transpose of Matrix m.
@@ -489,7 +524,7 @@ class Transpose(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         if isinstance(x, iterables):
             try:
                 m = s.Matrix(x)
@@ -498,7 +533,7 @@ class Transpose(s.Function):
                 return None
 
 
-class Re(s.Function):
+class Re(NormalFunction):
     """
     Re [x]
      Gives the Real part of x.
@@ -507,11 +542,11 @@ class Re(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.re, x)
 
 
-class Im(s.Function):
+class Im(NormalFunction):
     """
     Im [x]
      Gives the Imaginary part of x.
@@ -520,58 +555,58 @@ class Im(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.im, x)
 
 
-class ReIm(s.Function):
+class ReIm(NormalFunction):
     """
     ReIm [x]
      Gives the list {Re[x], Im[x]} of x.
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(lambda b: List(Re(b), Im(b)), x)
 
 
-class Plus(s.Function):
+class Plus(NormalFunction):
     @classmethod
-    def eval(cls, *args):
-        return reduce(operator.add, args)
+    def Eval(cls, *args):
+        return reduce(op.add, args)
 
 
-class Times(s.Function):
+class Times(NormalFunction):
     @classmethod
-    def eval(cls, *args):
-        return reduce(operator.mul, args)
+    def Eval(cls, *args):
+        return reduce(op.mul, args)
 
 
-class Power(s.Function):
+class Power(NormalFunction):
     @classmethod
-    def eval(cls, *args):
-        return reduce(operator.pow, args)
+    def Eval(cls, *args):
+        return reduce(op.pow, args)
 
 
-class PowerMod(s.Function):
+class PowerMod(NormalFunction):
     @classmethod
-    def eval(cls, a, b, m):
+    def Eval(cls, a, b, m):
         return pow(a, b, m)
 
 
-class Subtract(s.Function):
+class Subtract(NormalFunction):
     @classmethod
-    def eval(cls, x, y):
+    def Eval(cls, x, y):
         return x - y
 
 
-class Divide(s.Function):
+class Divide(NormalFunction):
     @classmethod
-    def eval(cls, x, y):
+    def Eval(cls, x, y):
         return x / y
 
 
-class Abs(s.Function):
+class Abs(NormalFunction):
     """
     Abs [x]
      Gives the absolute value of x.
@@ -580,11 +615,11 @@ class Abs(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.Abs, x)
 
 
-class Arg(s.Function):
+class Arg(NormalFunction):
     """
     Arg [x]
      Gives the argument of the complex number x.
@@ -593,22 +628,22 @@ class Arg(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.arg, x)
 
 
-class AbsArg(s.Function):
+class AbsArg(NormalFunction):
     """
     AbsArg [z]
      Gives the list {Abs[z],Arg[z]} of the number z.
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(lambda y: List(s.Abs(y), s.arg(y)), x)
 
 
-class Factorial(s.Function):
+class Factorial(NormalFunction):
     """
     Factorial [x]
      Gives the Factorial of x.
@@ -617,11 +652,11 @@ class Factorial(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.factorial, x)
 
 
-class Conjugate(s.Function):
+class Conjugate(NormalFunction):
     """
     Conjugate [x]
      Gives the complex conjugate of complex number x.
@@ -630,11 +665,11 @@ class Conjugate(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.conjugate, x)
 
 
-class ConjugateTranspose(s.Function):
+class ConjugateTranspose(NormalFunction):
     """
     ConjugateTranspose [m]
      Gives the conjugate transpose of m.
@@ -643,12 +678,12 @@ class ConjugateTranspose(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         if isinstance(x, iterables):
             return Transpose(Conjugate(x))
 
 
-class ComplexExpand(s.Function):
+class ComplexExpand(NormalFunction):
     """
     ComplexExpand[expr]
      Expands expr assuming that all variables are real.
@@ -659,28 +694,28 @@ class ComplexExpand(s.Function):
     """
 
     @classmethod
-    def eval(cls, x, complexes=()):
+    def Eval(cls, x, complexes=()):
         def exp(expr):
             return s.refine(s.expand_complex(expr),
-                            assumptions(s.Q.real(a) for a in expr.atoms(s.Symbol) if a not in complexes))
+                            ands(s.Q.real(a) for a in expr.atoms(s.Symbol) if a not in complexes))
 
         if not isinstance(complexes, iterables):
             complexes = (complexes,)
         return thread(exp, x)
 
 
-class LogisticSigmoid(s.Function):  # why is this here?
+class LogisticSigmoid(NormalFunction):  # why is this here?
     """
     LogisticSigmoid [z]
      Gives the logistic sigmoid function.
     """
 
     @classmethod
-    def eval(cls, z):
+    def Eval(cls, z):
         return thread(lambda x: 1 / (1 + s.exp(-x)), z)
 
 
-class Unitize(s.Function):
+class Unitize(NormalFunction):
     """
     Unitize [x]
      Gives 0 when x is zero, and 1 when x has any other numerical value.
@@ -693,11 +728,11 @@ class Unitize(s.Function):
         return 1
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(cls._unitize, x)
 
 
-class Ramp(s.Function):
+class Ramp(NormalFunction):
     """
     Ramp [x]
      Gives x if x ≥ 0 and 0 otherwise.
@@ -710,13 +745,13 @@ class Ramp(s.Function):
         return 0
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(cls._ramp, x)
 
 
-class Cross(s.Function):
+class Cross(NormalFunction):
     @classmethod
-    def eval(cls, *args):
+    def Eval(cls, *args):
         if len(args) == 1:
             if isinstance(args[0], iterables) and len(args[0]) == 2:
                 return List(args[0][1] * -1, args[0][0])
@@ -760,7 +795,7 @@ class Cross(s.Function):
         return 'Cross['.join(str(i) + ', ' for i in (printer.doprint(i) for i in self.args))[:-2] + ']'
 
 
-class Sign(s.Function):
+class Sign(NormalFunction):
     """
     Sign [x]
      Gives -1, 0, or 1 depending on whether x is negative, zero, or positive.
@@ -776,11 +811,11 @@ class Sign(s.Function):
             return n / Abs(n)
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(cls._sign, x)
 
 
-class Sqrt(s.Function):
+class Sqrt(NormalFunction):
     """
     Sqrt [Expr]
      Gives the Square Root of Expr.
@@ -789,17 +824,17 @@ class Sqrt(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.sqrt, x)
 
 
-# class StieltjesGamma(s.Function):
+# class StieltjesGamma(NormalFunction):
 #     @classmethod
-#     def eval(cls, x):
+#     def Eval(cls, x):
 #         return thread(s.stieltjes, )
 
 
-class Surd(s.Function):
+class Surd(NormalFunction):
     """
     Surd [x, n]
      Gives the real-valued nth root of x.
@@ -808,11 +843,11 @@ class Surd(s.Function):
     """
 
     @classmethod
-    def eval(cls, x, n):
+    def Eval(cls, x, n):
         return thread(s.real_root, x, n)
 
 
-class QuotientRemainder(s.Function):
+class QuotientRemainder(NormalFunction):
     """
     QuotientRemainder [m, n]
      Gives a list of the quotient and remainder from division of m by n.
@@ -822,11 +857,11 @@ class QuotientRemainder(s.Function):
         return List(m // n, m % n)
 
     @classmethod
-    def eval(cls, m, n):
+    def Eval(cls, m, n):
         thread(cls._qr, m, n)
 
 
-class GCD(s.Function):
+class GCD(NormalFunction):
     """
     GCD [x1, x2, x3, …]
      Gives the GCD of x1, x2, x3, …
@@ -837,7 +872,7 @@ class GCD(s.Function):
     """
 
     @classmethod
-    def eval(cls, *n):
+    def Eval(cls, *n):
         if len(n) == 1:
             return n
         gcd = n[0]
@@ -846,7 +881,7 @@ class GCD(s.Function):
         return gcd
 
 
-class LCM(s.Function):
+class LCM(NormalFunction):
     """
     LCM [x1, x2, x3, …]
      Gives the LCM of x1, x2, x3, …
@@ -857,7 +892,7 @@ class LCM(s.Function):
     """
 
     @classmethod
-    def eval(cls, *n):
+    def Eval(cls, *n):
         if len(n) == 1:
             return n
         lcm = n[0]
@@ -866,7 +901,7 @@ class LCM(s.Function):
         return lcm
 
 
-class PrimeQ(s.Function):
+class PrimeQ(NormalFunction):
     """
     PrimeQ [x]
      Returns True if x is Prime.
@@ -875,11 +910,11 @@ class PrimeQ(s.Function):
     """
 
     @classmethod
-    def eval(cls, n):
+    def Eval(cls, n):
         return thread(s.isprime, n)
 
 
-class CompositeQ(s.Function):
+class CompositeQ(NormalFunction):
     """
     CompositeQ [x]
      Returns True if x is Composite.
@@ -893,18 +928,18 @@ class CompositeQ(s.Function):
             return False
 
     @classmethod
-    def eval(cls, n):
+    def Eval(cls, n):
         return thread(cls._comp, n)
 
 
-class Equal(s.Function):
+class Equal(NormalFunction):
     """
     Equal [x1, x2, x3, …]
      Gives a condition x1 == x2 == x3 == …
     """
 
     @classmethod
-    def eval(cls, *args):
+    def Eval(cls, *args):
         if len(args) == 1:
             return None
         if len(args) == 2:
@@ -913,7 +948,7 @@ class Equal(s.Function):
         return s.And(*[s.Eq(args[x], args[x + 1]) for x in range(len(args) - 1)])
 
 
-class Set(s.Function):
+class Set(NormalFunction):
     """
     Set [x, n]
      x = n
@@ -921,7 +956,7 @@ class Set(s.Function):
     """
 
     @classmethod
-    def eval(cls, x, n):
+    def Eval(cls, x, n):
         refs = r.refs
         for ref in [
             refs.Constants.__dict__,
@@ -934,31 +969,34 @@ class Set(s.Function):
             if isinstance(n, s.Expr):
                 if x in n.atoms():
                     return None
-            refs.Symbols.__setattr__(x.name, n)
+            refs.Symbols[x.name] = n
             return n
         if isinstance(x, s.Function):
-            list_ = []
-            name = type(x).__name__
-            expr = n
-            num = 1
-            for arg in x.args:
-                if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
-                    expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
-                    list_.append(s.Symbol(f'*{num}'))
-                    num += 1
-                else:
-                    list_.append(arg)
-            if name not in refs.Functions:
-                refs.Functions[name] = {tuple(list_): (expr, ())}
-            else:
-                refs.Functions[name].update({tuple(list_): (expr, ())})
-            return n
+            pass
+            # TODO: think again
+            # list_ = []
+            # name = type(x).__name__
+            # expr = n
+            # num = 1
+            # for arg in x.args:
+            #     if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
+            #         expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
+            #         list_.append(s.Symbol(f'*{num}'))
+            #         num += 1
+            #     else:
+            #         list_.append(arg)
+            # if name not in refs.Functions:
+            #     refs.Functions[name] = {tuple(list_): (expr, ())}
+            # else:
+            #     refs.Functions[name].update({tuple(list_): (expr, ())})
+            # return n
         if isinstance(x, iterables):
             if isinstance(x, iterables) and len(x) == len(n):
                 return List.create(Set(a, b) for a, b in zip(x, n))
 
 
 def DelayedSet(f, x, n):
+    # TODO: again
     refs = r.refs
     for ref in [
         refs.Constants.__dict__,
@@ -971,7 +1009,7 @@ def DelayedSet(f, x, n):
         if isinstance(n, s.Expr):
             if x in n.atoms():
                 return None
-        refs.Symbols.__setattr__(x.name, n)
+        refs.Symbols[x.name] = n
         return n
     if isinstance(x, s.Function):
         list_ = []
@@ -995,7 +1033,7 @@ def DelayedSet(f, x, n):
             return List.create(DelayedSet(f, a, b) for a, b in zip(x, n))
 
 
-class Unset(s.Function):
+class Unset(NormalFunction):
     """
     Unset [x]
     x =.
@@ -1003,15 +1041,15 @@ class Unset(s.Function):
     """
 
     @classmethod
-    def eval(cls, n):
+    def Eval(cls, n):
         if isinstance(n, iterables):
             return List.create(Unset(x) for x in n)
-        if isinstance(n, s.Symbol) and str(n) in r.refs.Symbols.__dict__:
-            delattr(r.refs.Symbols, str(n))
+        if isinstance(n, s.Symbol) and str(n) in r.refs.Symbols:
+            del r.refs.Symbols[str(n)]
         return None
 
 
-class Rationalize(s.Function):
+class Rationalize(NormalFunction):
     """
     Rationalize [x]
      Converts an approximate number x to a nearby rational with small denominator.
@@ -1024,7 +1062,7 @@ class Rationalize(s.Function):
     """
 
     @classmethod
-    def eval(cls, x, dx=None):
+    def Eval(cls, x, dx=None):
         if isinstance(x, iterables):
             return List.create(Rationalize(n, dx) for n in x)
         if isinstance(x, (int, float, s.Number)):
@@ -1034,7 +1072,7 @@ class Rationalize(s.Function):
         return x
 
 
-class Subs(s.Function):
+class Subs(NormalFunction):
     """
     Subs [Expr, Rule]
      Transforms Expression expr with the given Rule.
@@ -1043,7 +1081,7 @@ class Subs(s.Function):
      Transforms Expression expr with the given Rules.
     """
     @classmethod
-    def eval(cls, expr, replacements):
+    def Eval(cls, expr, replacements):
         if not isinstance(replacements, iterables):
             replacements = (replacements,)
         if isinstance(expr, iterables):
@@ -1051,14 +1089,14 @@ class Subs(s.Function):
         if isinstance(expr, s.Expr):
             expr = expr.subs(replacements)
             replacement_dict = {str(k): str(v) for k, v in replacements}
-            for func in expr.atoms(s.Function):
+            for func in expr.atoms(NormalFunction):
                 # TODO: sympy function replacement
                 if str(func.func) in replacement_dict:
                     expr = expr.replace(func, Functions.call(replacement_dict[str(func.func)], *func.args))
             return expr
 
 
-class Factor(s.Function):
+class Factor(NormalFunction):
     """
     Factor [Expr, Modulus -> mod, Extension -> ext, GaussianIntegers -> bool}]
      Factors an Expression.
@@ -1067,14 +1105,14 @@ class Factor(s.Function):
     """
 
     @classmethod
-    def eval(cls, expr, *args):
+    def Eval(cls, expr, *args):
         kws = options(args, {"Modulus": "modulus",
                              "Extension": "extension",
                              "GaussianIntegers": "gaussian"})
         return thread(s.factor, expr, **kws)
 
 
-class Expand(s.Function):
+class Expand(NormalFunction):
     """
     Expand [Expr, Modulus -> mod]
      Expands an Expression.
@@ -1083,12 +1121,12 @@ class Expand(s.Function):
     """
 
     @classmethod
-    def eval(cls, expr, *ops):
+    def Eval(cls, expr, *ops):
         kws = options(ops, {"Modulus": "modulus", "Trig": "trig"}, {"trig": False})
         return thread(s.expand, expr, **kws)
 
 
-class TrigExpand(s.Function):
+class TrigExpand(NormalFunction):
     """
     TrigExpand [Expr]
      Expands only Trigonometric Functions.
@@ -1097,11 +1135,11 @@ class TrigExpand(s.Function):
     """
 
     @classmethod
-    def eval(cls, expr):
+    def Eval(cls, expr):
         return thread(s.expand_trig, expr)
 
 
-class nPr(s.Function):
+class nPr(NormalFunction):
     """
     nPr [n, r]
      Gives number of possibilities for choosing an ordered set of r objects from n objects.
@@ -1112,11 +1150,11 @@ class nPr(s.Function):
         return Factorial(x) / Factorial(x - q)
 
     @classmethod
-    def eval(cls, n, m):
+    def Eval(cls, n, m):
         return thread(cls._npr, n, m)
 
 
-class nCr(s.Function):
+class nCr(NormalFunction):
     """
     nCr [n, r]
      Gives The number of different, unordered combinations of r objects from n objects.
@@ -1127,11 +1165,11 @@ class nCr(s.Function):
         return Factorial(x) / (Factorial(x - q) * Factorial(q))
 
     @classmethod
-    def eval(cls, n, m):
+    def Eval(cls, n, m):
         return thread(cls._ncr, n, m)
 
 
-class N(s.Function):
+class N(NormalFunction):
     """
     N [expr]
      Gives the numerical value of expr.
@@ -1141,11 +1179,11 @@ class N(s.Function):
     """
 
     @classmethod
-    def eval(cls, n, *args):
+    def Eval(cls, n, *args):
         return thread(lambda x: s.N(x, *args), n)
 
 
-class D(s.Function):
+class D(NormalFunction):
     """
     D [f, x]
      Gives the partial derivative ∂f / ∂x.
@@ -1166,7 +1204,7 @@ class D(s.Function):
     """
 
     @classmethod
-    def eval(cls, f, *args):
+    def Eval(cls, f, *args):
         def threaded_diff(x, *d):
             if isinstance(x, iterables):
                 return List.create(threaded_diff(element, *d) for element in x)
@@ -1192,10 +1230,10 @@ class D(s.Function):
         return f
 
 
-class Integrate(s.Function):
+class Integrate(NormalFunction):
     # TODO: Doc
     @classmethod
-    def eval(cls, f, *args):
+    def Eval(cls, f, *args):
         def threaded_int(x, *i):
             if isinstance(x, iterables):
                 return List.create(threaded_int(element, *i) for element in x)
@@ -1207,7 +1245,7 @@ class Integrate(s.Function):
         return threaded_int(f, *args)
 
 
-class DiracDelta(s.Function):
+class DiracDelta(NormalFunction):
     """
     DiracDelta [x]
      represents the Dirac delta function δ(x).
@@ -1219,11 +1257,11 @@ class DiracDelta(s.Function):
     """
 
     @classmethod
-    def eval(cls, *args):
+    def Eval(cls, *args):
         return Times(*thread(s.DiracDelta, args))
 
 
-class HeavisideTheta(s.Function):
+class HeavisideTheta(NormalFunction):
     """
     HeavisideTheta [x]
      Represents the Heaviside theta function θ(x), equal to 0 for x < 0 and 1 for x > 0.
@@ -1232,18 +1270,18 @@ class HeavisideTheta(s.Function):
     """
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(s.Heaviside, x)
 
 
-class And(s.Function):
+class And(NormalFunction):
     @classmethod
-    def eval(cls, *args):
+    def Eval(cls, *args):
         # TODO: Proper And
         return s.And(*args)
 
 
-class Solve(s.Function):
+class Solve(NormalFunction):
     """
     Solve [expr, vars]
      Attempts to solve the system expr of equations or inequalities for the variables vars.
@@ -1251,7 +1289,7 @@ class Solve(s.Function):
     Uses sympy.solve().
     """
     @classmethod
-    def eval(cls, expr, v, dom=None):
+    def Eval(cls, expr, v, dom=None):
         # TODO: fix (?)
         if dom is None:
             dom = s.Complexes
@@ -1260,11 +1298,13 @@ class Solve(s.Function):
         # if not isinstance(expr, iterables + (s.core.relational._Inequality,)):
         #     ret = s.solveset(expr, v, dom)
         # else:
+        # if isinstance(expr, iterables):
+        #     expr = ands(expr)
         ret = s.solve(expr, v, dict=True)
         return ret
 
 
-class Simplify(s.Function):
+class Simplify(NormalFunction):
     """
     Simplify [expr]
      Attempts to simplify the expression expr.
@@ -1272,7 +1312,7 @@ class Simplify(s.Function):
     Equivalent to sympy.simplify().
     """
     @classmethod
-    def eval(cls, expr, assum=None):
+    def Eval(cls, expr, assum=None):
         if assum is not None:
             raise NotImplementedError("Assumptions not implemented.")
             # if isinstance(assum, iterables):
@@ -1285,7 +1325,7 @@ class Simplify(s.Function):
         return thread(s.simplify, expr)
 
 
-class IntegerPart(s.Function):
+class IntegerPart(NormalFunction):
     @staticmethod
     def integer_part(x):
         def non_complex_integer_part(n):
@@ -1297,11 +1337,11 @@ class IntegerPart(s.Function):
             return non_complex_integer_part(s.re(x)) + non_complex_integer_part(s.im(x)) * s.I
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(cls.integer_part, x)
 
 
-class FractionalPart(s.Function):
+class FractionalPart(NormalFunction):
     @staticmethod
     def frac_part(x):
         if x.is_infinite:
@@ -1312,11 +1352,11 @@ class FractionalPart(s.Function):
             return x - IntegerPart.integer_part(x)
 
     @classmethod
-    def eval(cls, x):
+    def Eval(cls, x):
         return thread(cls.frac_part, x)
 
 
-class Limit(s.Function):
+class Limit(NormalFunction):
     @staticmethod
     def lim(expr, lim, d='+-'):
         try:
@@ -1326,7 +1366,7 @@ class Limit(s.Function):
                 return s.nan
 
     @classmethod
-    def eval(cls, expr, lim, *args):
+    def Eval(cls, expr, lim, *args):
         kws = options(args, {'Direction': 'd'}, {'d': '+-'})
         d = kws['d']
         if str(d) in ("Reals", "TwoSided"):
@@ -1340,7 +1380,7 @@ class Limit(s.Function):
         return thread(lambda x: Limit.lim(x, lim, d), expr)
 
 
-class Sum(s.Function):
+class Sum(NormalFunction):
     @classmethod
     def limits(cls, a, b):
         if isinstance(a, s.Symbol) or (isinstance(b, s.Symbol) and is_integer(a)):
@@ -1365,7 +1405,7 @@ class Sum(s.Function):
         raise FunctionException("Invalid Limits.")
 
     @classmethod
-    def eval(cls, f, i, *xi):
+    def Eval(cls, f, i, *xi):
         i = (i,) + xi
         sum_ = f
         for limit in reversed(i):
@@ -1379,7 +1419,7 @@ class Sum(s.Function):
 
 class Product(Sum):
     @classmethod
-    def eval(cls, f, i, *xi):
+    def Eval(cls, f, i, *xi):
         i = (i,) + xi
         product = f
         for limit in reversed(i):
@@ -1390,7 +1430,7 @@ class Product(Sum):
         return product
 
 
-class Zeta(s.Function):
+class Zeta(NormalFunction):
     """
     Zeta [s]
      Gives the Riemann zeta function ζ(s).
@@ -1401,11 +1441,11 @@ class Zeta(s.Function):
     Equivalent to sympy.zeta().
     """
     @classmethod
-    def eval(cls, n, a=1):
+    def Eval(cls, n, a=1):
         return thread(s.zeta, n, a)
 
 
-class Range(s.Function):
+class Range(NormalFunction):
     """
     Range [i]
      Generates the list {1, 2, …, i}.
@@ -1432,11 +1472,11 @@ class Range(s.Function):
         return ret
 
     @classmethod
-    def eval(cls, i, n=None, di=1):
+    def Eval(cls, i, n=None, di=1):
         return thread(cls.single_range, i, n, di)
 
 
-class Permutations(s.Function):
+class Permutations(NormalFunction):
     """
     Permutations [list]
      Generates a list of all possible permutations of the elements in list.
@@ -1450,7 +1490,7 @@ class Permutations(s.Function):
     Uses itertools.permutations().
     """
     @classmethod
-    def eval(cls, li, n=None):
+    def Eval(cls, li, n=None):
         if n is not None:
             if isinstance(n, iterables):
                 n = Range(*n)
@@ -1467,7 +1507,7 @@ class Permutations(s.Function):
         return List.create(List.create(x) for x in set(permutations(li, n)))
 
 
-class Table(s.Function):
+class Table(NormalFunction):
     """
     Table [expr, n]
      Generates a list of n copies of expr.
@@ -1509,7 +1549,7 @@ class Table(s.Function):
         return Table._table(expr, arg[0], args)
 
     @classmethod
-    def eval(cls, expr, *args):
+    def Eval(cls, expr, *args):
         if not args:
             return expr
 
@@ -1526,7 +1566,7 @@ class Table(s.Function):
         return li
 
 
-class Subdivide(s.Function):
+class Subdivide(NormalFunction):
     """
     Subdivide [n]
      Generates the list {0, 1/n, 2/n, …, 1}.
@@ -1538,7 +1578,7 @@ class Subdivide(s.Function):
      Generates the list of values from subdividing the interval xmin to xmax.
     """
     @classmethod
-    def eval(cls, one, two=None, three=None):
+    def Eval(cls, one, two=None, three=None):
         if three is None:
             if two is None:
                 div = one
@@ -1566,7 +1606,7 @@ class Subdivide(s.Function):
         return li
 
 
-class Subsets(s.Function):
+class Subsets(NormalFunction):
     """
     Subsets [list]
      Gives a list of all possible subsets of list. (Power Set)
@@ -1578,7 +1618,7 @@ class Subsets(s.Function):
      Gives all subsets containing exactly n elements.
     """
     @classmethod
-    def eval(cls, li, n_spec=None):
+    def Eval(cls, li, n_spec=None):
         subsets = List()
 
         if n_spec is None:
@@ -1596,7 +1636,7 @@ class Subsets(s.Function):
         return subsets
 
 
-class FromPolarCoordinates(s.Function):
+class FromPolarCoordinates(NormalFunction):
     """
     FromPolarCoordinates[{r, θ}]
      Gives the {x, y} Cartesian coordinates corresponding to the polar coordinates {r, θ}.
@@ -1605,7 +1645,7 @@ class FromPolarCoordinates(s.Function):
      Gives the coordinates corresponding to the hyperspherical coordinates {r, θ1, …, θn - 2, ϕ}
     """
     @classmethod
-    def eval(cls, list_):
+    def Eval(cls, list_):
         # TODO: Thread
         length = len(list_)
         if length == 1:
@@ -1618,7 +1658,7 @@ class FromPolarCoordinates(s.Function):
         return ret
 
 
-class ToPolarCoordinates(s.Function):
+class ToPolarCoordinates(NormalFunction):
     """
     ToPolarCoordinates[{x, y}]
      Gives the {r, θ} polar coordinates corresponding to the Cartesian coordinates {x, y}.
@@ -1627,7 +1667,7 @@ class ToPolarCoordinates(s.Function):
      Gives the hyperspherical coordinates corresponding to the Cartesian coordinates {x1, x2, …, xn}.
     """
     @classmethod
-    def eval(cls, list_):
+    def Eval(cls, list_):
         # TODO: Thread
         list_ = List(*list_)
         length = len(list_)
@@ -1640,19 +1680,19 @@ class ToPolarCoordinates(s.Function):
         return ret
 
 
-class Together(s.Function):
+class Together(NormalFunction):
     @classmethod
-    def eval(cls, expr):
+    def Eval(cls, expr):
         return thread(lambda x: s.simplify(s.together(x)), expr)
 
 
-class Apart(s.Function):
+class Apart(NormalFunction):
     @classmethod
-    def eval(cls, expr, x=None):
+    def Eval(cls, expr, x=None):
         return thread(s.apart, expr, x)
 
 
-class Part(s.Function):
+class Part(NormalFunction):
     @staticmethod
     def get_part(expr, n):
         if not isinstance(expr, iterables):
@@ -1668,7 +1708,7 @@ class Part(s.Function):
         raise FunctionException(f'{n} is not a valid Part specification.')
 
     @classmethod
-    def eval(cls, expr, *args):
+    def Eval(cls, expr, *args):
         part = None
         if not args:
             return expr
@@ -1688,7 +1728,7 @@ class Part(s.Function):
         return Part(cls.get_part(part, arg), *args[1:])
 
 
-class Take(s.Function):
+class Take(NormalFunction):
     @staticmethod
     def ul(upper, lower):
         # I don't know how to do this better
@@ -1703,7 +1743,7 @@ class Take(s.Function):
         return upper, lower
 
     @classmethod
-    def eval(cls, expr, *seqs):
+    def Eval(cls, expr, *seqs):
         take = head = None
 
         if not seqs:
@@ -1790,36 +1830,47 @@ class Functions:
     r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)})
 
     @classmethod
-    def call(cls, f, *a):
+    def not_normal(cls, f: str):
+        if f in r.refs.BuiltIns:
+            return not issubclass(r.refs.BuiltIns[f], NormalFunction)
+        return False
+
+    @classmethod
+    def call(cls, f: str, *a):
         refs = r.refs
         if f in refs.NoCache:
             s.core.cache.clear_cache()
         if f in refs.BuiltIns:
             return refs.BuiltIns[f](*a)
-        if f in refs.Functions:
-            priority = {}
-            for header in list(refs.Functions[f])[::-1]:
-                match = True
-                matches = 0
-                if len(a) != len(header):
-                    continue
-                for ar, br in zip(a, header):
-                    if ar == br:
-                        matches += 1
-                        continue
-                    elif isinstance(br, s.Symbol) and br.name.startswith('*'):
-                        continue
-                    else:
-                        match = False
-                        break
-                if match:
-                    priority[matches] = header
-            if priority:
-                header = priority[max(priority)]
-                expr = refs.Functions[f][header][0]
-                reps = refs.Functions[f][header][1]
-                for ar, br in zip(a, header):
-                    if isinstance(br, s.Symbol) and br.name.startswith('*'):
-                        expr = Subs(expr, Rule(br, ar))
-                return Subs(expr, Rule.from_dict(vars(r.refs.Symbols)) + Rule.from_dict({x: x for x in reps}))
-        return s.Function(f)(*a)
+        # if f in refs.Functions:
+        #     priority = {}
+        #     for header in list(refs.Functions[f])[::-1]:
+        #         match = True
+        #         matches = 0
+        #         if len(a) != len(header):
+        #             continue
+        #         for ar, br in zip(a, header):
+        #             if ar == br:
+        #                 matches += 1
+        #                 continue
+        #             elif isinstance(br, s.Symbol) and br.name.startswith('*'):
+        #                 continue
+        #             else:
+        #                 match = False
+        #                 break
+        #         if match:
+        #             priority[matches] = header
+        #     if priority:
+        #         header = priority[max(priority)]
+        #         expr = refs.Functions[f][header][0]
+        #         reps = refs.Functions[f][header][1]
+        #         for ar, br in zip(a, header):
+        #             if isinstance(br, s.Symbol) and br.name.startswith('*'):
+        #                 expr = Subs(expr, Rule(br, ar))
+        #         return Subs(expr, Rule.from_dict(vars(r.refs.Symbols)) + Rule.from_dict({x: x for x in reps}))
+        return type(f, (NormalFunction,), {})(*a)
+
+    @classmethod
+    def pilot_call(cls, f: str, *a):
+        return type(f, (PilotFunction,), {})(*a)
+

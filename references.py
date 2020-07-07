@@ -29,7 +29,7 @@ class Constants:
     Degree = Pi / 180
 
 
-class Symbols:
+class Symbols(dict):
     pass
 
 

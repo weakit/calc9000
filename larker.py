@@ -1,105 +1,105 @@
-import expressions as ex
+import forge as op
 import sympy as s
 from datatypes import List, Rule
 from lark import Lark, Transformer, Tree, Token
 
 
 class AssignTransformer(Transformer):
-    @staticmethod
-    def plus(items):
-        return ex.plus(items)
-
-    @staticmethod
-    def subtract(items):
-        return ex.subtract(items)
-
-    @staticmethod
-    def times(items):
-        return ex.times(items)
-
-    @staticmethod
-    def dot(items):
-        return ex.dot(items)
-
-    @staticmethod
-    def positive(items):
-        return ex.positive(items)
-
-    @staticmethod
-    def negative(items):
-        return ex.negative(items)
-
-    @staticmethod
-    def divide(items):
-        return ex.divide(items)
-
-    @staticmethod
-    def power(items):
-        return ex.power(items)
-
-    @staticmethod
-    def factorial(items):
-        return ex.factorial(items)
-
-    @staticmethod
-    def function(items):
-        return ex.unset_function(items)
-
-    @staticmethod
-    def list(items):
-        return List(*items)
-
-    @staticmethod
-    def rule(items):
-        return Rule(*items)
-
-    @staticmethod
-    def rule_(items):
-        return Rule(*items)
-
-    @staticmethod
-    def relation(items):
-        return ex.relations(items)
-
-    @staticmethod
-    def and_(items):
-        return ex.And(items)
-
-    @staticmethod
-    def out(items):
-        return ex.out(items)
-
-    @staticmethod
-    def part(items):
-        return ex.part(items)
-
-    @staticmethod
-    def replace(items):
-        return ex.replace(items)
+    # @staticmethod
+    # def plus(items):
+    #     return op.plus(items)
+    #
+    # @staticmethod
+    # def subtract(items):
+    #     return op.subtract(items)
+    #
+    # @staticmethod
+    # def times(items):
+    #     return op.times(items)
+    #
+    # @staticmethod
+    # def dot(items):
+    #     return op.dot(items)
+    #
+    # @staticmethod
+    # def positive(items):
+    #     return op.positive(items)
+    #
+    # @staticmethod
+    # def negative(items):
+    #     return op.negative(items)
+    #
+    # @staticmethod
+    # def divide(items):
+    #     return op.divide(items)
+    #
+    # @staticmethod
+    # def power(items):
+    #     return op.power(items)
+    #
+    # @staticmethod
+    # def factorial(items):
+    #     return op.factorial(items)
+    #
+    # @staticmethod
+    # def function(items):
+    #     return op.unset_function(items)
+    #
+    # @staticmethod
+    # def list(items):
+    #     return List(*items)
+    #
+    # @staticmethod
+    # def rule(items):
+    #     return Rule(*items)
+    #
+    # @staticmethod
+    # def rule_(items):
+    #     return Rule(*items)
+    #
+    # @staticmethod
+    # def relation(items):
+    #     return op.relations(items)
+    #
+    # @staticmethod
+    # def and_(items):
+    #     return op.And(items)
+    #
+    # @staticmethod
+    # def out(items):
+    #     return op.out(items)
+    #
+    # @staticmethod
+    # def part(items):
+    #     return op.part(items)
+    #
+    # @staticmethod
+    # def replace(items):
+    #     return op.replace(items)
 
     @staticmethod
     def INT(n):
-        return ex.numeric(n)
+        return op.numeric(n)
 
     @staticmethod
     def FLOAT(n):
-        return ex.numeric(n)
+        return op.numeric(n)
 
     @staticmethod
     def CNAME(n):
         return str(n)
 
-    @staticmethod
-    def ESCAPED_STRING(n):
-        return str(n)[1:-1]
+    # @staticmethod
+    # def ESCAPED_STRING(n):
+    #     return str(n)[1:-1]
 
-    @staticmethod
-    def symbol(n):
-        return str(n[0])
+    # @staticmethod
+    # def symbol(n):
+    #     return s.Symbol(str(n[0]))
 
-    @staticmethod
-    def RELATIONAL(n):
-        return str(n)
+    # @staticmethod
+    # def RELATIONAL(n):
+    #     return str(n)
 
     def transform(self, tree):
         if isinstance(tree, Token):
@@ -112,13 +112,13 @@ class DelayedAssignTransformer(AssignTransformer):
         self.funcs = funcs
         super().__init__()
 
-    @staticmethod
-    def symbol(n):
-        return s.Symbol(str(n[0]))
-
-    def function(self, items):
-        self.funcs.append(items[0])
-        return ex.unset_function(items)
+    # @staticmethod
+    # def symbol(n):
+    #     return s.Symbol(str(n[0]))
+    #
+    # def function(self, items):
+    #     self.funcs.append(items[0])
+    #     return op.unset_function(items)
 
 
 class SymbolTransformer(AssignTransformer):
@@ -128,13 +128,13 @@ class SymbolTransformer(AssignTransformer):
             lark = f.read()
         self.parser = Lark(lark, start='start', parser="lalr")
 
-    @staticmethod
-    def symbol(n):
-        return ex.symbol(n[0])
-
-    @staticmethod
-    def function(items):
-        return ex.function(items)
+    # @staticmethod
+    # def symbol(n):
+    #     return op.symbol(n[0])
+    #
+    # @staticmethod
+    # def function(items):
+    #     return op.function(items)
 
     def handle(self, tree: Tree):
         if tree.data == "set":
@@ -142,24 +142,24 @@ class SymbolTransformer(AssignTransformer):
             for x in range(len(children) - 1):
                 children[x] = assigner.transform(children[x])
             children[-1] = self.transform(children[-1])
-            return ex.assign(children)
+            return op.assign(children)
         if tree.data == "unset":
-            return ex.unset(assigner.transform(tree.children[0]))
+            return op.unset(assigner.transform(tree.children[0]))
         if tree.data == "set_delayed":
             f = []
             transformer = DelayedAssignTransformer(f)
             children = tree.children[:]
             for x in range(len(children)):
                 children[x] = transformer.transform(children[x])
-            return ex.delayed(children, list(transformer.funcs))
+            return op.delayed(children, list(transformer.funcs))
 
     def evaluate(self, t):
         parsed = self.parser.parse(t)
         if isinstance(parsed, Tree):
             if parsed.data in ["set", "unset", "set_delayed"]:
                 return self.handle(parsed)
-            return self.transform(parsed)
-        return parsed
+            return op.operate(self.transform(parsed))
+        return op.operate(parsed)
 
 
 if __name__ == "larker":
