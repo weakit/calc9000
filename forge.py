@@ -16,7 +16,9 @@ basic_ops = (
     'divide',
     'power',
     'negative',
-    'positive'
+    'positive',
+    'dot',
+    'factorial',
 )
 
 
@@ -120,6 +122,8 @@ def delayed(n, f):
     return functions.DelayedSet(f, *n)
 
 
+# TODO: Out, Part, Replace and Logical Operators
+
 def pilot(tree: Tree):
     if not isinstance(tree, Tree):
         return tree
@@ -129,6 +133,8 @@ def pilot(tree: Tree):
         return globals()[tree.data]([pilot(x) for x in tree.children])
     if tree.data == 'list':
         return List(*(pilot(x) for x in tree.children))
+    if tree.data == 'rule':
+        return Rule(*(pilot(x) for x in tree.children))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':
@@ -146,6 +152,8 @@ def operate(tree: Tree):
         return globals()[tree.data]([operate(x) for x in tree.children])
     if tree.data == 'list':
         return List(*(operate(x) for x in tree.children))
+    if tree.data == 'rule':
+        return Rule(*(operate(x) for x in tree.children))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':
