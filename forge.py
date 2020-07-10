@@ -106,7 +106,7 @@ def unset(n):
     return Functions.call('Unset', pilot(n))
 
 
-def And(n):
+def _and(n):
     return Functions.call('And', *n)
 
 
@@ -122,7 +122,7 @@ def delayed(n, f):
     return functions.DelayedSet(f, *n)
 
 
-# TODO: Out, Part, Replace and Logical Operators
+# TODO: Part, Replace and Logical Operators
 
 def pilot(tree: Tree):
     if not isinstance(tree, Tree):
@@ -154,6 +154,8 @@ def operate(tree: Tree):
         return List(*(operate(x) for x in tree.children))
     if tree.data == 'rule':
         return Rule(*(operate(x) for x in tree.children))
+    if tree.data == 'out':
+        return out(*(operate(x) for x in tree.children))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':

@@ -27,15 +27,21 @@ class NormalFunction(s.Function):
 
     @classmethod
     def eval(cls, *args):
-        return cls.exec(*(cls._make_replacements(x) for x in args))
+        if hasattr(cls, 'exec'):
+            return cls.exec(*(cls._make_replacements(x) for x in args))
+
+
+class ExplicitFunction(s.Function):
+    @staticmethod
+    def _make_replacements(x: s.Basic):
+        # if hasattr(x, 'subs'):
+        #     return x.subs(r.refs.Symbols)
+        return x
 
     @classmethod
-    def exec(cls, *args):
-        return None
-
-
-class ExplictFunction(s.Function):
-    pass
+    def eval(cls, *args):
+        if hasattr(cls, 'exec'):
+            return cls.exec(*(cls._make_replacements(x) for x in args))
 
 
 class PilotFunction(s.Function):
@@ -45,12 +51,15 @@ class PilotFunction(s.Function):
     """
     @staticmethod
     def land_in(expr):
+        if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
+            return List.create(PilotFunction.land_in(x) for x in expr)
         for x in expr.atoms(PilotFunction):
             expr = expr.subs(x, x.land())
+        expr = expr.subs(r.refs.Symbols)
         return expr
 
     def land(self):
-        return Functions.call(type(self).__name__, *(PilotFunction.land_in(x) for x in self.args))
+        return Functions.call(type(self).__name__, *self.args)
 
     @classmethod
     def exec(cls):
@@ -1100,11 +1109,13 @@ class Subs(NormalFunction):
             return List.create(Subs(x, replacements) for x in expr)
         if isinstance(expr, s.Expr):
             expr = expr.subs(replacements)
-            replacement_dict = {str(k): str(v) for k, v in replacements}
-            for func in expr.atoms(NormalFunction):
+            replacement_dict = {str(k): v for k, v in replacements}
+            for func in expr.atoms(s.Function):
                 # TODO: sympy function replacement
+                if str(func) in replacement_dict:
+                    expr = expr.replace(func, replacement_dict[str(func)])
                 if str(func.func) in replacement_dict:
-                    expr = expr.replace(func, Functions.call(replacement_dict[str(func.func)], *func.args))
+                    expr = expr.replace(func, Functions.call(str(replacement_dict[str(func.func)]), *func.args))
             return expr
 
 
@@ -1485,7 +1496,9 @@ class Range(NormalFunction):
 
     @classmethod
     def exec(cls, i, n=None, di=1):
-        return thread(cls.single_range, i, n, di)
+        if isinstance(i, iterables) or isinstance(n, iterables) or isinstance(di, iterables):
+            return thread(cls.exec, i, n, di)
+        return cls.single_range(i, n, di)
 
 
 class Permutations(NormalFunction):
@@ -1519,7 +1532,7 @@ class Permutations(NormalFunction):
         return List.create(List.create(x) for x in set(permutations(li, n)))
 
 
-class Table(NormalFunction):
+class Table(ExplicitFunction):
     """
     Table [expr, n]
      Generates a list of n copies of expr.
@@ -1543,20 +1556,20 @@ class Table(NormalFunction):
     def _table(expr, repl, args):
         li = List()
         for arg in args:
-            li.append(Subs(expr, Rule(repl, arg)))
+            li.append(PilotFunction.land_in(Subs(expr, Rule(repl, arg))))
         return li
 
     @staticmethod
     def _range_parse(expr, arg):
         if arg.is_number:
-            return List.create((expr,) * arg)
+            return List.create((PilotFunction.land_in(expr),) * arg)
         if len(arg) == 2 and isinstance(arg[1], iterables):
             args = arg[1]
         elif len(arg) >= 2:
             args = Range(*arg[1:])
         else:
             raise FunctionException('Invalid Bounds.')  # TODO: Warning
-        if not isinstance(arg[0], s.Symbol):
+        if not (isinstance(arg[0], s.Symbol) or isinstance(arg[0], s.Function)):
             raise FunctionException(f'Cannot use {arg[0]} as an Iterator.')
         return Table._table(expr, arg[0], args)
 
@@ -1564,6 +1577,8 @@ class Table(NormalFunction):
     def exec(cls, expr, *args):
         if not args:
             return expr
+
+        args = PilotFunction.land_in(args)
 
         if len(args) == 1:
             return cls._range_parse(expr, args[0])
@@ -1792,16 +1807,10 @@ class Take(NormalFunction):
                 raise FunctionException(f'{seq} is not a valid Take specification.')
 
 
-class Example(ExplictFunction):
-    @classmethod
-    def eval(cls, arg):
-        return arg.land()
-
-
 class Functions:
     # TODO: Move functions into class (not doing that/finding a better solution was naive)
 
-    # TODO: Finish Explicit Functions
+    # TODO: Finish ExplicitExplicit Functions
     # TODO: Convert NormalFunctions to ExplicitFunctions
     # TODO: Double Check
     # TODO: Figure out Custom Functions
@@ -1861,13 +1870,13 @@ class Functions:
     @classmethod
     def is_explicit(cls, f: str) -> bool:
         if f in r.refs.BuiltIns:
-            return not issubclass(r.refs.BuiltIns[f], ExplictFunction)
+            return not issubclass(r.refs.BuiltIns[f], ExplicitFunction)
         return False
 
     @classmethod
     def call(cls, f: str, *a):
         refs = r.refs
-        if f in refs.NoCache:
+        if f in refs.NoCache or cls.not_normal(f):
             s.core.cache.clear_cache()
         if f in refs.BuiltIns:
             return refs.BuiltIns[f](*a)

@@ -1,6 +1,6 @@
 import forge as op
-import sympy as s
-from datatypes import List, Rule
+# import sympy as s
+# from datatypes import List, Rule
 from lark import Lark, Transformer, Tree, Token
 
 
