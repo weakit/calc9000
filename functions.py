@@ -1165,7 +1165,8 @@ class TrigExpand(NormalFunction):
 class nPr(NormalFunction):
     """
     nPr [n, r]
-     Gives number of possibilities for choosing an ordered set of r objects from n objects.
+     Gives number of possibilities for choosing an ordered set of r objects from
+     n objects.
     """
 
     @staticmethod
@@ -1307,7 +1308,8 @@ class And(NormalFunction):
 class Solve(NormalFunction):
     """
     Solve [expr, vars]
-     Attempts to solve the system expr of equations or inequalities for the variables vars.
+     Attempts to solve the system expr of equations or inequalities for the
+     variables vars.
 
     Uses sympy.solve().
     """
@@ -1548,7 +1550,7 @@ class Table(ExplicitFunction):
 
     Table [expr, {i, {i1, i2, …}}]
      Uses the successive values i1, i2, ….
-    
+
     Table [expr, {i, imin, imax}, {j, jmin, jmax}, …]
      Gives a nested list. The list associated with i is outermost.
     """
@@ -1569,7 +1571,7 @@ class Table(ExplicitFunction):
             args = Range(*arg[1:])
         else:
             raise FunctionException('Invalid Bounds.')  # TODO: Warning
-        if not (isinstance(arg[0], s.Symbol) or isinstance(arg[0], s.Function)):
+        if not (isinstance(arg[0], (s.Symbol, s.Function))):
             raise FunctionException(f'Cannot use {arg[0]} as an Iterator.')
         return Table._table(expr, arg[0], args)
 
@@ -1599,7 +1601,8 @@ class Subdivide(NormalFunction):
      Generates the list {0, 1/n, 2/n, …, 1}.
 
     Subdivide [xmax, n]
-     Generates the list of values obtained by subdividing the interval 0 to xmax into n equal parts.
+     Generates the list of values obtained by subdividing the interval 0 to xmax
+     into n equal parts.
 
     Subdivide [xmin, xmax, n]
      Generates the list of values from subdividing the interval xmin to xmax.
@@ -1637,7 +1640,7 @@ class Subsets(NormalFunction):
     """
     Subsets [list]
      Gives a list of all possible subsets of list. (Power Set)
-    
+
     Subsets [list, n]
      Gives all subsets containing at most n elements.
 
@@ -1666,10 +1669,12 @@ class Subsets(NormalFunction):
 class FromPolarCoordinates(NormalFunction):
     """
     FromPolarCoordinates[{r, θ}]
-     Gives the {x, y} Cartesian coordinates corresponding to the polar coordinates {r, θ}.
+     Gives the {x, y} Cartesian coordinates corresponding to the
+     polar coordinates {r, θ}.
 
     FromPolarCoordinates[{r, θ1, …, θn - 2, ϕ}]
-     Gives the coordinates corresponding to the hyperspherical coordinates {r, θ1, …, θn - 2, ϕ}
+     Gives the coordinates corresponding to the hyperspherical
+     coordinates {r, θ1, …, θn - 2, ϕ}
     """
     @classmethod
     def exec(cls, list_):
@@ -1688,10 +1693,12 @@ class FromPolarCoordinates(NormalFunction):
 class ToPolarCoordinates(NormalFunction):
     """
     ToPolarCoordinates[{x, y}]
-     Gives the {r, θ} polar coordinates corresponding to the Cartesian coordinates {x, y}.
+     Gives the {r, θ} polar coordinates corresponding to the Cartesian
+     coordinates {x, y}.
 
     ToPolarCoordinates[{x1, x2, …, xn}]
-     Gives the hyperspherical coordinates corresponding to the Cartesian coordinates {x1, x2, …, xn}.
+     Gives the hyperspherical coordinates corresponding to the Cartesian
+     coordinates {x1, x2, …, xn}.
     """
     @classmethod
     def exec(cls, list_):
