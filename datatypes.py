@@ -164,6 +164,10 @@ class List(s.Basic):  # probably a bad idea
     def append(self, *x):
         self.value += list(x)
 
+    # noinspection PyProtectedMember
+    def _pretty(self, printer=None):
+        return printer._print_seq(self.value, '{', '}')
+
 
 class Rule(s.AtomicExpr):
     # TODO: Pretty and LaTeX printing

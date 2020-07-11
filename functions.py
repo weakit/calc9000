@@ -55,6 +55,7 @@ class PilotFunction(s.Function):
             return List.create(PilotFunction.land_in(x) for x in expr)
         for x in expr.atoms(PilotFunction):
             expr = expr.subs(x, x.land())
+        expr = expr.subs(r.refs.Constants.__dict__)
         expr = expr.subs(r.refs.Symbols)
         return expr
 
@@ -1815,9 +1816,7 @@ class Take(NormalFunction):
 
 
 class Functions:
-    # TODO: Move functions into class (not doing that/finding a better solution was naive)
-
-    # TODO: Finish ExplicitExplicit Functions
+    # TODO: Finish Explicit Functions
     # TODO: Convert NormalFunctions to ExplicitFunctions
     # TODO: Double Check
     # TODO: Figure out Custom Functions

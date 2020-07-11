@@ -155,7 +155,7 @@ def operate(tree: Tree):
     if tree.data == 'rule':
         return Rule(*(operate(x) for x in tree.children))
     if tree.data == 'out':
-        return out(*(operate(x) for x in tree.children))
+        return out(tree.children)
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':

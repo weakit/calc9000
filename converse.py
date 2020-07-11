@@ -17,7 +17,10 @@ def process(input_text: str):
 
 def process_pretty(input_text):
     raw = process(input_text)
-    return s.pretty(raw)
+    try:
+        return s.pretty(raw)
+    except TypeError:
+        return raw
 
 
 def current_line():
