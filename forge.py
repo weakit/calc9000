@@ -135,6 +135,8 @@ def pilot(tree: Tree):
         return List(*(pilot(x) for x in tree.children))
     if tree.data == 'rule':
         return Rule(*(pilot(x) for x in tree.children))
+    if tree.data == 'part':
+        return Functions.pilot_call('Part', *(pilot(x) for x in tree.children))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':
@@ -154,6 +156,8 @@ def operate(tree: Tree):
         return List(*(operate(x) for x in tree.children))
     if tree.data == 'rule':
         return Rule(*(operate(x) for x in tree.children))
+    if tree.data == 'part':
+        return Functions.call('Part', *(operate(x) for x in tree.children))
     if tree.data == 'out':
         return out(tree.children)
     if tree.data == 'RELATIONAL':

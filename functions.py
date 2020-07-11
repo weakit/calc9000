@@ -1744,22 +1744,24 @@ class Part(NormalFunction):
 
     @classmethod
     def exec(cls, expr, *args):
-        part = None
+        part = head = None
         if not args:
             return expr
         if hasattr(expr, 'args'):
             part = expr.args
+            head = expr.__class__
         elif hasattr(expr, '__getitem__'):
             part = expr
+            head = List
         arg = args[0]
         if arg == s.S.Zero:
             return s.Symbol(type(expr).__name__)
         if not part:
             raise FunctionException(f'{expr} does not have Part {arg}')
-        if arg == r.refs.Constants.All:
+        if arg == r.refs.Constants.All:  # TODO: add None
             arg = Range(len(expr))
         if isinstance(arg, iterables):
-            return List.create(Part(cls.get_part(part, x), *args[1:]) for x in arg)
+            return head(*(Part(cls.get_part(part, x), *args[1:]) for x in arg))
         return Part(cls.get_part(part, arg), *args[1:])
 
 
@@ -1778,6 +1780,34 @@ class Take(NormalFunction):
         return upper, lower
 
     @classmethod
+    def get_take(cls, take, seq):
+        if seq == r.refs.Constants.All:
+            return take
+        # TODO: add None
+        if isinstance(seq, iterables):
+            if len(seq) == 1:
+                return Part(take, seq)
+            lower = seq[0]
+            upper = seq[1]
+            step = 1
+            if 0 in (lower, upper, step) or not (is_integer(lower) and is_integer(upper) and is_integer(step)):
+                raise FunctionException('Invalid Bounds for Take.')
+            if len(seq) == 3:
+                step = seq[2]
+            if step > 0:
+                upper, lower = cls.ul(upper, lower)
+            else:
+                upper -= 1
+                lower, upper = cls.ul(lower, upper)
+            return take[lower:upper:step]
+        if is_integer(seq):
+            if seq > 0:
+                return take[:seq]
+            return take[seq:]
+        else:
+            raise FunctionException(f'{seq} is not a valid Take specification.')
+
+    @classmethod
     def exec(cls, expr, *seqs):
         take = head = None
 
@@ -1790,29 +1820,10 @@ class Take(NormalFunction):
             take = expr
             head = List
 
-        for seq in seqs:
-            if isinstance(seq, iterables):
-                if len(seq) == 1:
-                    return Part(take, seq)
-                lower = seq[0]
-                upper = seq[1]
-                step = 1
-                if 0 in (lower, upper, step) or not (is_integer(lower) and is_integer(upper) and is_integer(step)):
-                    raise FunctionException('Invalid Bounds for Take.')
-                if len(seq) == 3:
-                    step = seq[2]
-                if step > 0:
-                    upper, lower = cls.ul(upper, lower)
-                else:
-                    upper -= 1
-                    lower, upper = cls.ul(lower, upper)
-                return head(*take[lower:upper:step])
-            if is_integer(seq):
-                if seq > 0:
-                    return head(*take[:seq])
-                return head(*take[seq:])
-            else:
-                raise FunctionException(f'{seq} is not a valid Take specification.')
+        if len(seqs) > 1:
+            return head(*(cls.exec(x, *seqs[1:]) for x in cls.get_take(take, seqs[0])))
+        else:
+            return head(*cls.get_take(take, seqs[0]))
 
 
 class Functions:
