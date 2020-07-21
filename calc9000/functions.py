@@ -55,7 +55,7 @@ class PilotFunction(s.Function):
             return List.create(PilotFunction.land_in(x) for x in expr)
         for x in expr.atoms(PilotFunction):
             expr = expr.subs(x, x.land())
-        expr = expr.subs(r.refs.Constants.__dict__)
+        expr = expr.subs(r.refs.Constants.Dict)
         expr = expr.subs(r.refs.Symbols)
         return expr
 
@@ -857,10 +857,17 @@ class Sqrt(NormalFunction):
         return thread(s.sqrt, x)
 
 
-# class StieltjesGamma(NormalFunction):
-#     @classmethod
-#     def exec(cls, x):
-#         return thread(s.stieltjes, )
+class StieltjesGamma(NormalFunction):
+    @classmethod
+    def exec(cls, x):
+        return thread(s.stieltjes, x)
+
+
+class Gamma(NormalFunction):
+    @classmethod
+    def exec(cls, x):
+        #TODO: incomplete gamma
+        return thread(s.gamma, x)
 
 
 class Surd(NormalFunction):
@@ -988,9 +995,9 @@ class Set(NormalFunction):
     def exec(cls, x, n):
         refs = r.refs
         for ref in [
-            refs.Constants.__dict__,
+            refs.Constants.Dict,
             refs.BuiltIns,
-            refs.Protected.__dict__
+            refs.Protected.Dict
         ]:
             if str(x) in ref:
                 raise FunctionException(f'Symbol {x} cannot be Assigned to.')
@@ -1024,13 +1031,30 @@ class Set(NormalFunction):
                 return List.create(Set(a, b) for a, b in zip(x, n))
 
 
+class Unset(NormalFunction):
+    """
+    Unset [x]
+    x =.
+        Deletes a symbol or list of symbols x, if they were previously assigned a value.
+    """
+
+    @classmethod
+    def exec(cls, n):
+        if isinstance(n, iterables):
+            return List.create(Unset(x) for x in n)
+        if isinstance(n, s.Symbol) and str(n) in r.refs.Symbols:
+            del r.refs.Symbols[str(n)]
+        # TODO: return 'Nothing' when done
+        return None
+
+
 def DelayedSet(f, x, n):
     # TODO: again
     refs = r.refs
     for ref in [
-        refs.Constants.__dict__,
+        refs.Constants.Dict,
         refs.BuiltIns,
-        refs.Protected.__dict__
+        refs.Protected.Dict
     ]:
         if str(x) in ref:
             raise FunctionException(f'Symbol {x} cannot be Assigned to.')
@@ -1060,22 +1084,6 @@ def DelayedSet(f, x, n):
     if isinstance(x, iterables):
         if isinstance(x, iterables) and len(x) == len(n):
             return List.create(DelayedSet(f, a, b) for a, b in zip(x, n))
-
-
-class Unset(NormalFunction):
-    """
-    Unset [x]
-    x =.
-        Deletes a symbol or list of symbols x, if they were previously assigned a value.
-    """
-
-    @classmethod
-    def exec(cls, n):
-        if isinstance(n, iterables):
-            return List.create(Unset(x) for x in n)
-        if isinstance(n, s.Symbol) and str(n) in r.refs.Symbols:
-            del r.refs.Symbols[str(n)]
-        return None
 
 
 class Rationalize(NormalFunction):

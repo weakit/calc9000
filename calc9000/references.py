@@ -7,6 +7,9 @@ class Protected:
     List = None
 
 
+Protected.Dict = {x: Protected.__dict__[x] for x in dir(Protected) if not x.startswith('__')}
+
+
 class Constants:
     # Caveats: pi
     # TODO: Nothing and other constants
@@ -26,7 +29,11 @@ class Constants:
     Integers = s.Integers
     Rationals = s.Rationals
     All = s.Symbol('All')
+    Nothing = s.Symbol('Nothing')
     Degree = Pi / 180
+
+
+Constants.Dict = {x: Constants.__dict__[x] for x in dir(Constants) if not x.startswith('__')}
 
 
 class Symbols(dict):

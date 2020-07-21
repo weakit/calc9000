@@ -9,19 +9,18 @@ grammar = """
 
 ?start: expression
       | replace
-      | assign
 
 replace: expression "/." expression
 
-?assign: set
-       | set_delayed
-       | unset
+// set: (expression "=")+ expression
+// set_delayed: expression ":=" expression
+// unset: expression "=" "."
 
-set: (expression "=")+ expression
-set_delayed: expression ":=" expression
-unset: expression "=" "."
+?expression: assign
 
-?expression: logic
+?assign: logic "=" assign -> set
+       | logic ("=" "."|"=.") -> unset
+       | logic
 
 ?logic: rule
       | logic ("&&" rule)+ -> and_
@@ -258,8 +257,8 @@ class SymbolTransformer(AssignTransformer):
     def evaluate(self, t):
         parsed = self.parser.parse(t)
         if isinstance(parsed, Tree):
-            if parsed.data in ["set", "unset", "set_delayed"]:
-                return self.handle(parsed)
+            # if parsed.data in ["set", "unset", "set_delayed"]:
+            #     return self.handle(parsed)
             return op.operate(self.transform(parsed))
         return op.operate(parsed)
 

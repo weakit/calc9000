@@ -26,8 +26,8 @@ def numeric(n):
 
 
 def symbol(n):
-    if n in r.refs.Constants.__dict__:
-        return r.refs.Constants.__dict__[n]
+    if n in r.refs.Constants.Dict:
+        return r.refs.Constants.Dict[n]
     if n not in r.refs.Symbols:
         r.refs.Symbols[n] = s.Symbol(n)
     ret = r.refs.Symbols[n]
@@ -95,7 +95,7 @@ def relations(n):
 
 
 def assign(n):
-    n = [pilot(x) for x in n]
+    # n = [pilot(x) for x in n]
     for x in n[1:-1]:
         Functions.call('Set', x, n[-1])
     return Functions.call('Set', n[0], n[-1])
@@ -136,6 +136,8 @@ def pilot(tree: Tree):
         return Rule(*(pilot(x) for x in tree.children))
     if tree.data == 'part':
         return Functions.pilot_call('Part', *(pilot(x) for x in tree.children))
+    if tree.data == 'set':
+        return Functions.pilot_call('Set', pilot(tree.children[0]), pilot(tree.children[1]))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':
@@ -159,6 +161,10 @@ def operate(tree: Tree):
         return Functions.call('Part', *(operate(x) for x in tree.children))
     if tree.data == 'out':
         return out(tree.children)
+    if tree.data == 'set':
+        return Functions.call('Set', pilot(tree.children[0]), operate(tree.children[1]))
+    if tree.data == 'unset':
+        return Functions.call('Unset', pilot(tree.children[0]))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':
