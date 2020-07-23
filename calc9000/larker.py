@@ -20,6 +20,7 @@ replace: expression "/." expression
 
 ?assign: logic "=" assign -> set
        | logic ("=" "."|"=.") -> unset
+       | logic ":=" assign -> set_delayed
        | logic
 
 ?logic: rule

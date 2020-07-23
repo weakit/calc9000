@@ -26,14 +26,7 @@ def numeric(n):
 
 
 def symbol(n):
-    if n in r.refs.Constants.Dict:
-        return r.refs.Constants.Dict[n]
-    if n not in r.refs.Symbols:
-        r.refs.Symbols[n] = s.Symbol(n)
-    ret = r.refs.Symbols[n]
-    if ret != s.symbols(n) and isinstance(ret, s.Expr):
-        ret = ret.subs(vars(r.refs.Symbols))
-    return ret
+    return functions.get_symbol_value(n)
 
 
 def function(n):
@@ -138,6 +131,8 @@ def pilot(tree: Tree):
         return Functions.pilot_call('Part', *(pilot(x) for x in tree.children))
     if tree.data == 'set':
         return Functions.pilot_call('Set', pilot(tree.children[0]), pilot(tree.children[1]))
+    if tree.data == 'set_delayed':
+        return Functions.call('SetDelayed', pilot(tree.children[0]), pilot(tree.children[1]))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':
@@ -162,7 +157,9 @@ def operate(tree: Tree):
     if tree.data == 'out':
         return out(tree.children)
     if tree.data == 'set':
-        return Functions.call('Set', pilot(tree.children[0]), operate(tree.children[1]))
+        return functions.real_set(pilot(tree.children[0]), operate(tree.children[1]))
+    if tree.data == 'set_delayed':
+        return Functions.call('SetDelayed', pilot(tree.children[0]), pilot(tree.children[1]))
     if tree.data == 'unset':
         return Functions.call('Unset', pilot(tree.children[0]))
     if tree.data == 'RELATIONAL':
@@ -171,7 +168,7 @@ def operate(tree: Tree):
         return relations([operate(x) for x in tree.children])
     if tree.data == 'function':
         name = str(tree.children[0].children[0])
-        if Functions.not_normal(name):
+        if Functions.is_explicit(name):
             return Functions.call(name, *(pilot(x) for x in tree.children[1:]))
         return Functions.call(name, *(operate(x) for x in tree.children[1:]))
     return tree

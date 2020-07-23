@@ -14,6 +14,20 @@ class FunctionException(Exception):
     pass
 
 
+def get_symbol_value(n):
+    # TODO: rethink structure
+    # if n in r.refs.Constants.Dict:
+    #     return r.refs.Constants.Dict[n]
+    if n not in r.refs.Symbols:
+        r.refs.Symbols[n] = s.Symbol(n)
+    ret = r.refs.Symbols[n]
+    if type(ret) is Delay:
+        return PilotFunction.land_in(ret.args[0])
+    if ret != s.symbols(n) and isinstance(ret, s.Expr):
+        return PilotFunction.land_in(ret)
+    return ret
+
+
 class NormalFunction(s.Function):
     """
     Ordinary Function Class
@@ -53,10 +67,35 @@ class PilotFunction(s.Function):
     def land_in(expr):
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List.create(PilotFunction.land_in(x) for x in expr)
-        for x in expr.atoms(PilotFunction):
-            expr = expr.subs(x, x.land())
+
         expr = expr.subs(r.refs.Constants.Dict)
         expr = expr.subs(r.refs.Symbols)
+
+        def extend(ex):
+            if not hasattr(ex, 'args') or not ex.args or not isinstance(ex.args, iterables):
+                return ex
+
+            if Functions.is_explicit(type(ex).__name__):
+                return ex.land()
+
+            rep = {x: extend(x) for x in ex.args}
+            ex = ex.subs(rep)
+
+            if isinstance(ex, PilotFunction):
+                return ex.land()
+
+            return ex
+
+        expr = extend(expr)
+
+        # # land from innermost functions
+        # funcs = sorted(expr.atoms(PilotFunction), key=lambda x: len(x.atoms(PilotFunction)))
+        # while funcs:
+        #     r_func = funcs[0]
+        #     func = r_func.land()
+        #     expr = expr.subs(r_func, func)
+        #     funcs = [x.subs(r_func, func) for x in funcs[1:]]
+
         return expr
 
     def land(self):
@@ -65,6 +104,10 @@ class PilotFunction(s.Function):
     @classmethod
     def exec(cls):
         return None
+
+
+class Delay(PilotFunction):
+    pass
 
 
 # TODO: add warnings
@@ -984,7 +1027,46 @@ class Equal(NormalFunction):
         return s.And(*[s.Eq(args[x], args[x + 1]) for x in range(len(args) - 1)])
 
 
-class Set(NormalFunction):
+def real_set(x, n):
+    refs = r.refs
+    for ref in [
+        refs.Constants.Dict,
+        refs.BuiltIns,
+        refs.Protected.Dict
+    ]:
+        if str(x) in ref:
+            raise FunctionException(f'Symbol {x} cannot be Assigned to.')
+    if isinstance(x, s.Symbol):
+        if isinstance(n, s.Expr):
+            if x in n.atoms():
+                return None
+        refs.Symbols[x.name] = n
+        return n
+    if isinstance(x, s.Function):
+        # process pattern
+        f_args = []
+        name = type(x).__name__
+        expr = n
+        num = 1
+        for arg in x.args:
+            if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
+                expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
+                f_args.append(s.Symbol(f'*{num}'))
+                num += 1
+            else:
+                f_args.append(arg)
+        # create patterns list if not present
+        if name not in refs.Functions:
+            refs.Functions[name] = {tuple(f_args): (expr, ())}
+        else:  # else add pattern to list
+            refs.Functions[name].update({tuple(f_args): (expr, ())})
+        return n
+    if isinstance(x, iterables):
+        if isinstance(x, iterables) and len(x) == len(n):
+            return List.create(Set(a, b) for a, b in zip(x, n))
+
+
+class Set(ExplicitFunction):
     """
     Set [x, n]
      x = n
@@ -993,42 +1075,7 @@ class Set(NormalFunction):
 
     @classmethod
     def exec(cls, x, n):
-        refs = r.refs
-        for ref in [
-            refs.Constants.Dict,
-            refs.BuiltIns,
-            refs.Protected.Dict
-        ]:
-            if str(x) in ref:
-                raise FunctionException(f'Symbol {x} cannot be Assigned to.')
-        if isinstance(x, s.Symbol):
-            if isinstance(n, s.Expr):
-                if x in n.atoms():
-                    return None
-            refs.Symbols[x.name] = n
-            return n
-        if isinstance(x, s.Function):
-            pass
-            # TODO: think again
-            # list_ = []
-            # name = type(x).__name__
-            # expr = n
-            # num = 1
-            # for arg in x.args:
-            #     if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
-            #         expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
-            #         list_.append(s.Symbol(f'*{num}'))
-            #         num += 1
-            #     else:
-            #         list_.append(arg)
-            # if name not in refs.Functions:
-            #     refs.Functions[name] = {tuple(list_): (expr, ())}
-            # else:
-            #     refs.Functions[name].update({tuple(list_): (expr, ())})
-            # return n
-        if isinstance(x, iterables):
-            if isinstance(x, iterables) and len(x) == len(n):
-                return List.create(Set(a, b) for a, b in zip(x, n))
+        return real_set(x, PilotFunction.land_in(n))
 
 
 class Unset(NormalFunction):
@@ -1048,42 +1095,48 @@ class Unset(NormalFunction):
         return None
 
 
-def DelayedSet(f, x, n):
-    # TODO: again
-    refs = r.refs
-    for ref in [
-        refs.Constants.Dict,
-        refs.BuiltIns,
-        refs.Protected.Dict
-    ]:
-        if str(x) in ref:
-            raise FunctionException(f'Symbol {x} cannot be Assigned to.')
-    if isinstance(x, s.Symbol):
-        if isinstance(n, s.Expr):
-            if x in n.atoms():
-                return None
-        refs.Symbols[x.name] = n
-        return n
-    if isinstance(x, s.Function):
-        list_ = []
-        name = type(x).__name__
-        expr = n
-        num = 1
-        for arg in x.args:
-            if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
-                expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
-                list_.append(s.Symbol(f'*{num}'))
-                num += 1
-            else:
-                list_.append(arg)
-        if name not in refs.Functions:
-            refs.Functions[name] = {tuple(list_): (expr, f)}
-        else:
-            refs.Functions[name].update({tuple(list_): (expr, f)})
-        return n
-    if isinstance(x, iterables):
-        if isinstance(x, iterables) and len(x) == len(n):
-            return List.create(DelayedSet(f, a, b) for a, b in zip(x, n))
+class SetDelayed(ExplicitFunction):
+
+    @classmethod
+    def exec(cls, x, n):
+        return real_set(x, Delay(n)).args[0]
+
+# def DelayedSet(f, x, n):
+#     # TODO: again
+#     refs = r.refs
+#     for ref in [
+#         refs.Constants.Dict,
+#         refs.BuiltIns,
+#         refs.Protected.Dict
+#     ]:
+#         if str(x) in ref:
+#             raise FunctionException(f'Symbol {x} cannot be Assigned to.')
+#     if isinstance(x, s.Symbol):
+#         if isinstance(n, s.Expr):
+#             if x in n.atoms():
+#                 return None
+#         refs.Symbols[x.name] = n
+#         return n
+#     if isinstance(x, s.Function):
+#         list_ = []
+#         name = type(x).__name__
+#         expr = n
+#         num = 1
+#         for arg in x.args:
+#             if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
+#                 expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
+#                 list_.append(s.Symbol(f'*{num}'))
+#                 num += 1
+#             else:
+#                 list_.append(arg)
+#         if name not in refs.Functions:
+#             refs.Functions[name] = {tuple(list_): (expr, f)}
+#         else:
+#             refs.Functions[name].update({tuple(list_): (expr, f)})
+#         return n
+#     if isinstance(x, iterables):
+#         if isinstance(x, iterables) and len(x) == len(n):
+#             return List.create(DelayedSet(f, a, b) for a, b in zip(x, n))
 
 
 class Rationalize(NormalFunction):
@@ -1892,7 +1945,7 @@ class Functions:
     # TODO: Implement Fully: Total, Clip, Quotient, Mod, Factor
 
     # for now, until I find something better
-    r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)})
+    r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function) and not issubclass(v, PilotFunction)})
 
     @classmethod
     def not_normal(cls, f: str) -> bool:
@@ -1903,7 +1956,7 @@ class Functions:
     @classmethod
     def is_explicit(cls, f: str) -> bool:
         if f in r.refs.BuiltIns:
-            return not issubclass(r.refs.BuiltIns[f], ExplicitFunction)
+            return issubclass(r.refs.BuiltIns[f], ExplicitFunction)
         return False
 
     @classmethod
@@ -1913,32 +1966,36 @@ class Functions:
             s.core.cache.clear_cache()
         if f in refs.BuiltIns:
             return refs.BuiltIns[f](*a)
-        # if f in refs.Functions:
-        #     priority = {}
-        #     for header in list(refs.Functions[f])[::-1]:
-        #         match = True
-        #         matches = 0
-        #         if len(a) != len(header):
-        #             continue
-        #         for ar, br in zip(a, header):
-        #             if ar == br:
-        #                 matches += 1
-        #                 continue
-        #             elif isinstance(br, s.Symbol) and br.name.startswith('*'):
-        #                 continue
-        #             else:
-        #                 match = False
-        #                 break
-        #         if match:
-        #             priority[matches] = header
-        #     if priority:
-        #         header = priority[max(priority)]
-        #         expr = refs.Functions[f][header][0]
-        #         reps = refs.Functions[f][header][1]
-        #         for ar, br in zip(a, header):
-        #             if isinstance(br, s.Symbol) and br.name.startswith('*'):
-        #                 expr = Subs(expr, Rule(br, ar))
-        #         return Subs(expr, Rule.from_dict(vars(r.refs.Symbols)) + Rule.from_dict({x: x for x in reps}))
+        if f in refs.Functions:
+            priority = {}
+            for header in list(refs.Functions[f])[::-1]:
+                match = True
+                matches = 0
+                if len(a) != len(header):
+                    continue
+                for ar, br in zip(a, header):
+                    if ar == br:
+                        matches += 1
+                        continue
+                    elif isinstance(br, s.Symbol) and br.name.startswith('*'):
+                        continue
+                    else:
+                        match = False
+                        break
+                if match:
+                    priority[matches] = header
+            if priority:
+                header = priority[max(priority)]
+                expr = refs.Functions[f][header][0]
+                # reps = refs.Functions[f][header][1]
+                for ar, br in zip(a, header):
+                    if isinstance(br, s.Symbol) and br.name.startswith('*'):
+                        expr = Subs(expr, Rule(br, ar))
+                expr = Subs(expr, Rule.from_dict(vars(r.refs.Symbols)))  # + Rule.from_dict({x: x for x in reps}))
+                if type(expr) is Delay:
+                    # TODO: improve naive approach
+                    return PilotFunction.land_in(expr.args[0])
+                return expr
         return type(f, (NormalFunction,), {})(*a)
 
     @classmethod
