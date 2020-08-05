@@ -15,17 +15,17 @@ class FunctionException(Exception):
 
 
 def get_symbol_value(n):
-    # TODO: rethink structure
-    # if n in r.refs.Constants.Dict:
-    #     return r.refs.Constants.Dict[n]
+    """
+    Returns value of symbol if present, else returns symbol.
+    """
+    if n in r.refs.Constants.Dict:
+        return r.refs.Constants.Dict[n]
     if n not in r.refs.Symbols:
-        r.refs.Symbols[n] = s.Symbol(n)
+        return s.Symbol(n)
     ret = r.refs.Symbols[n]
     if type(ret) is Delay:
         return PilotFunction.land_in(ret.args[0])
-    if ret != s.symbols(n) and isinstance(ret, s.Expr):
-        return PilotFunction.land_in(ret)
-    return ret
+    return PilotFunction.land_in(ret)
 
 
 class NormalFunction(s.Function):
@@ -46,6 +46,9 @@ class NormalFunction(s.Function):
 
 
 class ExplicitFunction(s.Function):
+    """
+    Functions that need to be called with the arguments unevaluated.
+    """
     @staticmethod
     def _make_replacements(x: s.Basic):
         # if hasattr(x, 'subs'):
@@ -107,6 +110,10 @@ class PilotFunction(s.Function):
 
 
 class Delay(PilotFunction):
+    """
+    A delayed expression.
+    Use first arg as expression.
+    """
     pass
 
 
@@ -507,7 +514,7 @@ class Out(NormalFunction):
 class Dot(NormalFunction):
     @classmethod
     def exec(cls, m, n):
-        if not isinstance(m, iterables) and isinstance(n, iterables):
+        if not isinstance(m, iterables) or not isinstance(n, iterables):
             return None
         m = s.Matrix(m)
         n = s.Matrix(n)
