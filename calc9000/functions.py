@@ -3,6 +3,7 @@ from functools import reduce
 from calc9000 import references as r
 from calc9000.datatypes import List, Rule
 import sympy as s
+from sympy.logic.boolalg import BooleanTrue, BooleanFalse
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from itertools import permutations, combinations
 from collections.abc import Sized
@@ -1380,11 +1381,67 @@ class HeavisideTheta(NormalFunction):
         return thread(s.Heaviside, x)
 
 
+# TODO: Proper Logic Functions w/ True and False
+
+
 class And(NormalFunction):
     @classmethod
     def exec(cls, *args):
-        # TODO: Proper And
         return s.And(*args)
+
+
+class Or(NormalFunction):
+    @classmethod
+    def exec(cls, *args):
+        return s.Or(*args)
+
+
+class Not(NormalFunction):
+    @classmethod
+    def exec(cls, *args):
+        return s.Not(*args)
+
+
+class Xor(NormalFunction):
+    @classmethod
+    def exec(cls, *args):
+        return s.Xor(*args)
+
+
+class Nor(NormalFunction):
+    @classmethod
+    def exec(cls, *args):
+        return s.Nor(*args)
+
+
+class Nand(NormalFunction):
+    @classmethod
+    def exec(cls, *args):
+        return s.Nand(*args)
+
+
+class Implies(NormalFunction):
+    @classmethod
+    def exec(cls, p, q):
+        return s.Implies(p, q)
+
+
+class Equivalent(NormalFunction):
+    @classmethod
+    def exec(cls, *args):
+        return s.Equivalent(*args)
+
+
+# class Boole(NormalFunction):
+#     @classmethod
+#     def exec(cls, x):
+#         if isinstance(x, iterables):
+#             return List.create(Boole(i) for i in x)
+#         if isinstance(x, (bool, BooleanTrue, BooleanFalse)):
+#             if x:
+#                 return 1
+#             return 0
+#         return None
 
 
 class Solve(NormalFunction):

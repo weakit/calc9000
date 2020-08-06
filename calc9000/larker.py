@@ -25,7 +25,9 @@ grammar = """
         | logic
 
 ?logic: rule
+      | "!" logic -> not_
       | logic ("&&" rule)+ -> and_
+      | logic ("||" rule)+ -> or_
 
 ?rule: relation "->" rule
      | relation

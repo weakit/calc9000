@@ -33,6 +33,9 @@ class Constants:
     Degree = Pi / 180
 
 
+setattr(Constants, 'True', True)
+setattr(Constants, 'False', False)
+
 Constants.Dict = {x: Constants.__dict__[x] for x in dir(Constants) if not x.startswith('__')}
 
 

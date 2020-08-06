@@ -18,6 +18,9 @@ basic_ops = (
     'positive',
     'dot',
     'factorial',
+    'and_',
+    'or_',
+    'not_'
 )
 
 # TODO: remove unused functions
@@ -100,8 +103,16 @@ def unset(n):
     return Functions.call('Unset', pilot(n))
 
 
-def _and(n):
+def and_(n):
     return Functions.call('And', *n)
+
+
+def or_(n):
+    return Functions.call('Or', *n)
+
+
+def not_(n):
+    return Functions.call('Not', *n)
 
 
 def part(n):
