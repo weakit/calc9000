@@ -1,11 +1,11 @@
 import operator as op
 from functools import reduce
 from calc9000 import references as r
+from calc9000.datatypes import List, Rule
 import sympy as s
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from itertools import permutations, combinations
 from collections.abc import Sized
-from calc9000.datatypes import List, Rule
 
 iterables = (s.Tuple, List, Sized, s.Matrix, list, tuple)
 
@@ -43,6 +43,7 @@ class NormalFunction(s.Function):
     def eval(cls, *args):
         if hasattr(cls, 'exec'):
             return cls.exec(*(cls._make_replacements(x) for x in args))
+        return None
 
 
 class ExplicitFunction(s.Function):
@@ -59,6 +60,7 @@ class ExplicitFunction(s.Function):
     def eval(cls, *args):
         if hasattr(cls, 'exec'):
             return cls.exec(*(cls._make_replacements(x) for x in args))
+        return None
 
 
 class PilotFunction(s.Function):
@@ -70,6 +72,9 @@ class PilotFunction(s.Function):
     def land_in(expr):
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List.create(PilotFunction.land_in(x) for x in expr)
+
+        if not hasattr(expr, 'subs'):
+            return expr
 
         expr = expr.subs(r.refs.Constants.Dict)
         expr = expr.subs(r.refs.Symbols)
@@ -916,7 +921,7 @@ class StieltjesGamma(NormalFunction):
 class Gamma(NormalFunction):
     @classmethod
     def exec(cls, x):
-        #TODO: incomplete gamma
+        # TODO: incomplete gamma
         return thread(s.gamma, x)
 
 
@@ -1071,6 +1076,7 @@ def real_set(x, n):
     if isinstance(x, iterables):
         if isinstance(x, iterables) and len(x) == len(n):
             return List.create(Set(a, b) for a, b in zip(x, n))
+    return None
 
 
 class Set(ExplicitFunction):
@@ -1169,7 +1175,7 @@ class Rationalize(NormalFunction):
         return x
 
 
-class Subs(NormalFunction):
+class Subs(ExplicitFunction):
     """
     Subs [Expr, Rule]
      Transforms Expression expr with the given Rule.
@@ -1192,7 +1198,7 @@ class Subs(NormalFunction):
                     expr = expr.replace(func, replacement_dict[str(func)])
                 if str(func.func) in replacement_dict:
                     expr = expr.replace(func, Functions.call(str(replacement_dict[str(func.func)]), *func.args))
-            return expr
+            return PilotFunction.land_in(expr)
 
 
 class Factor(NormalFunction):
@@ -1392,8 +1398,8 @@ class Solve(NormalFunction):
     @classmethod
     def exec(cls, expr, v, dom=None):
         # TODO: fix (?)
-        if dom is None:
-            dom = s.Complexes
+        # if dom is None:
+        #     dom = s.Complexes
         if isinstance(expr, s.And):
             expr = expr.args
         # if not isinstance(expr, iterables + (s.core.relational._Inequality,)):
@@ -1952,7 +1958,8 @@ class Functions:
     # TODO: Implement Fully: Total, Clip, Quotient, Mod, Factor
 
     # for now, until I find something better
-    r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function) and not issubclass(v, PilotFunction)})
+    r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)
+                            and not issubclass(v, PilotFunction)})
 
     @classmethod
     def not_normal(cls, f: str) -> bool:

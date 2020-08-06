@@ -1,9 +1,9 @@
 import sympy as s
 from functools import reduce
 import operator as op
-from calc9000 import functions, references as r
-from lark import Tree
+from calc9000 import functions
 from calc9000.datatypes import List, Rule
+from lark import Tree
 
 
 Functions = functions.Functions
@@ -19,6 +19,8 @@ basic_ops = (
     'dot',
     'factorial',
 )
+
+# TODO: remove unused functions
 
 
 def numeric(n):
@@ -111,10 +113,10 @@ def replace(n):
 
 
 def delayed(n, f):
-    return functions.DelayedSet(f, *n)
+    return Functions.call('DelayedSet', f, *n)
 
 
-# TODO: Part, Replace and Logical Operators
+# TODO: Part and Logical Operators
 
 def pilot(tree: Tree):
     if not isinstance(tree, Tree):
@@ -160,6 +162,8 @@ def operate(tree: Tree):
         return functions.real_set(pilot(tree.children[0]), operate(tree.children[1]))
     if tree.data == 'set_delayed':
         return Functions.call('SetDelayed', pilot(tree.children[0]), pilot(tree.children[1]))
+    if tree.data == 'replace':
+        return Functions.call('Subs', *(pilot(x) for x in tree.children))
     if tree.data == 'unset':
         return Functions.call('Unset', pilot(tree.children[0]))
     if tree.data == 'RELATIONAL':

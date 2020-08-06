@@ -8,9 +8,7 @@ grammar = """
 // calc9000 Parser Grammar
 
 ?start: expression
-      | replace
-
-replace: expression "/." expression
+//      | replace
 
 // set: (expression "=")+ expression
 // set_delayed: expression ":=" expression
@@ -18,10 +16,13 @@ replace: expression "/." expression
 
 ?expression: assign
 
-?assign: logic "=" assign -> set
-       | logic ("=" "."|"=.") -> unset
-       | logic ":=" assign -> set_delayed
-       | logic
+?assign: replace "=" assign -> set
+       | replace ("=" "."|"=.") -> unset
+       | replace ":=" assign -> set_delayed
+       | replace
+
+?replace: replace "/." logic
+        | logic
 
 ?logic: rule
       | logic ("&&" rule)+ -> and_
@@ -65,12 +66,12 @@ function: atom "[" (expression)? ("," expression)* "]"
 // TODO | function "[" (expression)? ("," expression)* "]"
 
 ?unary: factorial
-      | atom 
+      | atom
 
 ?atom: "(" expression ")"
      | execute
      | list
-     | numeric 
+     | numeric
      | symbol
      | string
      | out
@@ -264,8 +265,6 @@ class SymbolTransformer(AssignTransformer):
         return op.operate(parsed)
 
 
-if __name__ == 'larker' or __name__ == 'calc9000.larker':
+if 'larker' in __name__:
     assigner = AssignTransformer()
     parser = SymbolTransformer()
-else:
-    print(__name__)
