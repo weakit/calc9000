@@ -1188,9 +1188,17 @@ class Subs(ExplicitFunction):
     def exec(cls, expr, replacements):
         if not isinstance(replacements, iterables):
             replacements = (replacements,)
-        if isinstance(expr, iterables):
-            return List.create(Subs(x, replacements) for x in expr)
-        if isinstance(expr, s.Expr):
+        else:
+            if isinstance(replacements[0], iterables):
+                for x in replacements:
+                    if not isinstance(x, iterables):
+                        raise FunctionException(f'{replacements} is a mixture of Lists and Non-Lists.')
+                    return List(*(Subs(expr, replacement) for replacement in replacements))
+            else:
+                for x in replacements:
+                    if isinstance(x, iterables):
+                        raise FunctionException(f'{replacements} is a mixture of Lists and Non-Lists.')
+        if isinstance(expr, (s.Expr, List, s.Matrix, Rule)):
             expr = expr.subs(replacements)
             replacement_dict = {str(k): v for k, v in replacements}
             for func in expr.atoms(s.Function):
@@ -1200,6 +1208,9 @@ class Subs(ExplicitFunction):
                 if str(func.func) in replacement_dict:
                     expr = expr.replace(func, Functions.call(str(replacement_dict[str(func.func)]), *func.args))
             return PilotFunction.land_in(expr)
+        if isinstance(expr, iterables):
+            return List.create(Subs(x, replacements) for x in expr)
+        return None
 
 
 class Factor(NormalFunction):

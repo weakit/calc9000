@@ -173,8 +173,8 @@ def operate(tree: Tree):
         return functions.real_set(pilot(tree.children[0]), operate(tree.children[1]))
     if tree.data == 'set_delayed':
         return Functions.call('SetDelayed', pilot(tree.children[0]), pilot(tree.children[1]))
-    if tree.data == 'replace':
-        return Functions.call('Subs', *(pilot(x) for x in tree.children))
+    if tree.data == 'replace':  # see ReplaceAll
+        return Functions.call('Subs', *(operate(x) for x in tree.children))
     if tree.data == 'unset':
         return Functions.call('Unset', pilot(tree.children[0]))
     if tree.data == 'RELATIONAL':
