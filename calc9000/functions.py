@@ -3,15 +3,17 @@ from functools import reduce
 from calc9000 import references as r
 from calc9000.datatypes import List, Rule
 import sympy as s
-from sympy.logic.boolalg import BooleanTrue, BooleanFalse
+import secrets
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from itertools import permutations, combinations
 from collections.abc import Sized
 
 iterables = (s.Tuple, List, Sized, s.Matrix, list, tuple)
+random = secrets.SystemRandom()
 
 
 class FunctionException(Exception):
+    """General class for function related exceptions"""
     pass
 
 
@@ -66,11 +68,11 @@ class ExplicitFunction(s.Function):
 
 class PilotFunction(s.Function):
     """
-    Placeholder Function Class.
-    Acts as an Unevaluated Function.
+    A really bad Lazy Function implementation
     """
     @staticmethod
     def land_in(expr):
+        """Get value of Lazy Function, with other lazy functions as args."""
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List.create(PilotFunction.land_in(x) for x in expr)
 
@@ -81,7 +83,7 @@ class PilotFunction(s.Function):
         expr = expr.subs(r.refs.Symbols)
 
         def extend(ex):
-            if not hasattr(ex, 'args') or not ex.args or not isinstance(ex.args, iterables):
+            if not hasattr(ex, 'args') or not isinstance(ex.args, iterables):
                 return ex
 
             if Functions.is_explicit(type(ex).__name__):
@@ -212,6 +214,7 @@ def options(args, ops: dict, defaults=None):
 
 
 def is_integer(n):
+    """Returns true if is integer."""
     if hasattr(n, 'is_integer'):
         return bool(n.is_integer)
     if hasattr(n, 'is_Integer'):
@@ -421,12 +424,17 @@ class Mean(NormalFunction):
 
 class Accumulate(NormalFunction):
     @classmethod
-    def exec(cls, _list):
-        temp_list = list(_list)
-        if isinstance(_list, iterables):
-            for i in range(1, len(_list)):
-                temp_list[i] += temp_list[i - 1]
-            return List(*temp_list)
+    def exec(cls, expr):
+        if isinstance(expr, iterables):
+            head = List
+            iterable = expr
+        else:
+            head = expr.__class__
+            iterable = expr.args
+        temp_list = list(iterable)
+        for i in range(1, len(iterable)):
+            temp_list[i] += temp_list[i - 1]
+        return head(*temp_list)
 
 
 class Clip(NormalFunction):
@@ -1110,10 +1118,13 @@ class Unset(NormalFunction):
 
 
 class SetDelayed(ExplicitFunction):
-
     @classmethod
+    # TODO: Delayed function set?
     def exec(cls, x, n):
-        return real_set(x, Delay(n)).args[0]
+        value = real_set(x, Delay(n))
+        if hasattr(value, 'args'):
+            return value.args[0]
+        return None
 
 # def DelayedSet(f, x, n):
 #     # TODO: again
@@ -1645,7 +1656,7 @@ class Range(NormalFunction):
         except TypeError as e:
             if e.args[0].startswith('cannot determine truth value'):
                 raise FunctionException('Invalid/Unsupported Range bounds.')
-        return ret
+        return List.create(ret)
 
     @classmethod
     def exec(cls, i, n=None, di=1):
@@ -1715,7 +1726,7 @@ class Table(ExplicitFunction):
     @staticmethod
     def _range_parse(expr, arg):
         if arg.is_number:
-            return List.create((PilotFunction.land_in(expr),) * arg)
+            return List(*(PilotFunction.land_in(expr) for _ in range(arg)))
         if len(arg) == 2 and isinstance(arg[1], iterables):
             args = arg[1]
         elif len(arg) >= 2:
@@ -1729,7 +1740,7 @@ class Table(ExplicitFunction):
     @classmethod
     def exec(cls, expr, *args):
         if not args:
-            return expr
+            return PilotFunction.land_in(expr)
 
         args = PilotFunction.land_in(args)
 
@@ -1976,7 +1987,88 @@ class Take(NormalFunction):
             return head(*cls.get_take(take, seqs[0]))
 
 
+class RandomInteger(NormalFunction):
+    """
+    RandomInteger[]
+     Pseudo-randomly gives 0 or 1.
+
+    RandomInteger[i]
+     Gives a pseudo-random integer in the range {0, ..., i}.
+
+    RandomInteger[{min, max}]
+     Gives a pseudo-random integer in the range {min, max}.
+
+    RandomInteger[range, n]
+     Gives a list of n pseudo-random integers.
+
+    RandomInteger[range, {n1, n2, …}]
+     Gives an n1 × n2 × … array of pseudo-random integers.
+    """
+    @classmethod
+    def exec(cls, *args):
+        if not args:
+            return s.Rational(random.randint(0, 1))
+        if len(args) == 1:
+            if isinstance(args[0], iterables):
+                if len(args[0]) != 2:
+                    raise FunctionException('Invalid Bounds')
+                limit = args[0]
+            else:
+                limit = [0, args[0]]
+            if not (is_integer(limit[0]) and is_integer(limit[1])):
+                raise FunctionException('Limits for RandomInteger should be an Integer.')
+            return s.Rational(random.randint(limit[0], limit[1]))
+        if len(args) == 2:
+            if is_integer(args[1]):
+                return List(*[RandomInteger.exec(args[0]) for _ in range(int(args[1]))])
+            if isinstance(args[1], iterables):
+                if len(args[1]) == 1:
+                    return RandomInteger.exec(args[0], args[1][0])
+                return List(*[RandomInteger.exec(args[0], args[1][1:]) for _ in range(int(args[1][0]))])
+
+
+class RandomReal(NormalFunction):
+    """
+    RandomInteger[]
+     Gives a pseudo-random real number in the range 0 to 1
+
+    RandomInteger[i]
+     Gives a pseudo-random real number in the range 0 to i.
+
+    RandomInteger[{min, max}]
+     Gives a pseudo-random real number in the range min to max.
+
+    RandomInteger[range, n]
+     Gives a list of n pseudo-random reals.
+
+    RandomInteger[range, {n1, n2, …}]
+     Gives an n1 × n2 × … array of pseudo-random reals.
+    """
+    @classmethod
+    def exec(cls, *args):
+        prec = 15
+        if not args:
+            return random.randint(0, 10 ** prec) * s.RealNumber(10 ** (-prec))
+        if len(args) == 1:
+            if isinstance(args[0], iterables):
+                if len(args[0]) != 2:
+                    raise FunctionException('Invalid Bounds')
+                lower, upper = args[0]
+            else:
+                lower, upper = 0, args[0]
+            return lower + random.randint(0, (upper - lower) * 10 ** prec) * s.RealNumber(10 ** (-prec))
+        if len(args) == 2:
+            if is_integer(args[1]):
+                return List(*[RandomReal.exec(args[0]) for _ in range(int(args[1]))])
+            if isinstance(args[1], iterables):
+                if len(args[1]) == 1:
+                    return RandomReal.exec(args[0], args[1][0])
+                return List(*[RandomReal.exec(args[0], args[1][1:]) for _ in range(int(args[1][0]))])
+        
+
+
 class Functions:
+    # TODO: Convert all code function calls to Functions.call / Function.exec
     # TODO: Finish Explicit Functions
     # TODO: Convert NormalFunctions to ExplicitFunctions
     # TODO: Double Check

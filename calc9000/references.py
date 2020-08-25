@@ -52,7 +52,10 @@ NoCache = [
     "ReplaceAll",
     "Set",
     "Subs",
-    "Unset"
+    "Unset",
+    "Random",
+    "RandomInteger",
+    "RandomReal"
 ]
 
 
