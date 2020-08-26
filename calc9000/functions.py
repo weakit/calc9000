@@ -1830,11 +1830,11 @@ class Subsets(NormalFunction):
 
 class FromPolarCoordinates(NormalFunction):
     """
-    FromPolarCoordinates[{r, θ}]
+    FromPolarCoordinates [{r, θ}]
      Gives the {x, y} Cartesian coordinates corresponding to the
      polar coordinates {r, θ}.
 
-    FromPolarCoordinates[{r, θ1, …, θn - 2, ϕ}]
+    FromPolarCoordinates [{r, θ1, …, θn - 2, ϕ}]
      Gives the coordinates corresponding to the hyperspherical
      coordinates {r, θ1, …, θn - 2, ϕ}
     """
@@ -1854,11 +1854,11 @@ class FromPolarCoordinates(NormalFunction):
 
 class ToPolarCoordinates(NormalFunction):
     """
-    ToPolarCoordinates[{x, y}]
+    ToPolarCoordinates [{x, y}]
      Gives the {r, θ} polar coordinates corresponding to the Cartesian
      coordinates {x, y}.
 
-    ToPolarCoordinates[{x1, x2, …, xn}]
+    ToPolarCoordinates [{x1, x2, …, xn}]
      Gives the hyperspherical coordinates corresponding to the Cartesian
      coordinates {x1, x2, …, xn}.
     """
@@ -1989,23 +1989,23 @@ class Take(NormalFunction):
 
 class RandomInteger(NormalFunction):
     """
-    RandomInteger[]
+    RandomInteger []
      Pseudo-randomly gives 0 or 1.
 
-    RandomInteger[i]
+    RandomInteger [i]
      Gives a pseudo-random integer in the range {0, ..., i}.
 
-    RandomInteger[{min, max}]
+    RandomInteger [{min, max}]
      Gives a pseudo-random integer in the range {min, max}.
 
-    RandomInteger[range, n]
+    RandomInteger [range, n]
      Gives a list of n pseudo-random integers.
 
-    RandomInteger[range, {n1, n2, …}]
+    RandomInteger [range, {n1, n2, …}]
      Gives an n1 × n2 × … array of pseudo-random integers.
     """
     @classmethod
-    def exec(cls, *args):
+    def exec(cls, *args, p=None):
         if not args:
             return s.Rational(random.randint(0, 1))
         if len(args) == 1:
@@ -2019,36 +2019,48 @@ class RandomInteger(NormalFunction):
                 raise FunctionException('Limits for RandomInteger should be an Integer.')
             return s.Rational(random.randint(limit[0], limit[1]))
         if len(args) == 2:
-            if is_integer(args[1]):
-                return List(*[RandomInteger.exec(args[0]) for _ in range(int(args[1]))])
-            if isinstance(args[1], iterables):
-                if len(args[1]) == 1:
-                    return RandomInteger.exec(args[0], args[1][0])
-                return List(*[RandomInteger.exec(args[0], args[1][1:]) for _ in range(int(args[1][0]))])
+            return RandomInteger.repeat(args, RandomInteger)
+
+    @staticmethod
+    def repeat(args, func, p=None):
+        precision = p
+        if is_integer(args[1]):
+            return List(*[func.exec(args[0], p=precision) for _ in range(int(args[1]))])
+        if isinstance(args[1], iterables):
+            if len(args[1]) == 1:
+                return func.exec(args[0], args[1][0], p=precision)
+            return List(*[func.exec(args[0], args[1][1:], p=precision) for _ in range(int(args[1][0]))])
 
 
 class RandomReal(NormalFunction):
     """
-    RandomInteger[]
+    RandomReal []
      Gives a pseudo-random real number in the range 0 to 1
 
-    RandomInteger[i]
+    RandomReal [i]
      Gives a pseudo-random real number in the range 0 to i.
 
-    RandomInteger[{min, max}]
+    RandomReal [{min, max}]
      Gives a pseudo-random real number in the range min to max.
 
-    RandomInteger[range, n]
+    RandomReal [range, n]
      Gives a list of n pseudo-random reals.
 
-    RandomInteger[range, {n1, n2, …}]
+    RandomReal [range, {n1, n2, …}]
      Gives an n1 × n2 × … array of pseudo-random reals.
     """
     @classmethod
-    def exec(cls, *args):
-        prec = 15
+    def exec(cls, *args, p=15):
+        precision = p
+        option = []
+
+        while args and isinstance(args[-1], Rule):
+            option.append(args[-1])
+            args = args[:-1]
+            precision = options(option, {'WorkingPrecision': 'p'})['p']
+
         if not args:
-            return random.randint(0, 10 ** prec) * s.RealNumber(10 ** (-prec))
+            return random.randint(0, 10 ** precision) * s.N(10 ** (-precision), precision)
         if len(args) == 1:
             if isinstance(args[0], iterables):
                 if len(args[0]) != 2:
@@ -2056,15 +2068,46 @@ class RandomReal(NormalFunction):
                 lower, upper = args[0]
             else:
                 lower, upper = 0, args[0]
-            return lower + random.randint(0, (upper - lower) * 10 ** prec) * s.RealNumber(10 ** (-prec))
+            return lower + random.randint(0, (upper - lower) * 10 ** precision) * s.N(10 ** (-precision), precision)
         if len(args) == 2:
-            if is_integer(args[1]):
-                return List(*[RandomReal.exec(args[0]) for _ in range(int(args[1]))])
-            if isinstance(args[1], iterables):
-                if len(args[1]) == 1:
-                    return RandomReal.exec(args[0], args[1][0])
-                return List(*[RandomReal.exec(args[0], args[1][1:]) for _ in range(int(args[1][0]))])
-        
+            return RandomInteger.repeat(args, RandomReal, p=precision)
+
+
+class RandomComplex(NormalFunction):
+    """
+    RandomComplex []
+     Gives a pseudo-random complex number with real and imaginary parts in the range 0 to 1.
+
+    RandomComplex [{min, max}]
+     Gives a pseudo-random complex number in the rectangle with corners given by the complex numbers min and max.
+
+    RandomComplex [max]
+     Gives a pseudo-random complex number in the rectangle whose corners are the origin and max.
+
+    RandomComplex [range, n]
+     Gives a list of n pseudo-random complex numbers.
+
+    RandomComplex [range, {n1, n2, …}]
+     Gives an n1 × n2 × … array of pseudo-random complex numbers.
+
+    """
+    @classmethod
+    def exec(cls, *args, p=15):
+        option = []
+        precision = p
+
+        while args and isinstance(args[-1], Rule):
+            option.append(args[-1])
+            args = args[:-1]
+            precision = options(option, {'WorkingPrecision': 'p'})['p']
+
+        if not args:
+            return RandomReal.exec(p=precision) + RandomReal.exec(p=precision) * r.Constants.I
+        if len(args) == 1:
+            return RandomReal.exec(Re.exec(args[0]), p=precision) + \
+                   RandomReal.exec(Im.exec(args[0]), p=precision) * r.Constants.I
+        if len(args) == 2:
+            return RandomInteger.repeat(args, RandomComplex, p=precision)
 
 
 class Functions:

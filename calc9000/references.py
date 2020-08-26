@@ -27,6 +27,10 @@ class Constants:
     Complexes = s.Complexes
     Reals = s.Reals
     Integers = s.Integers
+    Integer = None
+    Real = None
+    Head = None
+    Complex = None
     Rationals = s.Rationals
     All = s.Symbol('All')
     Nothing = s.Symbol('Nothing')
@@ -55,7 +59,8 @@ NoCache = [
     "Unset",
     "Random",
     "RandomInteger",
-    "RandomReal"
+    "RandomReal",
+    "RandomComplex"
 ]
 
 
