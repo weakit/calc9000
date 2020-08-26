@@ -423,6 +423,10 @@ class Mean(NormalFunction):
 
 
 class Accumulate(NormalFunction):
+    """
+    Accumulate [list]
+     Gives a list of the successive accumulated totals of elements in list.
+    """
     @classmethod
     def exec(cls, expr):
         if isinstance(expr, iterables):
@@ -438,10 +442,54 @@ class Accumulate(NormalFunction):
 
 
 class Clip(NormalFunction):
+    """
+    Clip [x]
+     Gives x clipped to be between and .
+
+    Clip [x, {min, max}]
+     Gives x for min≤x≤max, min for x<min and max for x>max.
+
+    Clip [x, {min, max}, {v_min, v_max}]
+     Gives v_min for x < min and v_max for x > max.
+    """
     @classmethod
-    def exec(cls, x, limits=(-1, 1)):
+    def exec(cls, x, limits=(s.S.NegativeOne, s.S.One), limit_return=None):
+        if isinstance(x, iterables):
+            return List(*(Clip(i, limits, limit_return) for i in x))
+        if limit_return is None:
+            limit_return = limits
         if x.is_number:
-            return s.Max(s.Min(x, limits[1]), limits[0])
+            if x < limits[0]:
+                return limit_return[0]
+            if x > limits[1]:
+                return limit_return[1]
+            return x
+            # return s.Max(s.Min(x, limits[1]), limits[0])
+
+    def _eval_rewrite_as_Piecewise(self, **kwargs):
+        if len(self.args) == 3:
+            limits = self.args[1]
+            limit_return = self.args[2]
+        elif len(self.args) == 2:
+            limits = self.args[1]
+            limit_return = limits
+        else:
+            limits = (s.S.NegativeOne, s.S.One)
+            limit_return = limits
+
+        x = self.args[0]
+
+        return s.Piecewise(
+            (x, s.And(limits[0] <= x, x <= limits[1])),
+            (limit_return[0], x < limits[0]),
+            (limit_return[1], x > limits[1])
+        )
+
+    def _eval_derivative(self, *args, **kwargs):
+        return s.Derivative(self._eval_rewrite_as_Piecewise(), *args, evaluate=True)
+
+    def _eval_Integral(self, *args, **kwargs):
+        return s.Integral(self._eval_rewrite_as_Piecewise(), *args)
 
 
 class Quotient(NormalFunction):
@@ -577,6 +625,8 @@ class Det(NormalFunction):
     """
     Det [m]
      Gives the Determinant of Square Matrix m.
+
+    Equivalent to sympy.Matrix.det().
     """
 
     @classmethod
@@ -595,6 +645,8 @@ class Inverse(NormalFunction):
     """
     Inverse [m]
      Gives the Inverse of Square Matrix m.
+
+    Equivalent to sympy.Matrix.inv().
     """
 
     @classmethod
@@ -784,6 +836,7 @@ class ComplexExpand(NormalFunction):
     ComplexExpand [expr, {x1, x2, …}]
      Expands expr assuming that variables matching any of the x are complex.
 
+    Uses sympy.expand_complex().
     """
 
     @classmethod
@@ -1305,6 +1358,8 @@ class N(NormalFunction):
 
     N [expr, n]
      Attempts to give a result with n-digit precision.
+
+    Equivalent to sympy.N().
     """
 
     @classmethod
@@ -1762,12 +1817,12 @@ class Subdivide(NormalFunction):
     Subdivide [n]
      Generates the list {0, 1/n, 2/n, …, 1}.
 
-    Subdivide [xmax, n]
-     Generates the list of values obtained by subdividing the interval 0 to xmax
+    Subdivide [x, n]
+     Generates the list of values obtained by subdividing the interval 0 to x.
      into n equal parts.
 
-    Subdivide [xmin, xmax, n]
-     Generates the list of values from subdividing the interval xmin to xmax.
+    Subdivide [min, max, n]
+     Generates the list of values from subdividing the interval min to max.
     """
     @classmethod
     def exec(cls, one, two=None, three=None):
@@ -1888,6 +1943,39 @@ class Apart(NormalFunction):
         return thread(s.apart, expr, x)
 
 
+class Collect(NormalFunction):
+    """
+    Collect [expr, x]
+     Collects together terms involving the same powers of objects matching x.
+
+    Collect [expr, {x1, x2, …}]
+     Collects together terms that involve the same powers of objects matching x1, x2, ….
+
+    Collect [expr, var, h]
+     Applies h to the expression that forms the coefficient of each term obtained.
+
+    """
+    @staticmethod
+    def collect(expr, v, h):
+        unevaluated_expr = s.collect(s.expand(expr), v, evaluate=False)
+        expr = 0
+        if h:
+            if not isinstance(h, (s.Symbol, s.Function)):
+                raise FunctionException('Invalid Function.')
+            for c in unevaluated_expr:
+                expr += Functions.call(str(h), unevaluated_expr[c]) * c
+        else:
+            for c in unevaluated_expr:
+                expr += unevaluated_expr[c] * c
+        return expr
+
+    @classmethod
+    def exec(cls, expr, v, h=None):
+        if isinstance(expr, iterables):
+            return List(*(cls.exec(x, v, h) for x in expr))
+        return cls.collect(expr, v, h)
+
+
 class Part(NormalFunction):
     @staticmethod
     def get_part(expr, n):
@@ -2003,6 +2091,8 @@ class RandomInteger(NormalFunction):
 
     RandomInteger [range, {n1, n2, …}]
      Gives an n1 × n2 × … array of pseudo-random integers.
+
+    Uses python's SystemRandom().
     """
     @classmethod
     def exec(cls, *args, p=None):
@@ -2048,6 +2138,8 @@ class RandomReal(NormalFunction):
 
     RandomReal [range, {n1, n2, …}]
      Gives an n1 × n2 × … array of pseudo-random reals.
+
+    Uses python's SystemRandom().
     """
     @classmethod
     def exec(cls, *args, p=15):
@@ -2090,6 +2182,7 @@ class RandomComplex(NormalFunction):
     RandomComplex [range, {n1, n2, …}]
      Gives an n1 × n2 × … array of pseudo-random complex numbers.
 
+    Uses python's SystemRandom().
     """
     @classmethod
     def exec(cls, *args, p=15):
@@ -2119,12 +2212,10 @@ class Functions:
 
     # TODO: Subs List replacement
 
-    # TODO: Collect
     # TODO: Span
     # TODO: Prime Notation
     # TODO: Part, Assignment
     # TODO: Semicolon
-    # TODO: Logical Or
 
     # TODO: Polar Complex Number Representation
     # TODO: Series
@@ -2132,7 +2223,6 @@ class Functions:
     # TODO: NSolve, DSolve
     # TODO: Roots (Solve)
     # TODO: Series
-    # TODO: Random Functions
     # TODO: Unit Conversions
 
     # TODO: Simple List Functions
@@ -2158,7 +2248,7 @@ class Functions:
     # TODO: Arithmetic Functions: Ratios, Differences
     # TODO: Booleans, Conditions, Boole
     # TODO: Cross of > 3 dimensional vectors
-    # TODO: Implement Fully: Total, Clip, Quotient, Mod, Factor
+    # TODO: Implement Fully: Total, Quotient, Mod, Factor
 
     # for now, until I find something better
     r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)
