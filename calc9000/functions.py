@@ -8,7 +8,7 @@ from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from itertools import permutations, combinations
 from collections.abc import Sized
 
-iterables = (s.Tuple, List, Sized, s.Matrix, list, tuple)
+iterables = (s.Tuple, List, s.Matrix, list, tuple)
 random = secrets.SystemRandom()
 
 
@@ -1986,6 +1986,32 @@ class Collect(NormalFunction):
         return cls.collect(expr, v, h)
 
 
+class Length(NormalFunction):
+    """
+    Length [expr]
+     Gives the number of elements in expr.
+    """
+    @classmethod
+    def exec(cls, x):
+        if isinstance(x, iterables):
+            return len(x)
+        if hasattr(x, 'args'):
+            return len(x.args)
+        return 0
+
+
+class Head(NormalFunction):
+    """
+    Head [expr]
+     Gives the head of expr.
+    """
+    @classmethod
+    def exec(cls, h, f=None):
+        if f is not None:
+            return Functions.call(str(f), Part(h, 0))
+        return Part(h, 0)
+
+
 class Part(NormalFunction):
     @staticmethod
     def get_part(expr, n):
@@ -2083,6 +2109,44 @@ class Take(NormalFunction):
             return head(*(cls.exec(x, *seqs[1:]) for x in cls.get_take(take, seqs[0])))
         else:
             return head(*cls.get_take(take, seqs[0]))
+
+
+class First(ExplicitFunction):
+    """
+    First [expr]
+     Gives the first element in expr.
+
+    First [expr, def]
+     Gives the first element if it exists, or def otherwise.
+    """
+    @classmethod
+    def exec(cls, x, d=None):
+        x = PilotFunction.land_in(x)
+        if Length(x) > 0:
+            return Part(x, 1)
+        if d is not None:
+            return PilotFunction.land_in(d)
+        else:
+            raise FunctionException(f'{x} has zero length, and no first element.')
+
+
+class Last(ExplicitFunction):
+    """
+    Last [expr]
+     Gives the last element in expr.
+
+    Last [expr, def]
+     Gives the last element if there are any elements, or def otherwise.
+    """
+    @classmethod
+    def exec(cls, x, d=None):
+        x = PilotFunction.land_in(x)
+        if Length(x) > 0:
+            return Part(x, -1)
+        if d is not None:
+            return PilotFunction.land_in(d)
+        else:
+            raise FunctionException(f'{x} has zero length, and no last element.')
 
 
 class RandomInteger(NormalFunction):
@@ -2246,6 +2310,7 @@ class Functions:
     # TODO: Remaining Matrix Operations
 
     # TODO: Warnings
+    # TODO: Fix Compound Expressions (f[x][y][z])
 
     # TODO: Clear Function from References
 
