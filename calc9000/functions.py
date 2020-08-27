@@ -1530,7 +1530,7 @@ class Solve(NormalFunction):
     Uses sympy.solve().
     """
     @classmethod
-    def exec(cls, expr, v, dom=None):
+    def exec(cls, expr, v=None, dom=None):
         # TODO: fix (?)
         # if dom is None:
         #     dom = s.Complexes
@@ -1541,8 +1541,8 @@ class Solve(NormalFunction):
         # else:
         # if isinstance(expr, iterables):
         #     expr = ands(expr)
-        ret = s.solve(expr, v, dict=True)
-        return ret
+        ret = s.solve(expr, v or expr.free_symbols, dict=True)
+        return List(*[Rule.from_dict(x, head=List) for x in ret])
 
 
 class Simplify(NormalFunction):
@@ -2195,12 +2195,18 @@ class RandomComplex(NormalFunction):
             precision = options(option, {'WorkingPrecision': 'p'})['p']
 
         if not args:
-            return RandomReal.exec(p=precision) + RandomReal.exec(p=precision) * r.Constants.I
+            return RandomReal.exec(p=precision) + RandomReal.exec(p=precision) * r.refs.Constants.I
         if len(args) == 1:
             return RandomReal.exec(Re.exec(args[0]), p=precision) + \
-                   RandomReal.exec(Im.exec(args[0]), p=precision) * r.Constants.I
+                   RandomReal.exec(Im.exec(args[0]), p=precision) * r.refs.Constants.I
         if len(args) == 2:
             return RandomInteger.repeat(args, RandomComplex, p=precision)
+
+
+class Nothing(NormalFunction):
+    @classmethod
+    def exec(cls, *args, **kwargs):
+        return r.refs.Constants.Nothing
 
 
 class Functions:
@@ -2210,8 +2216,6 @@ class Functions:
     # TODO: Double Check
     # TODO: Figure out Custom Functions
 
-    # TODO: Subs List replacement
-
     # TODO: Span
     # TODO: Prime Notation
     # TODO: Part, Assignment
@@ -2219,14 +2223,12 @@ class Functions:
 
     # TODO: Polar Complex Number Representation
     # TODO: Series
-    # TODO: Solve output
     # TODO: NSolve, DSolve
     # TODO: Roots (Solve)
     # TODO: Series
     # TODO: Unit Conversions
 
     # TODO: Simple List Functions
-    # TODO: Nothing (Lists)
 
     # TODO: Make Matrix Functions use List
     # TODO: Matrix Representation
@@ -2243,6 +2245,7 @@ class Functions:
 
     # Low Priority
 
+    # TODO: Move Rule into iterables (thread functions over Rule)
     # TODO: Map, Apply
     # TODO: Pretty Printer Fixes for Dot, Cross
     # TODO: Arithmetic Functions: Ratios, Differences

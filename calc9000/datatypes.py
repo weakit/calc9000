@@ -21,7 +21,7 @@ class List(s.Basic):  # probably a bad idea
         if args is None:
             self.value = []
         else:
-            self.value = list(args)
+            self.value = list(filter(s.Symbol('Nothing').__ne__, args))
 
     def __getitem__(self, x):
         if isinstance(x, slice):
@@ -31,6 +31,7 @@ class List(s.Basic):  # probably a bad idea
 
     def __setitem__(self, key, value):
         self.value[key] = value
+        self.value = list(filter(s.Symbol('Nothing').__ne__, args))
 
     def __iter__(self):
         return self.value.__iter__()
@@ -192,6 +193,10 @@ class Rule(s.AtomicExpr):
     def __str__(self):
         return self.__repr__()
 
+    # noinspection PyProtectedMember
+    def _pretty(self, printer=None):
+        return printer._print_Implies(List(self.lhs, self.rhs), altchar='->')
+
     @classmethod
-    def from_dict(cls, d):
-        return tuple(Rule(x, d[x]) for x in d)
+    def from_dict(cls, d, head=tuple):
+        return head(*(Rule(x, d[x]) for x in d))
