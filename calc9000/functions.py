@@ -316,7 +316,7 @@ class Round(NormalFunction):
     Round [x]
      Gives the integer closest to x.
 
-    Round [x,a]
+    Round [x, a]
      Rounds to the nearest multiple of a.
     """
 
@@ -1240,7 +1240,7 @@ class Rationalize(NormalFunction):
         return x
 
 
-class Subs(ExplicitFunction):
+class Subs(NormalFunction):
     """
     Subs [Expr, Rule]
      Transforms Expression expr with the given Rule.
@@ -1248,6 +1248,17 @@ class Subs(ExplicitFunction):
     Subs [Expr, {Rule1, Rule2, …}]
      Transforms Expression expr with the given Rules.
     """
+    @staticmethod
+    def func_replacement_helper(replacements):
+        reps = {str(k): v for k, v in replacements}
+        fw = r.refs.FunctionWrappers
+        for x in list(reps):
+            if x in fw:
+                reps[fw[x]] = reps[x]
+            elif x in fw.values():
+                del reps[x]
+        return reps
+
     @classmethod
     def exec(cls, expr, replacements):
         if not isinstance(replacements, iterables):
@@ -1264,9 +1275,8 @@ class Subs(ExplicitFunction):
                         raise FunctionException(f'{replacements} is a mixture of Lists and Non-Lists.')
         if isinstance(expr, (s.Expr, List, s.Matrix, Rule)):
             expr = expr.subs(replacements)
-            replacement_dict = {str(k): v for k, v in replacements}
+            replacement_dict = Subs.func_replacement_helper(replacements)
             for func in expr.atoms(s.Function):
-                # TODO: sympy function replacement
                 if str(func) in replacement_dict:
                     expr = expr.replace(func, replacement_dict[str(func)])
                 if str(func.func) in replacement_dict:
@@ -2238,7 +2248,6 @@ class Functions:
     # TODO: Warnings
 
     # TODO: Clear Function from References
-    # TODO: Subs Function Replacement
 
     # TODO: Latex Printer
     # TODO: References Storage

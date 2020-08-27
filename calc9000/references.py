@@ -51,6 +51,46 @@ class Functions(dict):
     pass
 
 
+FunctionWrappers = {
+    # Trig Functions
+    'Sin': 'sin',
+    'Cos': 'cos',
+    'Tan': 'tan',
+    'Csc': 'csc',
+    'Sec': 'sec',
+    'Cot': 'cot',
+    'ArcSin': 'asin',
+    'ArcCos': 'acos',
+    'ArcTan': 'atan',
+    'ArcCsc': 'acsc',
+    'ArcSec': 'asec',
+    'ArcCot': 'acot',
+    'Log': 'log',
+    'Floor': 'floor',
+    'Ceiling': 'ceiling',
+    'Re': 're',
+    'Im': 'im',
+    'Arg': 'arg',
+    # 'Transpose': 'transpose',
+    # 'Inverse': 'inverse',
+    'Factorial': 'factorial',
+    'Conjugate': 'conjugate',
+    'Sqrt': 'sqrt',
+    'StieltjesGamma': 'stieltjes',
+    'Gamma': 'gamma',
+    'Surd': 'real_root',
+    'GCD': 'gcd',
+    'LCM': 'lcm',
+    'PrimeQ': 'isprime',
+    'Equal': 'eq',
+    'Factor': 'factor',
+    'Expand': 'expand',
+    'TrigExpand': 'expand_trig',
+    'HeavisideTheta': 'Heaviside',
+    'Simplify': 'simplify',
+    'Zeta': 'zeta',
+}
+
 NoCache = [
     "Out",
     "ReplaceAll",
@@ -72,6 +112,7 @@ class References:
         self.NoCache = NoCache
         self.BuiltIns = Functions()
         self.Functions = Functions()
+        self.FunctionWrappers = FunctionWrappers
         self.Constants = Constants
         self.Protected = Protected
         self.Line = 1
