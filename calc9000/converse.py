@@ -8,13 +8,15 @@ def process(input_text: str):
     if not input_text or input_text.isspace():
         r.refs.add_def("", "")
         return None
-    out = parser.evaluate(input_text)
-    r.refs.add_def(input_text, out)
+    out = parser.evaluate(input_text, r)
+    # r.refs.add_def(input_text, out)
     return out
 
 
 def process_pretty(input_text):
     raw = process(input_text)
+    if raw is None:
+        return None
     try:
         return s.pretty(raw)
     except TypeError:

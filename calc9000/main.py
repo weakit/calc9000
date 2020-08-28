@@ -10,7 +10,10 @@ if __name__.endswith('main'):
         while True:
             i = input(f'IN  {c.current_line()}: ')
             try:
-                out = str(c.process_pretty(i))
+                out = c.process_pretty(i)
+                if out is None:
+                    print('')
+                    continue
             except KeyboardInterrupt as e:
                 if isinstance(e, lark.exceptions.UnexpectedInput):
                     print(str(e)[:str(e).rindex('Expect')-2])
