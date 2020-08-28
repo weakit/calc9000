@@ -6,7 +6,6 @@ import sympy as s
 import secrets
 from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from itertools import permutations, combinations
-from collections.abc import Sized
 
 iterables = (s.Tuple, List, s.Matrix, list, tuple)
 random = secrets.SystemRandom()
@@ -138,18 +137,17 @@ def thread(func, *args, **kwargs):
     Internal threading function
     keyword args are not threaded
     """
+
     length = None
 
-    # check list lengths
     for arg in args:
         if isinstance(arg, iterables):
             if length is not None:
                 if length != len(arg):
-                    raise FunctionException("Cannot Thread over Lists of unequal length.")
+                    raise FunctionException("Cannot Thread over Lists of Unequal Length")
             else:
-                length = len(iterables)
+                length = len(arg)
 
-    # return called function if no lists present
     if length is None:
         return func(*args, **kwargs)
 
@@ -159,7 +157,7 @@ def thread(func, *args, **kwargs):
         if not isinstance(chained[i], iterables):
             chained[i] = (chained[i],) * length
 
-    return List.create(func(*z) for z in zip(*chained))
+    return List.create(thread(func, *z, **kwargs) for z in zip(*chained))
 
     # if isinstance(x, iterables):
     #     temp_list = List()
@@ -169,9 +167,28 @@ def thread(func, *args, **kwargs):
     # return func(x)
 
 
+def r_thread(func, to_thread, *args, rule=True, **kwargs):
+    if isinstance(to_thread, iterables):
+        return List(*(r_thread(func, x, *args, **kwargs) for x in to_thread))
+
+    if rule and isinstance(to_thread, Rule):
+        return Rule(
+            r_thread(func, to_thread.lhs, *args, **kwargs),
+            r_thread(func, to_thread.rhs, *args, **kwargs),
+        )
+
+    return func(to_thread, *args, **kwargs)
+
+
 def threaded(name, func):
     def fun(x):
         return thread(func, x)
+    return type(name, (NormalFunction,), {'exec': fun})
+
+
+def r_threaded(name, func):
+    def fun(x):
+        return r_thread(func, x)
     return type(name, (NormalFunction,), {'exec': fun})
 
 
@@ -373,13 +390,11 @@ class Min(NormalFunction):
     """
     @classmethod
     def exec(cls, *x):
-        temp_list = List()
-        for i in x:
-            if isinstance(i, iterables):
-                temp_list.append(Min(*i))
-            else:
-                temp_list.append(i)
-        return s.Min(*temp_list)
+        x = List(x)
+        for i, n in enumerate(x):
+            if isinstance(n, iterables):
+                x[i] = (Min(*n))
+        return s.Min(*x)
 
 
 class Max(NormalFunction):
@@ -389,13 +404,11 @@ class Max(NormalFunction):
     """
     @classmethod
     def exec(cls, *x):
-        temp_list = List()
-        for i in x:
-            if isinstance(i, iterables):
-                temp_list.append(Max(*i))
-            else:
-                temp_list.append(i)
-        return s.Max(*temp_list)
+        x = List(x)
+        for i, n in enumerate(x):
+            if isinstance(n, iterables):
+                x[i] = (Max(*n))
+        return s.Max(*x)
 
 
 class Total(NormalFunction):
@@ -675,6 +688,7 @@ class Transpose(NormalFunction):
                 m = s.Matrix(x)
                 return toList(m.transpose())
             except ValueError:
+                # TODO: Warning
                 return None
 
 
@@ -1300,7 +1314,7 @@ class Factor(NormalFunction):
         kws = options(args, {"Modulus": "modulus",
                              "Extension": "extension",
                              "GaussianIntegers": "gaussian"})
-        return thread(s.factor, expr, **kws)
+        return r_thread(s.factor, expr, **kws)
 
 
 class Expand(NormalFunction):
@@ -1314,7 +1328,7 @@ class Expand(NormalFunction):
     @classmethod
     def exec(cls, expr, *ops):
         kws = options(ops, {"Modulus": "modulus", "Trig": "trig"}, {"trig": False})
-        return thread(s.expand, expr, **kws)
+        return r_thread(s.expand, expr, **kws)
 
 
 class TrigExpand(NormalFunction):
@@ -1327,7 +1341,7 @@ class TrigExpand(NormalFunction):
 
     @classmethod
     def exec(cls, expr):
-        return thread(s.expand_trig, expr)
+        return r_thread(s.expand_trig, expr)
 
 
 class nPr(NormalFunction):
@@ -1373,8 +1387,9 @@ class N(NormalFunction):
     """
 
     @classmethod
-    def exec(cls, n, *args):
-        return thread(lambda x: s.N(x, *args), n)
+    def exec(cls, *args):
+        # return thread(lambda x: s.N(x, *args), n)
+        return r_thread(s.N, *args)
 
 
 class D(NormalFunction):
@@ -1573,7 +1588,7 @@ class Simplify(NormalFunction):
             #
             #     assum = assumptions(assum)
             #     expr = thread(lambda x: s.refine(x, assum), expr)
-        return thread(s.simplify, expr)
+        return r_thread(s.simplify, expr)
 
 
 class IntegerPart(NormalFunction):
@@ -2293,7 +2308,6 @@ class Functions:
     # TODO: Span
     # TODO: Prime Notation
     # TODO: Part, Assignment
-    # TODO: Semicolon
 
     # TODO: Polar Complex Number Representation
     # TODO: Series
@@ -2319,7 +2333,6 @@ class Functions:
 
     # Low Priority
 
-    # TODO: Move Rule into iterables (thread functions over Rule)
     # TODO: Map, Apply
     # TODO: Pretty Printer Fixes for Dot, Cross
     # TODO: Arithmetic Functions: Ratios, Differences
