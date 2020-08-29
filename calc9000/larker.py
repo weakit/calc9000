@@ -194,7 +194,7 @@ class AssignTransformer(Transformer):
 
     @staticmethod
     def FLOAT(n):
-        return op.numeric(n)
+        return op._float(n)
 
     @staticmethod
     def CNAME(n):

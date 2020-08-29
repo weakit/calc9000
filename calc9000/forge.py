@@ -30,6 +30,10 @@ def numeric(n):
     return s.Number(n)
 
 
+def _float(n):
+    return s.Float(n, 20)
+
+
 def symbol(n):
     return functions.get_symbol_value(n)
 

@@ -1387,9 +1387,9 @@ class N(NormalFunction):
     """
 
     @classmethod
-    def exec(cls, *args):
+    def exec(cls, expr, p=15, *args):
         # return thread(lambda x: s.N(x, *args), n)
-        return r_thread(s.N, *args)
+        return r_thread(s.N, r_thread(s.N, expr, p + 10, *args), p)
 
 
 class D(NormalFunction):
