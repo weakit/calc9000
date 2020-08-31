@@ -31,7 +31,7 @@ class List(s.Basic):  # probably a bad idea
 
     def __setitem__(self, key, value):
         self.value[key] = value
-        self.value = list(filter(s.Symbol('Nothing').__ne__, args))
+        self.value = list(filter(s.Symbol('Nothing').__ne__, self.value))
 
     def __iter__(self):
         return self.value.__iter__()
@@ -165,10 +165,6 @@ class List(s.Basic):  # probably a bad idea
     def append(self, *x):
         self.value += list(x)
 
-    # noinspection PyProtectedMember
-    def _pretty(self, printer=None):
-        return printer._print_seq(self.value, '{', '}')
-
 
 class Rule(s.AtomicExpr):
     # TODO: Pretty and LaTeX printing
@@ -192,10 +188,6 @@ class Rule(s.AtomicExpr):
 
     def __str__(self):
         return self.__repr__()
-
-    # noinspection PyProtectedMember
-    def _pretty(self, printer=None):
-        return printer._print_Implies(List(self.lhs, self.rhs), altchar='->')
 
     @classmethod
     def from_dict(cls, d, head=lambda *x: tuple(x)):

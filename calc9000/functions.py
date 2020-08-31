@@ -4,8 +4,8 @@ from calc9000 import references as r
 from calc9000.datatypes import List, Rule
 import sympy as s
 import secrets
-from sympy.printing.pretty.stringpict import stringPict, prettyForm, xsym
 from itertools import permutations, combinations
+from iteration_utilities import deepflatten, accumulate
 
 iterables = (s.Tuple, List, s.Matrix, list, tuple)
 random = secrets.SystemRandom()
@@ -47,13 +47,13 @@ class NormalFunction(s.Function):
             try:
                 return cls.exec(*(cls._make_replacements(x) for x in args))
             except FunctionException as x:
-                print(f'\nFunctionException: {x.args[0]}\n')
+                print(f'FunctionException: {x.args[0]}\n')
                 return None
             except TypeError as t:
                 if str(t).startswith('exec()'):
                     t = str(t).replace('exec()', cls.__name__)
                     t = t.translate(str.maketrans({x: str(int(x) - 1) for x in filter(str.isdigit, t)}))
-                print(f'\nTypeError: {t}\n')
+                print(f'TypeError: {t}\n')
                 return None
         return None
 
@@ -400,10 +400,7 @@ class Min(NormalFunction):
     """
     @classmethod
     def exec(cls, *x):
-        x = List(x)
-        for i, n in enumerate(x):
-            if isinstance(n, iterables):
-                x[i] = (Min(*n))
+        x = deepflatten(x)
         return s.Min(*x)
 
 
@@ -414,10 +411,7 @@ class Max(NormalFunction):
     """
     @classmethod
     def exec(cls, *x):
-        x = List(x)
-        for i, n in enumerate(x):
-            if isinstance(n, iterables):
-                x[i] = (Max(*n))
+        x = deepflatten(x)
         return s.Max(*x)
 
 
@@ -458,10 +452,7 @@ class Accumulate(NormalFunction):
         else:
             head = expr.__class__
             iterable = expr.args
-        temp_list = list(iterable)
-        for i in range(1, len(iterable)):
-            temp_list[i] += temp_list[i - 1]
-        return head(*temp_list)
+        return head(*accumulate(iterable))
 
 
 class Clip(NormalFunction):
@@ -607,38 +598,6 @@ class Dot(NormalFunction):
         if m.shape[1] == n.shape[1] == 1:
             return m.dot(n)
         return m * n
-
-    def _pretty(self, printer=None):
-        # TODO: redo pretty formatting
-        def dot(p, *others):
-            """stolen from stringpict.py"""
-            if len(others) == 0:
-                return p
-            if p.binding > prettyForm.MUL:
-                arg = stringPict(*p.parens())
-            result = [p]
-            for arg in others:
-                result.append('.')
-                if arg.binding > prettyForm.MUL:
-                    arg = stringPict(*arg.parens())
-                result.append(arg)
-            len_res = len(result)
-            for i in range(len_res):
-                if i < len_res - 1 and result[i] == '-1' and result[i + 1] == xsym('*'):
-                    result.pop(i)
-                    result.pop(i)
-                    result.insert(i, '-')
-            if result[0][0] == '-':
-                bin = prettyForm.NEG
-                if result[0] == '-':
-                    right = result[1]
-                    if right.picture[right.baseline][0] == '-':
-                        result[0] = '- '
-            else:
-                bin = prettyForm.MUL
-            return prettyForm(binding=bin, *stringPict.next(*result))
-
-        return dot(*(printer._print(i) for i in self.args))
 
     def _sympystr(self, printer=None):
         return ''.join(str(i) + '.' for i in (printer.doprint(i) for i in self.args))[:-1]
@@ -929,37 +888,6 @@ class Cross(NormalFunction):
             if isinstance(args[0], iterables) and isinstance(args[1], iterables):
                 if len(args[0]) == len(args[1]) == 3:
                     return List.create(s.Matrix(args[0]).cross(s.Matrix(args[1])))
-
-    def _pretty(self, printer=None):
-        def dot(p, *others):
-            """stolen from stringpict.py."""
-            if len(others) == 0:
-                return printer._print_Function(self, func_name='Cross')
-            if p.binding > prettyForm.MUL:
-                arg = stringPict(*p.parens())
-            result = [p]
-            for arg in others:
-                result.append('×')
-                if arg.binding > prettyForm.MUL:
-                    arg = stringPict(*arg.parens())
-                result.append(arg)
-            len_res = len(result)
-            for i in range(len_res):
-                if i < len_res - 1 and result[i] == '-1' and result[i + 1] == xsym('*'):
-                    result.pop(i)
-                    result.pop(i)
-                    result.insert(i, '-')
-            if result[0][0] == '-':
-                bin = prettyForm.NEG
-                if result[0] == '-':
-                    right = result[1]
-                    if right.picture[right.baseline][0] == '-':
-                        result[0] = '- '
-            else:
-                bin = prettyForm.MUL
-            return prettyForm(binding=bin, *stringPict.next(*result))
-
-        return dot(*(printer._print(i) for i in self.args))
 
     def _sympystr(self, printer=None):
         return 'Cross['.join(str(i) + ', ' for i in (printer.doprint(i) for i in self.args))[:-2] + ']'
