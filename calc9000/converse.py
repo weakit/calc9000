@@ -1,5 +1,6 @@
 import sympy as s
 from calc9000 import references as r, larker
+from calc9000.printer import pretty_print
 
 parser = larker.parser
 
@@ -18,7 +19,7 @@ def process_pretty(input_text):
     if raw is None:
         return None
     try:
-        return s.pretty(raw)
+        return pretty_print(raw)
     except TypeError:
         return raw
 

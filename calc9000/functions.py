@@ -1387,9 +1387,9 @@ class N(NormalFunction):
     """
 
     @classmethod
-    def exec(cls, expr, p=15, *args):
+    def exec(cls, expr, p=16, *args):
         # return thread(lambda x: s.N(x, *args), n)
-        return r_thread(s.N, r_thread(s.N, expr, p + 10, *args), p)
+        return r_thread(s.N, expr, p + 4, *args)
 
 
 class D(NormalFunction):
@@ -2329,6 +2329,7 @@ class Functions:
     # TODO: Clear Function from References
 
     # TODO: Latex Printer
+    # TODO: Float Precision
     # TODO: References Storage
 
     # Low Priority

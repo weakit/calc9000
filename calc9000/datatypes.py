@@ -198,5 +198,5 @@ class Rule(s.AtomicExpr):
         return printer._print_Implies(List(self.lhs, self.rhs), altchar='->')
 
     @classmethod
-    def from_dict(cls, d, head=tuple):
+    def from_dict(cls, d, head=lambda *x: tuple(x)):
         return head(*(Rule(x, d[x]) for x in d))

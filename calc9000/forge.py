@@ -31,7 +31,7 @@ def numeric(n):
 
 
 def _float(n):
-    return s.Float(n, 20)
+    return s.Float(n, max(20, len(n) + 4))
 
 
 def symbol(n):

@@ -284,7 +284,7 @@ class SymbolTransformer(AssignTransformer):
                     result = op.operate(statements[-1])
                     r.refs.add_def(t, result)
                     return result
-        result = op.operate(parsed)
+        result = op.operate(self.transform(parsed))
         r.refs.add_def(t, result)
         return result
 
