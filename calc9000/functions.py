@@ -44,7 +44,17 @@ class NormalFunction(s.Function):
     @classmethod
     def eval(cls, *args):
         if hasattr(cls, 'exec'):
-            return cls.exec(*(cls._make_replacements(x) for x in args))
+            try:
+                return cls.exec(*(cls._make_replacements(x) for x in args))
+            except FunctionException as x:
+                print(f'\nFunctionException: {x.args[0]}\n')
+                return None
+            except TypeError as t:
+                if str(t).startswith('exec()'):
+                    t = str(t).replace('exec()', cls.__name__)
+                    t = t.translate(str.maketrans({x: str(int(x) - 1) for x in filter(str.isdigit, t)}))
+                print(f'\nTypeError: {t}\n')
+                return None
         return None
 
 
