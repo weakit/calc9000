@@ -194,7 +194,7 @@ class AssignTransformer(Transformer):
 
     @staticmethod
     def FLOAT(n):
-        return op.numeric(n)
+        return op._float(n)
 
     @staticmethod
     def CNAME(n):
@@ -284,7 +284,7 @@ class SymbolTransformer(AssignTransformer):
                     result = op.operate(statements[-1])
                     r.refs.add_def(t, result)
                     return result
-        result = op.operate(parsed)
+        result = op.operate(self.transform(parsed))
         r.refs.add_def(t, result)
         return result
 
