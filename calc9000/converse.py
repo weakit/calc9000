@@ -1,4 +1,3 @@
-import sympy as s
 from calc9000 import references as r, larker
 from calc9000.printer import pretty_print
 

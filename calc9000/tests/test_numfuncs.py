@@ -1,7 +1,5 @@
-from . import s, p, p_str
+from . import s, p, p_str, f
 from calc9000.datatypes import List
-
-f = s.Rational
 
 
 def test_round():
