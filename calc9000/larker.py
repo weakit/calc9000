@@ -68,7 +68,7 @@ RELATIONAL: "=="
 ?execute: function
         | atom "[" "[" (expression)? ("," expression)* "]" "]" -> part
 
-function: atom "[" (expression)? ("," expression)* "]"
+function: atom "[" (compound_statement)? ("," compound_statement)* "]"
 // TODO | function "[" (expression)? ("," expression)* "]"
 
 ?unary: factorial
@@ -262,30 +262,9 @@ class SymbolTransformer(AssignTransformer):
                 children[x] = transformer.transform(children[x])
             return op.delayed(children, list(transformer.funcs))
 
-    def evaluate(self, t, r):
+    def evaluate(self, t):
         parsed = self.parser.parse(t)
-        if isinstance(parsed, Tree):
-            # if parsed.data in ["set", "unset", "set_delayed"]:
-            #     return self.handle(parsed)
-            # return op.operate(self.transform(parsed))
-            parsed = self.transform(parsed)
-            if parsed.data in ['compound_statement', 'semicolon_statement']:
-                if parsed.data == 'compound_statement':
-                    statements = parsed.children
-                else:
-                    statements = (parsed,)
-                for statement in statements[:-1]:
-                    op.operate(statement.children[0])
-                if isinstance(statements[-1], Tree) and statements[-1].data == 'semicolon_statement':
-                    result = op.operate(statements[-1].children[0])
-                    r.refs.add_def(t, result)
-                    return None
-                else:
-                    result = op.operate(statements[-1])
-                    r.refs.add_def(t, result)
-                    return result
         result = op.operate(self.transform(parsed))
-        r.refs.add_def(t, result)
         return result
 
 

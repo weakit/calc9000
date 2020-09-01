@@ -104,7 +104,7 @@ def assign(n):
 
 
 def unset(n):
-    return Functions.call('Unset', pilot(n))
+    return Functions.call('Unset', lazy(n))
 
 
 def and_(n):
@@ -133,29 +133,34 @@ def delayed(n, f):
 
 # TODO: Part and Logical Operators
 
-def pilot(tree: Tree):
+def lazy(tree: Tree):
     if not isinstance(tree, Tree):
         return tree
     if tree.data == 'symbol':
         return s.Symbol(tree.children[0])
     if tree.data in basic_ops:
-        return globals()[tree.data]([pilot(x) for x in tree.children])
+        # TODO: Convert to hold
+        return globals()[tree.data]([lazy(x) for x in tree.children])
+    if tree.data == 'function':
+        return Functions.lazy_call(str(tree.children[0].children[0]), *(lazy(x) for x in tree.children[1:]))
     if tree.data == 'list':
-        return List(*(pilot(x) for x in tree.children))
+        return List(*(lazy(x) for x in tree.children))
     if tree.data == 'rule':
-        return Rule(*(pilot(x) for x in tree.children))
+        return Rule(*(lazy(x) for x in tree.children))
     if tree.data == 'part':
-        return Functions.pilot_call('Part', *(pilot(x) for x in tree.children))
+        return Functions.lazy_call('Part', *(lazy(x) for x in tree.children))
     if tree.data == 'set':
-        return Functions.pilot_call('Set', pilot(tree.children[0]), pilot(tree.children[1]))
+        return Functions.lazy_call('Set', lazy(tree.children[0]), lazy(tree.children[1]))
     if tree.data == 'set_delayed':
-        return Functions.call('SetDelayed', pilot(tree.children[0]), pilot(tree.children[1]))
+        return Functions.lazy_call('SetDelayed', lazy(tree.children[0]), lazy(tree.children[1]))
+    if tree.data == 'semicolon_statement':
+        return Functions.lazy_call('SemicolonStatement', *(lazy(x) for x in tree.children))
+    if tree.data == 'compound_statement':
+        return Functions.lazy_call('CompoundExpression', *(lazy(x) for x in tree.children))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':
-        return relations([pilot(x) for x in tree.children])
-    if tree.data == 'function':
-        return Functions.pilot_call(str(tree.children[0].children[0]), *(pilot(x) for x in tree.children[1:]))
+        return relations([lazy(x) for x in tree.children])
 
 
 def operate(tree: Tree):
@@ -165,6 +170,11 @@ def operate(tree: Tree):
         return symbol(tree.children[0])
     if tree.data in basic_ops:
         return globals()[tree.data]([operate(x) for x in tree.children])
+    if tree.data == 'function':
+        name = str(tree.children[0].children[0])
+        if Functions.is_explicit(name):
+            return Functions.call(name, *(lazy(x) for x in tree.children[1:]))
+        return Functions.call(name, *(operate(x) for x in tree.children[1:]))
     if tree.data == 'list':
         return List(*(operate(x) for x in tree.children))
     if tree.data == 'rule':
@@ -174,20 +184,19 @@ def operate(tree: Tree):
     if tree.data == 'out':
         return out(tree.children)
     if tree.data == 'set':
-        return functions.real_set(pilot(tree.children[0]), operate(tree.children[1]))
+        return functions.real_set(lazy(tree.children[0]), operate(tree.children[1]))
     if tree.data == 'set_delayed':
-        return Functions.call('SetDelayed', pilot(tree.children[0]), pilot(tree.children[1]))
+        return Functions.call('SetDelayed', lazy(tree.children[0]), lazy(tree.children[1]))
     if tree.data == 'replace':  # see ReplaceAll
         return Functions.call('Subs', *(operate(x) for x in tree.children))
     if tree.data == 'unset':
-        return Functions.call('Unset', pilot(tree.children[0]))
+        return Functions.call('Unset', lazy(tree.children[0]))
+    if tree.data == 'semicolon_statement':
+        return Functions.call('SemicolonStatement', *(lazy(x) for x in tree.children))
+    if tree.data == 'compound_statement':
+        return Functions.call('CompoundExpression', *(lazy(x) for x in tree.children))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':
         return relations([operate(x) for x in tree.children])
-    if tree.data == 'function':
-        name = str(tree.children[0].children[0])
-        if Functions.is_explicit(name):
-            return Functions.call(name, *(pilot(x) for x in tree.children[1:]))
-        return Functions.call(name, *(operate(x) for x in tree.children[1:]))
     return tree

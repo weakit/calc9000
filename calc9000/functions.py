@@ -26,8 +26,8 @@ def get_symbol_value(n):
         return s.Symbol(n)
     ret = r.refs.Symbols[n]
     if type(ret) is Delay:
-        return PilotFunction.land_in(ret.args[0])
-    return PilotFunction.land_in(ret)
+        return LazyFunction.evaluate(ret.args[0])
+    return LazyFunction.evaluate(ret)
 
 
 class NormalFunction(s.Function):
@@ -75,15 +75,15 @@ class ExplicitFunction(s.Function):
         return None
 
 
-class PilotFunction(s.Function):
+class LazyFunction(s.Function):
     """
     A really bad Lazy Function implementation
     """
     @staticmethod
-    def land_in(expr):
+    def evaluate(expr):
         """Get value of Lazy Function, with other lazy functions as args."""
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
-            return List.create(PilotFunction.land_in(x) for x in expr)
+            return List.create(LazyFunction.evaluate(x) for x in expr)
 
         if not hasattr(expr, 'subs'):
             return expr
@@ -101,7 +101,7 @@ class PilotFunction(s.Function):
             rep = {x: extend(x) for x in ex.args}
             ex = ex.subs(rep)
 
-            if isinstance(ex, PilotFunction):
+            if isinstance(ex, LazyFunction):
                 return ex.land()
 
             return ex
@@ -109,7 +109,7 @@ class PilotFunction(s.Function):
         expr = extend(expr)
 
         # # land from innermost functions
-        # funcs = sorted(expr.atoms(PilotFunction), key=lambda x: len(x.atoms(PilotFunction)))
+        # funcs = sorted(expr.atoms(LazyFunction), key=lambda x: len(x.atoms(LazyFunction)))
         # while funcs:
         #     r_func = funcs[0]
         #     func = r_func.land()
@@ -126,7 +126,7 @@ class PilotFunction(s.Function):
         return None
 
 
-class Delay(PilotFunction):
+class Delay(LazyFunction):
     """
     A delayed expression.
     Use first arg as expression.
@@ -251,6 +251,26 @@ def is_integer(n):
     if isinstance(n, float):
         return int(n) == n
     return False
+
+
+class SemicolonStatement(ExplicitFunction):
+    """
+    !internal
+    """
+    @classmethod
+    def exec(cls, expr):
+        return r.NoOutput(LazyFunction.evaluate(expr))
+
+
+class CompoundExpression(ExplicitFunction):
+    """
+    !internal
+    """
+    @classmethod
+    def exec(cls, *args):
+        for expr in args[:-1]:
+            LazyFunction.evaluate(expr)
+        return LazyFunction.evaluate(args[-1])
 
 
 # Trig Functions
@@ -1106,7 +1126,7 @@ class Set(ExplicitFunction):
 
     @classmethod
     def exec(cls, x, n):
-        return real_set(x, PilotFunction.land_in(n))
+        return real_set(x, LazyFunction.evaluate(n))
 
 
 class Unset(NormalFunction):
@@ -1237,7 +1257,7 @@ class Subs(NormalFunction):
                     expr = expr.replace(func, replacement_dict[str(func)])
                 if str(func.func) in replacement_dict:
                     expr = expr.replace(func, Functions.call(str(replacement_dict[str(func.func)]), *func.args))
-            return PilotFunction.land_in(expr)
+            return LazyFunction.evaluate(expr)
         if isinstance(expr, iterables):
             return List.create(Subs(x, replacements) for x in expr)
         return None
@@ -1742,13 +1762,13 @@ class Table(ExplicitFunction):
     def _table(expr, repl, args):
         li = List()
         for arg in args:
-            li.append(PilotFunction.land_in(Subs(expr, Rule(repl, arg))))
+            li.append(LazyFunction.evaluate(Subs(expr, Rule(repl, arg))))
         return li
 
     @staticmethod
     def _range_parse(expr, arg):
         if arg.is_number:
-            return List(*(PilotFunction.land_in(expr) for _ in range(arg)))
+            return List(*(LazyFunction.evaluate(expr) for _ in range(arg)))
         if len(arg) == 2 and isinstance(arg[1], iterables):
             args = arg[1]
         elif len(arg) >= 2:
@@ -1762,9 +1782,9 @@ class Table(ExplicitFunction):
     @classmethod
     def exec(cls, expr, *args):
         if not args:
-            return PilotFunction.land_in(expr)
+            return LazyFunction.evaluate(expr)
 
-        args = PilotFunction.land_in(args)
+        args = LazyFunction.evaluate(args)
 
         if len(args) == 1:
             return cls._range_parse(expr, args[0])
@@ -2078,11 +2098,11 @@ class First(ExplicitFunction):
     """
     @classmethod
     def exec(cls, x, d=None):
-        x = PilotFunction.land_in(x)
+        x = LazyFunction.evaluate(x)
         if Length(x) > 0:
             return Part(x, 1)
         if d is not None:
-            return PilotFunction.land_in(d)
+            return LazyFunction.evaluate(d)
         else:
             raise FunctionException(f'{x} has zero length, and no first element.')
 
@@ -2097,11 +2117,11 @@ class Last(ExplicitFunction):
     """
     @classmethod
     def exec(cls, x, d=None):
-        x = PilotFunction.land_in(x)
+        x = LazyFunction.evaluate(x)
         if Length(x) > 0:
             return Part(x, -1)
         if d is not None:
-            return PilotFunction.land_in(d)
+            return LazyFunction.evaluate(d)
         else:
             raise FunctionException(f'{x} has zero length, and no last element.')
 
@@ -2240,6 +2260,16 @@ class Nothing(NormalFunction):
         return r.refs.Constants.Nothing
 
 
+class Timing(ExplicitFunction):
+    @classmethod
+    def exec(cls, expr):
+        import time
+        start = time.time()
+        result = LazyFunction.evaluate(expr)
+        end = time.time()
+        return List(s.Float(end) - s.Float(start), result)
+
+
 class Functions:
     # TODO: Convert all code function calls to Functions.call / Function.exec
     # TODO: Finish Explicit Functions
@@ -2276,8 +2306,8 @@ class Functions:
 
     # Low Priority
 
+    # TODO: Try Piecewise
     # TODO: Map, Apply
-    # TODO: Pretty Printer Fixes for Dot, Cross
     # TODO: Arithmetic Functions: Ratios, Differences
     # TODO: Booleans, Conditions, Boole
     # TODO: Cross of > 3 dimensional vectors
@@ -2285,7 +2315,7 @@ class Functions:
 
     # for now, until I find something better
     r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)
-                            and not issubclass(v, PilotFunction)})
+                            and not issubclass(v, LazyFunction)})
 
     @classmethod
     def not_normal(cls, f: str) -> bool:
@@ -2334,10 +2364,10 @@ class Functions:
                 expr = Subs(expr, Rule.from_dict(vars(r.refs.Symbols)))  # + Rule.from_dict({x: x for x in reps}))
                 if type(expr) is Delay:
                     # TODO: improve naive approach
-                    return PilotFunction.land_in(expr.args[0])
+                    return LazyFunction.evaluate(expr.args[0])
                 return expr
         return type(f, (NormalFunction,), {})(*a)
 
     @classmethod
-    def pilot_call(cls, f: str, *a):
-        return type(f, (PilotFunction,), {})(*a)
+    def lazy_call(cls, f: str, *a):
+        return type(f, (LazyFunction,), {})(*a)

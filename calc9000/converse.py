@@ -9,8 +9,12 @@ def process(input_text: str):
     if not input_text or input_text.isspace():
         r.refs.add_def("", "")
         return None
-    out = parser.evaluate(input_text, r)
-    # r.refs.add_def(input_text, out)
+    out = parser.evaluate(input_text)
+    if isinstance(out, (r.NoOutput,)):
+        r.refs.add_def(input_text, out.value)
+        out = None
+    else:
+        r.refs.add_def(input_text, out)
     return out
 
 

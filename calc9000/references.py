@@ -1,6 +1,14 @@
 import sympy as s
 
 
+class NoOutput:
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return ''
+
+
 class Protected:
     Symbol = None
     Rule = None
@@ -100,7 +108,9 @@ NoCache = [
     "Random",
     "RandomInteger",
     "RandomReal",
-    "RandomComplex"
+    "RandomComplex",
+    "ComplexExpression",
+    "SemicolonStatement"
 ]
 
 
