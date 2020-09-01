@@ -466,6 +466,7 @@ class Clip(NormalFunction):
     Clip [x, {min, max}, {v_min, v_max}]
      Gives v_min for x < min and v_max for x > max.
     """
+    # TODO: Raise exception for complex values
     @classmethod
     def exec(cls, x, limits=(s.S.NegativeOne, s.S.One), limit_return=None):
         if isinstance(x, iterables):
@@ -903,10 +904,13 @@ class Sign(NormalFunction):
 
     @staticmethod
     def _sign(n):
-        if n.is_real:
+        if hasattr(n, 'is_real') and n.is_real:
             return s.sign(n)
-        if n.is_complex:
-            return n / Abs(n)
+        if n == s.oo:
+            return 1
+        if n == -s.oo:
+            return -1
+        return n / Abs(n)
 
     @classmethod
     def exec(cls, x):

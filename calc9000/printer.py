@@ -7,7 +7,7 @@ from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
 
 class Printer9000(PrettyPrinter):
     def _print_Float(self, e):
-        e = s.Float(e, precision=e._prec-12)
+        e = s.Float(e, precision=max(e._prec-13, 1))
         full_prec = self._settings["full_prec"]
         if full_prec == "auto":
             full_prec = self._print_level == 1
