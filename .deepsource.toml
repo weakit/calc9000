@@ -1,7 +1,7 @@
 version = 1
 
 test_patterns = [
-  "test_*.py"
+  "calc9000/tests/test_*.py"
 ]
 
 [[analyzers]]
