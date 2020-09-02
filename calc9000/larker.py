@@ -218,18 +218,18 @@ class AssignTransformer(Transformer):
         return super().transform(tree)
 
 
-class DelayedAssignTransformer(AssignTransformer):
-    def __init__(self, funcs):
-        self.funcs = funcs
-        super().__init__()
-
-    # @staticmethod
-    # def symbol(n):
-    #     return s.Symbol(str(n[0]))
-    #
-    # def function(self, items):
-    #     self.funcs.append(items[0])
-    #     return op.unset_function(items)
+# class DelayedAssignTransformer(AssignTransformer):
+#     def __init__(self, funcs):
+#         self.funcs = funcs
+#         super().__init__()
+#
+#     @staticmethod
+#     def symbol(n):
+#         return s.Symbol(str(n[0]))
+#
+#     def function(self, items):
+#         self.funcs.append(items[0])
+#         return op.unset_function(items)
 
 
 class SymbolTransformer(AssignTransformer):
@@ -245,22 +245,22 @@ class SymbolTransformer(AssignTransformer):
     # def function(items):
     #     return op.function(items)
 
-    def handle(self, tree: Tree):
-        if tree.data == "set":
-            children = tree.children[:]
-            for x in range(len(children) - 1):
-                children[x] = assigner.transform(children[x])
-            children[-1] = self.transform(children[-1])
-            return op.assign(children)
-        if tree.data == "unset":
-            return op.unset(assigner.transform(tree.children[0]))
-        if tree.data == "set_delayed":
-            f = []
-            transformer = DelayedAssignTransformer(f)
-            children = tree.children[:]
-            for x in range(len(children)):
-                children[x] = transformer.transform(children[x])
-            return op.delayed(children, list(transformer.funcs))
+    # def handle(self, tree: Tree):
+    #     if tree.data == "set":
+    #         children = tree.children[:]
+    #         for x in range(len(children) - 1):
+    #             children[x] = assigner.transform(children[x])
+    #         children[-1] = self.transform(children[-1])
+    #         return op.assign(children)
+    #     if tree.data == "unset":
+    #         return op.unset(assigner.transform(tree.children[0]))
+    #     if tree.data == "set_delayed":
+    #         f = []
+    #         transformer = DelayedAssignTransformer(f)
+    #         children = tree.children[:]
+    #         for x in range(len(children)):
+    #             children[x] = transformer.transform(children[x])
+    #         return op.delayed(children, list(transformer.funcs))
 
     def evaluate(self, t):
         parsed = self.parser.parse(t)

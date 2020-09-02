@@ -203,6 +203,8 @@ def r_threaded(name, func):
 
 
 def boolean(x):
+    if isinstance(x, bool):
+        return x
     if isinstance(x, s.Symbol):
         if x.name == "True":
             return True
@@ -1201,19 +1203,45 @@ class Rationalize(NormalFunction):
     Rationalize [x, dx]
      Yields the rational number with smallest denominator that lies within dx of x.
 
+    Rationalize [args, ForceRational -> False]
+     Might return a better result that which may not necessarily be a rational.
+
     Uses sympy.nsimplify().
     See https://reference.wolfram.com/language/ref/Rationalize
     """
 
-    @classmethod
-    def exec(cls, x, dx=None):
-        if isinstance(x, iterables):
-            return List.create(Rationalize(n, dx) for n in x)
-        if isinstance(x, (int, float, s.Number)):
-            rat = s.nsimplify(x, rational=True, tolerance=dx)
-            if dx or 1 / (10 ** 4 * s.denom(rat)) > s.Abs(rat - x):
-                return rat
+    @staticmethod
+    def rat_rat(x, dx=None):
+        pr = 20
+        if dx:
+            pr = -s.log(dx, 10) + 4
+        rat = s.nsimplify(N(x, pr), tolerance=dx)
+        if dx or 1 / (10 ** 4 * s.denom(rat) ** 2) > s.Abs(rat - x):
+            if isinstance(rat, s.Rational):  # return better result
+                return Rationalize.rat(x, dx)
+            return rat
         return x
+
+    @staticmethod
+    def rat(x, dx=None):
+        # TODO: add precision checking for 0, fix return
+        pr = 20
+        if dx:
+            pr = -s.log(dx, 10) + 4
+        rat = s.nsimplify(N(x, pr), rational=True, tolerance=dx)
+        if dx or 1 / (10 ** 4 * s.denom(rat) ** 2) > s.N(s.Abs(rat - x)):
+            return rat
+        return x
+
+    @classmethod
+    def exec(cls, x, dx=None, *o):
+        rat = options(o, {'ForceRational': 'r'}, {'r': True})['r']
+        if not rat:
+            try:
+                return thread(cls.rat_rat, x, dx)
+            except AssertionError:  # this happens sometimes, dunno why
+                return thread(cls.rat, x, dx)
+        return thread(cls.rat, x, dx)
 
 
 class Subs(NormalFunction):

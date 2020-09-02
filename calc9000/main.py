@@ -4,8 +4,9 @@ import platform
 if __name__.endswith('main'):
     print(f'\n--- calc9000 [running on {platform.python_implementation()} {platform.python_version()}] ', end='')
     from calc9000 import converse as c
+    import sympy as s
     import lark
-    print(f'\b\b, using sympy {c.s.__version__}]\n')
+    print(f'\b\b, using sympy {s.__version__}]\n')
     try:
         while True:
             i = input(f'IN  {c.current_line()}: ')
