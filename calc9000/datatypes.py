@@ -136,7 +136,7 @@ class List(s.Basic):  # probably a bad idea
         return List(*new)
 
     def __hash__(self):
-        return tuple(self.value).__hash__()
+        return (List, *self.value).__hash__()
 
     def __repr__(self):
         if not self.value:
@@ -179,6 +179,14 @@ class Rule(s.AtomicExpr):
         if item == 1:
             return self.rhs
         raise RuleException
+
+    def __eq__(self, other):
+        if isinstance(other, Rule):
+            return self.lhs == other.lhs and self.rhs == other.rhs
+        return False
+
+    def __hash__(self):
+        return (Rule, self.lhs, self.rhs).__hash__()
 
     def __iter__(self):
         return (self.lhs, self.rhs).__iter__()
