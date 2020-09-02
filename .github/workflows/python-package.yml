@@ -38,6 +38,5 @@ jobs:
         project-token: ${{ secrets.COVERAGE_TOKEN }}
         coverage-reports: coverage.xml
     - name: Update coverage (codecov)
-    - uses: codecov/codecov-action@v1
-      with:
-        file: ./coverage.xml
+      run: |
+        bash <(curl -s https://codecov.io/bash)
