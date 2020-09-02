@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Python package
+name: pytest
 
 on:
   push:
@@ -32,8 +32,12 @@ jobs:
       run: |
         coverage run -m pytest
         coverage xml -o coverage.xml
-    - name: Update coverage
+    - name: Update coverage (codacy)
       uses: codacy/codacy-coverage-reporter-action@0.2.0
       with:
         project-token: ${{ secrets.COVERAGE_TOKEN }}
-        coverage-reports: coverage.xml 
+        coverage-reports: coverage.xml
+    - name: Update coverage (codecov)
+    - uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
