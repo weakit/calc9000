@@ -47,6 +47,8 @@ class NormalFunction(s.Function):
             try:
                 return cls.exec(*(cls._make_replacements(x) for x in args))
             except FunctionException as x:
+                # TODO: Pass error to converse.py
+                # TODO: Handle NotImplementedError(s)
                 print(f'FunctionException: {x.args[0]}\n')
                 return None
             except TypeError as t:
@@ -109,7 +111,8 @@ class LazyFunction(s.Function):
         expr = extend(expr)
 
         # # land from innermost functions
-        # funcs = sorted(expr.atoms(LazyFunction), key=lambda x: len(x.atoms(LazyFunction)))
+        # funcs = sorted(expr.atoms(LazyFunction),
+        #                key=lambda x: len(x.atoms(LazyFunction)))
         # while funcs:
         #     r_func = funcs[0]
         #     func = r_func.land()
@@ -377,6 +380,7 @@ class Round(NormalFunction):
             return a * round(x / a)
         if isinstance(x, iterables):
             return thread(Round, x)
+        return None
 
 
 class Floor(NormalFunction):
@@ -447,6 +451,7 @@ class Total(NormalFunction):
     def exec(cls, _list):
         if isinstance(_list, iterables):
             return sum(_list)
+        return None
 
 
 class Mean(NormalFunction):
@@ -459,6 +464,7 @@ class Mean(NormalFunction):
     def exec(cls, _list):
         if isinstance(_list, iterables):
             return Total(_list) / len(_list)
+        return None
 
 
 class Accumulate(NormalFunction):
@@ -502,6 +508,7 @@ class Clip(NormalFunction):
                 return limit_return[1]
             return x
             # return s.Max(s.Min(x, limits[1]), limits[0])
+        return None
 
     def _eval_rewrite_as_Piecewise(self, **kwargs):
         if len(self.args) == 3:
@@ -534,6 +541,7 @@ class Quotient(NormalFunction):
     def exec(cls, m, n):
         if m.is_number and n.is_number:
             return m // n
+        return None
 
     def _eval_is_real(self):
         return self.args[0].is_real and self.args[1].is_real
@@ -543,7 +551,7 @@ class Rescale(NormalFunction):
     # TODO: clean
     @classmethod
     def exec(cls, x, x_range=None, y_range=None):
-        if x_range is None and isinstance(x, iterables):
+        if x_range is None and isinstance(x, iterables) and y_range is None:
             x = list(x)
             _min = Min(x)
             _max = Max(x)
@@ -555,6 +563,7 @@ class Rescale(NormalFunction):
                 if y_range is None:
                     y_range = (0, 1)
                 return ((x - x_range[0]) * y_range[1] + (x_range[1] - x) * y_range[0]) / (x_range[1] - x_range[0])
+        raise FunctionException(f'Invalid Arguments for Rescale.')  # TODO: ?
 
 
 class In(NormalFunction):
@@ -644,6 +653,7 @@ class Det(NormalFunction):
             except ValueError:
                 # TODO: Warning
                 return None
+        return None
 
 
 class Inverse(NormalFunction):
@@ -663,6 +673,7 @@ class Inverse(NormalFunction):
             except ValueError:
                 # TODO: Warning
                 return None
+        return None
 
 
 class Transpose(NormalFunction):
@@ -682,6 +693,7 @@ class Transpose(NormalFunction):
             except ValueError:
                 # TODO: Warning
                 return None
+        return None
 
 
 class Re(NormalFunction):
@@ -911,6 +923,7 @@ class Cross(NormalFunction):
             if isinstance(args[0], iterables) and isinstance(args[1], iterables):
                 if len(args[0]) == len(args[1]) == 3:
                     return List.create(s.Matrix(args[0]).cross(s.Matrix(args[1])))
+        raise NotImplementedError('Not Implemented')
 
     def _sympystr(self, printer=None):
         return 'Cross['.join(str(i) + ', ' for i in (printer.doprint(i) for i in self.args))[:-2] + ']'
@@ -1057,6 +1070,7 @@ class CompositeQ(NormalFunction):
             if x.is_composite:
                 return True
             return False
+        return None
 
     @classmethod
     def exec(cls, n):
@@ -2189,6 +2203,7 @@ class RandomInteger(NormalFunction):
             return s.Rational(random.randint(limit[0], limit[1]))
         if len(args) == 2:
             return RandomInteger.repeat(args, RandomInteger)
+        raise TypeError('RandomInteger takes 1 to 2 positional arguments.')
 
     @staticmethod
     def repeat(args, func, p=None):
@@ -2199,6 +2214,7 @@ class RandomInteger(NormalFunction):
             if len(args[1]) == 1:
                 return func.exec(args[0], args[1][0], p=precision)
             return List(*[func.exec(args[0], args[1][1:], p=precision) for _ in range(int(args[1][0]))])
+        raise FunctionException("Invalid Bounds")
 
 
 class RandomReal(NormalFunction):
@@ -2242,18 +2258,22 @@ class RandomReal(NormalFunction):
             return lower + random.randint(0, (upper - lower) * 10 ** precision) * s.N(10 ** (-precision), precision)
         if len(args) == 2:
             return RandomInteger.repeat(args, RandomReal, p=precision)
+        raise TypeError('RandomInteger takes 1 to 2 positional arguments.')
 
 
 class RandomComplex(NormalFunction):
     """
     RandomComplex []
-     Gives a pseudo-random complex number with real and imaginary parts in the range 0 to 1.
+     Gives a pseudo-random complex number with real and
+     imaginary parts in the range 0 to 1.
 
     RandomComplex [{min, max}]
-     Gives a pseudo-random complex number in the rectangle with corners given by the complex numbers min and max.
+     Gives a pseudo-random complex number in the rectangle with
+     corners given by the complex numbers min and max.
 
     RandomComplex [max]
-     Gives a pseudo-random complex number in the rectangle whose corners are the origin and max.
+     Gives a pseudo-random complex number in the rectangle whose
+     corners are the origin and max.
 
     RandomComplex [range, n]
      Gives a list of n pseudo-random complex numbers.
@@ -2280,6 +2300,7 @@ class RandomComplex(NormalFunction):
                    RandomReal.exec(Im.exec(args[0]), p=precision) * r.refs.Constants.I
         if len(args) == 2:
             return RandomInteger.repeat(args, RandomComplex, p=precision)
+        raise TypeError('RandomInteger takes 1 to 2 positional arguments.')
 
 
 class Nothing(NormalFunction):

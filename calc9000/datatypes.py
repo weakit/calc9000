@@ -1,6 +1,6 @@
 import sympy as s
-# TODO: Nothing
 # TODO: check others
+# TODO: LaTeX printing
 
 
 class RuleException(Exception):
@@ -11,8 +11,7 @@ class ListException(Exception):
     pass
 
 
-class List(s.Basic):  # probably a bad idea
-    # TODO: Pretty and LaTeX printing
+class List(s.Basic):
     @staticmethod
     def create(x):
         return List(*x)
@@ -138,6 +137,11 @@ class List(s.Basic):  # probably a bad idea
     def __hash__(self):
         return (List, *self.value).__hash__()
 
+    def __eq__(self, other):
+        if isinstance(other, List):
+            return self.value == other.value
+        return False
+
     def __repr__(self):
         if not self.value:
             return '{}'
@@ -154,9 +158,9 @@ class List(s.Basic):  # probably a bad idea
             string += ', ' + str(value)
         return string + '}'
 
-    @classmethod
-    def concat(cls, x, y):
-        if isinstance(x, List):
+    def concat(self, y):
+        x = self
+        if isinstance(self, List):
             x = x.value
         if isinstance(y, List):
             y = y.value
@@ -167,7 +171,6 @@ class List(s.Basic):  # probably a bad idea
 
 
 class Rule(s.AtomicExpr):
-    # TODO: Pretty and LaTeX printing
     def __init__(self, a, b):
         self.lhs = a
         self.rhs = b

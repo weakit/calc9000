@@ -161,6 +161,7 @@ def lazy(tree: Tree):
         return str(tree.children[0])
     if tree.data == 'relation':
         return relations([lazy(x) for x in tree.children])
+    return None  # shouldn't probably do that
 
 
 def operate(tree: Tree):
