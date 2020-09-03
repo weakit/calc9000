@@ -1,12 +1,14 @@
 import sympy as s
-from calc9000.functions import Dot, Cross
+from calc9000.functions import Dot, Cross, Limit
 from calc9000.datatypes import List
 from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
     precedence_traditional, PRECEDENCE
 
 
 class Printer9000(PrettyPrinter):
+
     def _print_Float(self, e):
+        # TODO: fix float printing in List
         e = s.Float(e, precision=max(e._prec-13, 1))
         full_prec = self._settings["full_prec"]
         if full_prec == "auto":
@@ -30,8 +32,17 @@ class Printer9000(PrettyPrinter):
                                    parenthesize=lambda x: precedence_traditional(x) <= PRECEDENCE["Mul"])
         return super()._print_Cross(e)
 
-    def _print_Rule(self, e):
-        return self._print_Implies(List(e.lhs, e.rhs), altchar='->')
+    # def _print_Rule(self, e):
+    #     TODO: Proper rule printing
+    #     return self._print_Implies(List(
+    #         self._print_seq(e.lhs),
+    #         self._print_seq(e.rhs)
+    #     ), altchar='->')
+
+    def _print_Limit(self, l):
+        if isinstance(l, Limit):
+            return super()._print_Function(l)
+        return super()._print_Limit(l)
 
     def _print_List(self, e):
         return self._print_seq(e.value, '{', '}')

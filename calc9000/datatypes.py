@@ -106,12 +106,7 @@ class List(s.Basic):
         return False
 
     def __repr__(self):
-        if not self.value:
-            return 'List()'
-        string = 'List(' + repr(self.value[0])
-        for value in self.value[1:]:
-            string += ', ' + repr(value)
-        return string + ')'
+        return self.__str__()
 
     def __str__(self):
         if not self.value:
@@ -158,7 +153,7 @@ class Rule(s.AtomicExpr):
         return (self.lhs, self.rhs).__iter__()
 
     def __repr__(self):
-        return f'Rule({self[0]}, {self[1]})'
+        return self.__str__()
 
     def __str__(self):
         return f'{self[0]} -> {self[1]}'

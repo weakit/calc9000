@@ -30,8 +30,7 @@ def test_list():
     assert p('{1, 2, 3} ^ 2') == List(1, 4, 9)
     assert p('{1, 2, 3} ^ {3, 2, 1}') == List(1, 4, 3)
     assert p('{1, 2, 3, x}') == p('{2 - 1, 2, 2 + 1, x}')
-    assert p('{1, 2}').__repr__() == 'List(1, 2)'
-    assert p('{1, 2}').__str__() == '{1, 2}'
+    assert p('{1, 2}').__repr__() == p('{1, 2}').__str__() == '{1, 2}'
     assert list(p('{1, 2, 3}')) == [1, 2, 3]
 
 
@@ -44,6 +43,5 @@ def test_rule():
     assert (p('1 -> 2') == r) is False
     assert (r.lhs, r.rhs) == (r[0], r[1])
     assert list(r) == [2, 2]
-    assert Rule(1, 2).__repr__() == 'Rule(1, 2)'
-    assert Rule(1, 2).__str__() == '1 -> 2'
+    assert Rule(1, 2).__repr__() == Rule(1, 2).__str__() == '1 -> 2'
     assert Rule.from_dict({1: 2, 3: 4}, head=List) == List(Rule(1, 2), Rule(3, 4))

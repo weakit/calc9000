@@ -198,9 +198,9 @@ class AssignTransformer(Transformer):
     def CNAME(n):
         return str(n)
 
-    # @staticmethod
-    # def ESCAPED_STRING(n):
-    #     return str(n)[1:-1]
+    @staticmethod
+    def ESCAPED_STRING(n):
+        return str(n)[1:-1]
 
     # @staticmethod
     # def symbol(n):

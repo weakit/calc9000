@@ -34,28 +34,69 @@ class NormalFunction(s.Function):
     Ordinary Function Class
     Works for most Functions.
     """
+
     @staticmethod
     def _make_replacements(x: s.Basic):
         # if hasattr(x, 'subs'):
         #     return x.subs(r.refs.Symbols)
         return x
 
+    op_spec = None
+    param_spec = None
+    rule_param = False
+
     @classmethod
     def eval(cls, *args):
         if hasattr(cls, 'exec'):
+            # TODO: Reset cache on exception
+            # TODO: fix messed up options processing
             try:
-                return cls.exec(*(cls._make_replacements(x) for x in args))
+                if cls.op_spec:  # check if function accepts options
+
+                    if cls.rule_param:
+                        # if function accepts rules as params,
+                        # don't assume all rule args to be options
+                        def checker(d):
+                            if isinstance(d, Rule):  # check if rule
+                                return isinstance(d.lhs, s.Symbol) and \
+                                       d.lhs.name in cls.op_spec[0]  # check if rule is accepted option
+                            return False
+                        kws = options(filter(checker, args), *cls.op_spec)
+                        args_to_pass = tuple(filter(lambda d: not checker(d), args))
+
+                    else:  # assume all rule args to be options
+                        kws = options(filter(lambda d: isinstance(d, Rule), args), *cls.op_spec)
+                        args_to_pass = tuple(filter(lambda d: not isinstance(d, Rule), args))
+
+                    # check params and raise error if no of args is invalid
+                    if cls.param_spec and not (cls.param_spec[0] <= len(args_to_pass) <= cls.param_spec[1]):
+                        if cls.param_spec[0] == cls.param_spec[1]:
+                            st = f'{cls.__name__} takes {cls.param_spec[0]} ' \
+                                 f'arguments but {len(args_to_pass)} were given.'
+                        else:
+                            st = f'{cls.__name__} takes {cls.param_spec[0]} to {cls.param_spec[1]} ' \
+                                 f'arguments but {len(args_to_pass)} were given.'
+                        raise TypeError(st)
+
+                    return cls.exec(*args_to_pass, **kws)
+                return cls.exec(*args)
+
             except FunctionException as x:
                 # TODO: Pass error to converse.py
-                # TODO: Handle NotImplementedError(s)
                 print(f'FunctionException: {x.args[0]}\n')
                 return None
+
             except TypeError as t:
                 if str(t).startswith('exec()'):
                     t = str(t).replace('exec()', cls.__name__)
                     t = t.translate(str.maketrans({x: str(int(x) - 1) for x in filter(str.isdigit, t)}))
                 print(f'TypeError: {t}\n')
                 return None
+
+            except NotImplementedError as e:
+                print(f'NotImlementedError: {e}\n')
+                return None
+
         return None
 
 
@@ -63,23 +104,19 @@ class ExplicitFunction(s.Function):
     """
     Functions that need to be called with the arguments unevaluated.
     """
-    @staticmethod
-    def _make_replacements(x: s.Basic):
-        # if hasattr(x, 'subs'):
-        #     return x.subs(r.refs.Symbols)
-        return x
 
-    @classmethod
-    def eval(cls, *args):
-        if hasattr(cls, 'exec'):
-            return cls.exec(*(cls._make_replacements(x) for x in args))
-        return None
+    # @classmethod
+    # def eval(cls, *args):
+    #     if hasattr(cls, 'exec'):
+    #         return cls.exec(*args)
+    #     return None
 
 
 class LazyFunction(s.Function):
     """
     A really bad Lazy Function implementation
     """
+
     @staticmethod
     def evaluate(expr):
         """Get value of Lazy Function, with other lazy functions as args."""
@@ -194,12 +231,14 @@ def r_thread(func, to_thread, *args, rule=True, **kwargs):
 def threaded(name, func):
     def fun(x):
         return thread(func, x)
+
     return type(name, (NormalFunction,), {'exec': fun})
 
 
 def r_threaded(name, func):
     def fun(x):
         return r_thread(func, x)
+
     return type(name, (NormalFunction,), {'exec': fun})
 
 
@@ -260,6 +299,7 @@ class SemicolonStatement(ExplicitFunction):
     """
     !internal
     """
+
     @classmethod
     def exec(cls, expr):
         return r.NoOutput(LazyFunction.evaluate(expr))
@@ -269,6 +309,7 @@ class CompoundExpression(ExplicitFunction):
     """
     !internal
     """
+
     @classmethod
     def exec(cls, *args):
         for expr in args[:-1]:
@@ -422,6 +463,7 @@ class Min(NormalFunction):
     Min [x1, {x2, x3}, x4, …]
      Gives the smallest x.
     """
+
     @classmethod
     def exec(cls, *x):
         x = deepflatten(x)
@@ -433,6 +475,7 @@ class Max(NormalFunction):
     Max [x1, {x2, x3}, x4, …]
      Gives the largest x.
     """
+
     @classmethod
     def exec(cls, *x):
         x = deepflatten(x)
@@ -470,6 +513,7 @@ class Accumulate(NormalFunction):
     Accumulate [list]
      Gives a list of the successive accumulated totals of elements in list.
     """
+
     @classmethod
     def exec(cls, expr):
         if isinstance(expr, iterables):
@@ -492,6 +536,7 @@ class Clip(NormalFunction):
     Clip [x, {min, max}, {v_min, v_max}]
      Gives v_min for x < min and v_max for x > max.
     """
+
     # TODO: Raise exception for complex values
     @classmethod
     def exec(cls, x, limits=(s.S.NegativeOne, s.S.One), limit_return=None):
@@ -569,6 +614,7 @@ class In(NormalFunction):
     In [n]
      Gives the raw input given in the nth line.
     """
+
     @staticmethod
     def _in(n):
         if n is None:
@@ -995,6 +1041,7 @@ class QuotientRemainder(NormalFunction):
     QuotientRemainder [m, n]
      Gives a list of the quotient and remainder from division of m by n.
     """
+
     @staticmethod
     def _qr(m, n):
         return List(m // n, m % n)
@@ -1170,6 +1217,7 @@ class SetDelayed(ExplicitFunction):
             return value.args[0]
         return None
 
+
 # def DelayedSet(f, x, n):
 #     # TODO: again
 #     refs = r.refs
@@ -1246,9 +1294,11 @@ class Rationalize(NormalFunction):
             return rat
         return x
 
+    op_spec = ({'ForceRational': 'rat'}, {'rat': True})
+    param_spec = (1, 2)
+
     @classmethod
-    def exec(cls, x, dx=None, *o):
-        rat = options(o, {'ForceRational': 'r'}, {'r': True})['r']
+    def exec(cls, x, dx=None, rat=True):
         if not rat:
             try:
                 return thread(cls.rat_rat, x, dx)
@@ -1265,6 +1315,7 @@ class Subs(NormalFunction):
     Subs [Expr, {Rule1, Rule2, …}]
      Transforms Expression expr with the given Rules.
     """
+
     @staticmethod
     def func_replacement_helper(replacements):
         reps = {str(k): v for k, v in replacements}
@@ -1312,11 +1363,17 @@ class Factor(NormalFunction):
     Equivalent to sympy.factor().
     """
 
+    op_spec = (
+        {"Modulus": "modulus",
+         "Extension": "extension",
+         "GaussianIntegers": "gaussian"
+         },
+        None)
+
+    param_spec = (1, 1)
+
     @classmethod
-    def exec(cls, expr, *args):
-        kws = options(args, {"Modulus": "modulus",
-                             "Extension": "extension",
-                             "GaussianIntegers": "gaussian"})
+    def exec(cls, expr, **kws):
         return r_thread(s.factor, expr, **kws)
 
 
@@ -1328,9 +1385,15 @@ class Expand(NormalFunction):
     Equivalent to sympy.expand().
     """
 
+    op_spec = (
+        {"Modulus": "modulus", "Trig": "trig"},
+        {"trig": False}
+    )
+
+    param_spec = (1, 1)
+
     @classmethod
-    def exec(cls, expr, *ops):
-        kws = options(ops, {"Modulus": "modulus", "Trig": "trig"}, {"trig": False})
+    def exec(cls, expr, **kws):
         return r_thread(s.expand, expr, **kws)
 
 
@@ -1557,6 +1620,7 @@ class Solve(NormalFunction):
 
     Uses sympy.solve().
     """
+
     @classmethod
     def exec(cls, expr, v=None, dom=None):
         # TODO: fix (?)
@@ -1580,6 +1644,7 @@ class Simplify(NormalFunction):
 
     Equivalent to sympy.simplify().
     """
+
     @classmethod
     def exec(cls, expr, assum=None):
         if assum is not None:
@@ -1629,21 +1694,25 @@ class FractionalPart(NormalFunction):
 class Limit(NormalFunction):
     @staticmethod
     def lim(expr, lim, d='+-'):
+        if not isinstance(lim, Rule):
+            raise FunctionException('Invalid Limit.')
         try:
-            return s.limit(expr, lim[0], lim[1], d)
+            return s.limit(expr, lim.lhs, lim.rhs, d)
         except ValueError as e:
             if e.args[0].startswith("The limit does not exist"):
                 return s.nan
 
+    op_spec = ({'Direction': 'd'}, {'d': '+-'})
+    param_spec = (2, 2)
+    rule_param = True
+
     @classmethod
-    def exec(cls, expr, lim, *args):
-        kws = options(args, {'Direction': 'd'}, {'d': '+-'})
-        d = kws['d']
+    def exec(cls, expr, lim, d='+-'):
         if str(d) in ("Reals", "TwoSided"):
             d = '+-'
-        elif str(d) in ("FromAbove", "Right") or kws['d'] == -1:
+        elif str(d) in ("FromAbove", "Right") or d == -1:
             d = '+'
-        elif str(d) in ("FromBelow", "Left") or kws['d'] == 1:
+        elif str(d) in ("FromBelow", "Left") or d == 1:
             d = '-'
         if d not in ('+', '-', '+-'):
             raise FunctionException("Invalid Limit Direction")
@@ -1659,7 +1728,7 @@ class Sum(NormalFunction):
 
     @classmethod
     def process_skip(cls, s_, i):
-        return s_.subs(i[0], i[0] * i[3]),  (i[0], *cls.limits(i[1] / i[3], i[2] / i[3]))
+        return s_.subs(i[0], i[0] * i[3]), (i[0], *cls.limits(i[1] / i[3], i[2] / i[3]))
 
     @classmethod
     def process(cls, s_, i):
@@ -1710,6 +1779,7 @@ class Zeta(NormalFunction):
 
     Equivalent to sympy.zeta().
     """
+
     @classmethod
     def exec(cls, n, a=1):
         return thread(s.zeta, n, a)
@@ -1726,6 +1796,7 @@ class Range(NormalFunction):
     Range[a, b, di]
      Uses step di.
     """
+
     @staticmethod
     def single_range(i, n, di):
         ret = List()
@@ -1761,6 +1832,7 @@ class Permutations(NormalFunction):
 
     Uses itertools.permutations().
     """
+
     @classmethod
     def exec(cls, li, n=None):
         if n is not None:
@@ -1799,6 +1871,7 @@ class Table(ExplicitFunction):
     Table [expr, {i, imin, imax}, {j, jmin, jmax}, …]
      Gives a nested list. The list associated with i is outermost.
     """
+
     @staticmethod
     def _table(expr, repl, args):
         li = List()
@@ -1832,8 +1905,8 @@ class Table(ExplicitFunction):
 
         li = List()
         for expr_, specs in zip(
-            cls._range_parse(expr, args[0]),
-            cls._range_parse(args[1:], args[0])
+                cls._range_parse(expr, args[0]),
+                cls._range_parse(args[1:], args[0])
         ):
             li.append(Table(expr_, *specs))
 
@@ -1852,6 +1925,7 @@ class Subdivide(NormalFunction):
     Subdivide [min, max, n]
      Generates the list of values from subdividing the interval min to max.
     """
+
     @classmethod
     def exec(cls, one, two=None, three=None):
         if three is None:
@@ -1892,6 +1966,7 @@ class Subsets(NormalFunction):
     Subsets [list, {n}]
      Gives all subsets containing exactly n elements.
     """
+
     @classmethod
     def exec(cls, li, n_spec=None):
         subsets = List()
@@ -1921,6 +1996,7 @@ class FromPolarCoordinates(NormalFunction):
      Gives the coordinates corresponding to the hyperspherical
      coordinates {r, θ1, …, θn - 2, ϕ}
     """
+
     @classmethod
     def exec(cls, list_):
         # TODO: Thread
@@ -1945,6 +2021,7 @@ class ToPolarCoordinates(NormalFunction):
      Gives the hyperspherical coordinates corresponding to the Cartesian
      coordinates {x1, x2, …, xn}.
     """
+
     @classmethod
     def exec(cls, list_):
         # TODO: Thread
@@ -1983,6 +2060,7 @@ class Collect(NormalFunction):
      Applies h to the expression that forms the coefficient of each term obtained.
 
     """
+
     @staticmethod
     def collect_func(expr, v, h):
         unevaluated_expr = s.collect(s.expand(expr), v, evaluate=False)
@@ -2009,6 +2087,7 @@ class Length(NormalFunction):
     Length [expr]
      Gives the number of elements in expr.
     """
+
     @classmethod
     def exec(cls, x):
         if isinstance(x, iterables):
@@ -2023,6 +2102,7 @@ class Head(NormalFunction):
     Head [expr]
      Gives the head of expr.
     """
+
     @classmethod
     def exec(cls, h, f=None):
         if f is not None:
@@ -2135,6 +2215,7 @@ class First(ExplicitFunction):
     First [expr, def]
      Gives the first element if it exists, or def otherwise.
     """
+
     @classmethod
     def exec(cls, x, d=None):
         x = LazyFunction.evaluate(x)
@@ -2153,6 +2234,7 @@ class Last(ExplicitFunction):
     Last [expr, def]
      Gives the last element if there are any elements, or def otherwise.
     """
+
     @classmethod
     def exec(cls, x, d=None):
         x = LazyFunction.evaluate(x)
@@ -2182,33 +2264,31 @@ class RandomInteger(NormalFunction):
 
     Uses python's SystemRandom().
     """
+
     @classmethod
-    def exec(cls, *args, p=None):
-        if not args:
+    def exec(cls, spec=None, rep=None):
+        if not spec:
             return s.Rational(random.randint(0, 1))
-        if len(args) == 1:
-            if isinstance(args[0], iterables):
-                if len(args[0]) != 2:
+        if not rep:
+            if isinstance(spec, iterables):
+                if len(spec) != 2:
                     raise FunctionException('Invalid Bounds')
-                limit = args[0]
+                limit = spec
             else:
-                limit = [0, args[0]]
+                limit = [0, spec]
             if not (is_integer(limit[0]) and is_integer(limit[1])):
                 raise FunctionException('Limits for RandomInteger should be an Integer.')
             return s.Rational(random.randint(limit[0], limit[1]))
-        if len(args) == 2:
-            return RandomInteger.repeat(args, RandomInteger)
-        raise TypeError('RandomInteger takes 1 to 2 positional arguments.')
+        return cls.repeat(spec, rep, RandomInteger)
 
-    @staticmethod
-    def repeat(args, func, p=None):
-        precision = p
-        if is_integer(args[1]):
-            return List(*[func.exec(args[0], p=precision) for _ in range(int(args[1]))])
-        if isinstance(args[1], iterables):
-            if len(args[1]) == 1:
-                return func.exec(args[0], args[1][0], p=precision)
-            return List(*[func.exec(args[0], args[1][1:], p=precision) for _ in range(int(args[1][0]))])
+    @classmethod
+    def repeat(cls, spec, rep, func):
+        if is_integer(rep):
+            return List(*[func.exec(spec) for _ in range(int(rep))])
+        if isinstance(rep, iterables):
+            if len(rep) == 1:
+                return func.exec(spec, rep[0])
+            return List(*[func.exec(spec, rep[1:]) for _ in range(int(rep[0]))])
         raise FunctionException("Invalid Bounds")
 
 
@@ -2231,32 +2311,39 @@ class RandomReal(NormalFunction):
 
     Uses python's SystemRandom().
     """
+
+    op_spec = ({'WorkingPrecision': 'p'}, {'p': 16})
+    param_spec = (0, 2)
+
     @classmethod
-    def exec(cls, *args, p=15):
-        precision = p
-        option = []
+    def exec(cls, spec=None, rep=None, p=16):
+        precision = p + 4
 
-        while args and isinstance(args[-1], Rule):
-            option.append(args[-1])
-            args = args[:-1]
-            precision = options(option, {'WorkingPrecision': 'p'})['p']
-
-        if not args:
+        if not spec:
             return random.randint(0, 10 ** precision) * s.N(10 ** (-precision), precision)
-        if len(args) == 1:
-            if isinstance(args[0], iterables):
-                if len(args[0]) != 2:
+        if not rep:
+            if isinstance(spec, iterables):
+                if len(spec) != 2:
                     raise FunctionException('Invalid Bounds')
-                lower, upper = args[0]
+                lower, upper = spec
             else:
-                lower, upper = 0, args[0]
+                lower, upper = 0, spec
             return lower + random.randint(0, (upper - lower) * 10 ** precision) * s.N(10 ** (-precision), precision)
-        if len(args) == 2:
-            return RandomInteger.repeat(args, RandomReal, p=precision)
-        raise TypeError('RandomInteger takes 1 to 2 positional arguments.')
+        return cls.repeat(spec, rep, p=precision)
+
+    @classmethod
+    def repeat(cls, spec, rep, p=None):
+        precision = p
+        if is_integer(rep):
+            return List(*[cls.exec(spec, p=precision) for _ in range(int(rep))])
+        if isinstance(rep, iterables):
+            if len(rep) == 1:
+                return cls.exec(spec, rep[0], p=precision)
+            return List(*[cls.exec(spec, rep[1:], p=precision) for _ in range(int(rep[0]))])
+        raise FunctionException("Invalid Bounds")
 
 
-class RandomComplex(NormalFunction):
+class RandomComplex(RandomReal):
     """
     RandomComplex []
      Gives a pseudo-random complex number with real and
@@ -2278,24 +2365,20 @@ class RandomComplex(NormalFunction):
 
     Uses python's SystemRandom().
     """
+
+    op_spec = ({'WorkingPrecision': 'p'}, {'p': 15})
+    param_spec = (0, 2)
+
     @classmethod
-    def exec(cls, *args, p=15):
-        option = []
+    def exec(cls, spec, rep, p=15):
         precision = p
 
-        while args and isinstance(args[-1], Rule):
-            option.append(args[-1])
-            args = args[:-1]
-            precision = options(option, {'WorkingPrecision': 'p'})['p']
-
-        if not args:
+        if not spec:
             return RandomReal.exec(p=precision) + RandomReal.exec(p=precision) * r.refs.Constants.I
-        if len(args) == 1:
-            return RandomReal.exec(Re.exec(args[0]), p=precision) + \
-                   RandomReal.exec(Im.exec(args[0]), p=precision) * r.refs.Constants.I
-        if len(args) == 2:
-            return RandomInteger.repeat(args, RandomComplex, p=precision)
-        raise TypeError('RandomInteger takes 1 to 2 positional arguments.')
+        if not rep:
+            return RandomReal.exec(Re.exec(spec), p=precision) + \
+                   RandomReal.exec(Im.exec(spec), p=precision) * r.refs.Constants.I
+        return cls.repeat(spec, rep, p=precision)
 
 
 class Nothing(NormalFunction):
