@@ -17,10 +17,10 @@ class List(s.Basic):
         return List(*x)
 
     def __init__(self, *args):
-        if args is None:
-            self.value = []
-        else:
+        if args:
             self.value = list(filter(s.Symbol('Nothing').__ne__, args))
+        else:
+            self.value = []
 
     def __getitem__(self, x):
         if isinstance(x, slice):
@@ -39,76 +39,47 @@ class List(s.Basic):
         return self.value.__len__()
 
     def __add__(self, other):
-        new = list(self)
         if isinstance(other, List):
-            if len(other) != len(new):
+            if len(other) != len(self.value):
                 raise ListException("Lists are of Unequal Length")
-            for i in range(len(new)):
-                new[i] = new[i] + other[i]
-            return List(*new)
-        for i in range(len(new)):
-            new[i] = new[i] + other
-        return List(*new)
+            return List(*(self.value[i] + other[i] for i in range(len(self.value))))
+        return List(*(x + other for x in self.value))
 
     def __radd__(self, other):
-        new = list(self)
-        for i in range(len(new)):
-            new[i] = other + new[i]
-        return List(*new)
+        return List(*(other + x for x in self.value))
 
     def __sub__(self, other):
-        new = list(self)
         if isinstance(other, List):
+            new = list(self)
             if len(other) != len(new):
                 raise ListException("Lists are of Unequal Length")
-            for i in range(len(new)):
-                new[i] = new[i] - other[i]
-            return List(*new)
-        for i in range(len(new)):
-            new[i] = new[i] - other
-        return List(*new)
+            return List(*(self.value[i] - other[i] for i in range(len(self.value))))
+        return List(*(x - other for x in self.value))
 
     def __rsub__(self, other):
-        new = list(self)
-        for i in range(len(new)):
-            new[i] = other - new[i]
-        return List(*new)
+        return List(*(other - x for x in self.value))
 
     def __mul__(self, other):
-        new = list(self)
         if isinstance(other, List):
+            new = list(self)
             if len(other) != len(new):
                 raise ListException("Lists are of Unequal Length")
-            for i in range(len(new)):
-                new[i] = new[i] * other[i]
-            return List(*new)
-        for i in range(len(new)):
-            new[i] = new[i] * other
-        return List(*new)
+            return List(*(self.value[i] * other[i] for i in range(len(self.value))))
+        return List(*(x * other for x in self.value))
 
     def __rmul__(self, other):
-        new = list(self)
-        for i in range(len(new)):
-            new[i] = other * new[i]
-        return List(*new)
+        return List(*(other * x for x in self.value))
 
     def __truediv__(self, other):
-        new = list(self)
         if isinstance(other, List):
+            new = list(self)
             if len(other) != len(new):
                 raise ListException("Lists are of Unequal Length")
-            for i in range(len(new)):
-                new[i] = new[i] / other[i]
-            return List(*new)
-        for i in range(len(new)):
-            new[i] = new[i] / other
-        return List(*new)
+            return List(*(self.value[i] / other[i] for i in range(len(self.value))))
+        return List(*(x / other for x in self.value))
 
     def __rtruediv__(self, other):
-        new = list(self)
-        for i in range(len(new)):
-            new[i] = other / new[i]
-        return List(*new)
+        return List(*(other / x for x in self.value))
 
     def evalf(self, n=15, **options):
         new = list(self)
@@ -117,22 +88,15 @@ class List(s.Basic):
         return List(*new)
 
     def __pow__(self, other):
-        new = list(self)
         if isinstance(other, List):
+            new = list(self)
             if len(other) != len(new):
                 raise ListException("Lists are of Unequal Length")
-            for i in range(len(new)):
-                new[i] = pow(new[i], other[i])
-            return List(*new)
-        for i in range(len(new)):
-            new[i] = pow(new[i], other)
-        return List(*new)
+            return List(*(pow(self.value[i], other[i]) for i in range(len(self.value))))
+        return List(*(pow(x, other) for x in self.value))
 
     def __rpow__(self, other):
-        new = list(self)
-        for i in range(len(new)):
-            new[i] = pow(other, new[i])
-        return List(*new)
+        return List(*(pow(other, x) for x in self.value))
 
     def __hash__(self):
         return (List, *self.value).__hash__()
@@ -144,11 +108,11 @@ class List(s.Basic):
 
     def __repr__(self):
         if not self.value:
-            return '{}'
-        string = '{' + repr(self.value[0])
+            return 'List()'
+        string = 'List(' + repr(self.value[0])
         for value in self.value[1:]:
             string += ', ' + repr(value)
-        return string + '}'
+        return string + ')'
 
     def __str__(self):
         if not self.value:
@@ -195,10 +159,10 @@ class Rule(s.AtomicExpr):
         return (self.lhs, self.rhs).__iter__()
 
     def __repr__(self):
-        return f'{self[0]} -> {self[1]}'
+        return f'Rule({self[0]}, {self[1]})'
 
     def __str__(self):
-        return self.__repr__()
+        return f'{self[0]} -> {self[1]}'
 
     @classmethod
     def from_dict(cls, d, head=lambda *x: tuple(x)):
