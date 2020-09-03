@@ -4,9 +4,9 @@ from calc9000.converse import process as p
 f = s.Rational
 
 
-def p_str(*args) -> str:
-    return str(p(*args))
+def p_str(input_str: str) -> str:
+    return str(p(input_str))
 
 
-def p_int(*args) -> int:
-    return int(p_str(*args))
+def p_int(input_str: str) -> int:
+    return int(p_str(input_str))

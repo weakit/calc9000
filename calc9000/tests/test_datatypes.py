@@ -44,4 +44,6 @@ def test_rule():
     assert (p('1 -> 2') == r) is False
     assert (r.lhs, r.rhs) == (r[0], r[1])
     assert list(r) == [2, 2]
+    assert Rule(1, 2).__repr__() == 'Rule(1, 2)'
+    assert Rule(1, 2).__str__() == '1 -> 2'
     assert Rule.from_dict({1: 2, 3: 4}, head=List) == List(Rule(1, 2), Rule(3, 4))

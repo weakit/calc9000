@@ -13,7 +13,6 @@ random = secrets.SystemRandom()
 
 class FunctionException(Exception):
     """General class for function related exceptions"""
-    pass
 
 
 def get_symbol_value(n):
@@ -134,7 +133,6 @@ class Delay(LazyFunction):
     A delayed expression.
     Use first arg as expression.
     """
-    pass
 
 
 # TODO: add warnings
@@ -529,8 +527,8 @@ class Clip(NormalFunction):
             (limit_return[1], x > limits[1])
         )
 
-    def _eval_derivative(self, *args, **kwargs):
-        return s.Derivative(self._eval_rewrite_as_Piecewise(), *args, evaluate=True)
+    def _eval_derivative(self, x):
+        return s.Derivative(self._eval_rewrite_as_Piecewise(), x, evaluate=True)
 
     def _eval_Integral(self, *args, **kwargs):
         return s.Integral(self._eval_rewrite_as_Piecewise(), *args)
@@ -563,7 +561,7 @@ class Rescale(NormalFunction):
                 if y_range is None:
                     y_range = (0, 1)
                 return ((x - x_range[0]) * y_range[1] + (x_range[1] - x) * y_range[0]) / (x_range[1] - x_range[0])
-        raise FunctionException(f'Invalid Arguments for Rescale.')  # TODO: ?
+        raise FunctionException('Invalid Arguments for Rescale.')  # TODO: ?
 
 
 class In(NormalFunction):
@@ -578,7 +576,7 @@ class In(NormalFunction):
         if is_integer(n):
             if 0 < n < r.refs.Line:
                 return r.refs.get_in(n)
-            elif -r.refs.Line < n < 0:
+            if -r.refs.Line < n < 0:
                 return r.refs.get_in(r.refs.Line + n)
         return None
 
@@ -844,6 +842,7 @@ class ConjugateTranspose(NormalFunction):
     def exec(cls, x):
         if isinstance(x, iterables):
             return Transpose(Conjugate(x))
+        return None
 
 
 class ComplexExpand(NormalFunction):
@@ -1985,7 +1984,7 @@ class Collect(NormalFunction):
 
     """
     @staticmethod
-    def collect(expr, v, h):
+    def collect_func(expr, v, h):
         unevaluated_expr = s.collect(s.expand(expr), v, evaluate=False)
         expr = 0
         if h:
@@ -2002,7 +2001,7 @@ class Collect(NormalFunction):
     def exec(cls, expr, v, h=None):
         if isinstance(expr, iterables):
             return List(*(cls.exec(x, v, h) for x in expr))
-        return cls.collect(expr, v, h)
+        return cls.collect_func(expr, v, h)
 
 
 class Length(NormalFunction):
@@ -2108,8 +2107,7 @@ class Take(NormalFunction):
             if seq > 0:
                 return take[:seq]
             return take[seq:]
-        else:
-            raise FunctionException(f'{seq} is not a valid Take specification.')
+        raise FunctionException(f'{seq} is not a valid Take specification.')
 
     @classmethod
     def exec(cls, expr, *seqs):
@@ -2126,8 +2124,7 @@ class Take(NormalFunction):
 
         if len(seqs) > 1:
             return head(*(cls.exec(x, *seqs[1:]) for x in cls.get_take(take, seqs[0])))
-        else:
-            return head(*cls.get_take(take, seqs[0]))
+        return head(*cls.get_take(take, seqs[0]))
 
 
 class First(ExplicitFunction):
@@ -2145,8 +2142,7 @@ class First(ExplicitFunction):
             return Part(x, 1)
         if d is not None:
             return LazyFunction.evaluate(d)
-        else:
-            raise FunctionException(f'{x} has zero length, and no first element.')
+        raise FunctionException(f'{x} has zero length, and no first element.')
 
 
 class Last(ExplicitFunction):
@@ -2164,8 +2160,7 @@ class Last(ExplicitFunction):
             return Part(x, -1)
         if d is not None:
             return LazyFunction.evaluate(d)
-        else:
-            raise FunctionException(f'{x} has zero length, and no last element.')
+        raise FunctionException(f'{x} has zero length, and no last element.')
 
 
 class RandomInteger(NormalFunction):
@@ -2396,11 +2391,10 @@ class Functions:
                     if ar == br:
                         matches += 1
                         continue
-                    elif isinstance(br, s.Symbol) and br.name.startswith('*'):
+                    if isinstance(br, s.Symbol) and br.name.startswith('*'):
                         continue
-                    else:
-                        match = False
-                        break
+                    match = False
+                    break
                 if match:
                     priority[matches] = header
             if priority:

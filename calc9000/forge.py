@@ -30,7 +30,7 @@ def numeric(n):
     return s.Number(n)
 
 
-def _float(n: str):
+def float_(n: str):
     return s.Float(n, max(20, len(n.lstrip('0').replace('.', '')) + 4))
 
 

@@ -4,6 +4,11 @@ test_patterns = [
   "calc9000/tests/test_*.py"
 ]
 
+
+exclude_patterns = [
+  "setup.py"
+]
+
 [[analyzers]]
 name = "python"
 enabled = true

@@ -1,7 +1,5 @@
 from calc9000 import forge as op
-# import sympy as s
-# from datatypes import List, Rule
-from lark import Lark, Transformer, Tree, Token
+from lark import Lark, Transformer, Token
 
 
 grammar = """
@@ -194,7 +192,7 @@ class AssignTransformer(Transformer):
 
     @staticmethod
     def FLOAT(n):
-        return op._float(n)
+        return op.float_(n)
 
     @staticmethod
     def CNAME(n):

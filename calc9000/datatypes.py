@@ -25,8 +25,7 @@ class List(s.Basic):
     def __getitem__(self, x):
         if isinstance(x, slice):
             return List(*self.value.__getitem__(x))
-        else:
-            return self.value.__getitem__(x)
+        return self.value.__getitem__(x)
 
     def __setitem__(self, key, value):
         self.value[key] = value
