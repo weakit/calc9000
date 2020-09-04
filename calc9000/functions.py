@@ -29,17 +29,62 @@ def get_symbol_value(n):
     return LazyFunction.evaluate(ret)
 
 
+def exec_func(cls, *args):
+    if hasattr(cls, 'exec'):
+        # TODO: Reset cache on exception
+        # TODO: fix messed up options processing
+        try:
+            if cls.op_spec:  # check if function accepts options
+
+                # find first rule (option) occurrence
+                i = len(args)
+                for i, v in enumerate(reversed(args)):
+                    if not isinstance(v, Rule):
+                        i -= 1
+                        break
+                i = max(cls.param_spec[0], len(args) - i - 1)
+
+                # take remaining arguments and separate options
+                args_to_pass = args[:i]
+                kws = options(args[i:], *cls.op_spec)
+
+                # check params and raise error if no of args is invalid
+                if cls.param_spec and not (cls.param_spec[0] <= len(args_to_pass) <= cls.param_spec[1]):
+                    if cls.param_spec[0] == cls.param_spec[1]:
+                        st = f'{cls.__name__} takes {cls.param_spec[0]} ' \
+                             f'arguments but {len(args_to_pass)} were given.'
+                    else:
+                        st = f'{cls.__name__} takes {cls.param_spec[0]} to {cls.param_spec[1]} ' \
+                             f'arguments but {len(args_to_pass)} were given.'
+                    raise TypeError(st)
+
+                # pass args and options as kws
+                return cls.exec(*args_to_pass, **kws)
+            return cls.exec(*args)
+
+        except FunctionException as x:
+            # TODO: Pass error to converse.py
+            print(f'FunctionException: {x.args[0]}\n')
+            return None
+
+        except TypeError as t:
+            if str(t).startswith('exec()'):
+                t = str(t).replace('exec()', cls.__name__)
+                t = t.translate(str.maketrans({x: str(int(x) - 1) for x in filter(str.isdigit, t)}))
+            print(f'TypeError: {t}\n')
+            return None
+
+        except NotImplementedError as e:
+            print(f'Not ImlementedError: {e}\n')
+            return None
+    return None
+
+
 class NormalFunction(s.Function):
     """
     Ordinary Function Class
     Works for most Functions.
     """
-
-    @staticmethod
-    def _make_replacements(x: s.Basic):
-        # if hasattr(x, 'subs'):
-        #     return x.subs(r.refs.Symbols)
-        return x
 
     op_spec = None
     param_spec = (0, s.oo)
@@ -47,67 +92,20 @@ class NormalFunction(s.Function):
 
     @classmethod
     def eval(cls, *args):
-        if hasattr(cls, 'exec'):
-            # TODO: Reset cache on exception
-            # TODO: fix messed up options processing
-            try:
-                if cls.op_spec:  # check if function accepts options
-
-                    # find first rule (option) occurrence
-                    i = len(args)
-                    for i, v in enumerate(reversed(args)):
-                        if not isinstance(v, Rule):
-                            i -= 1
-                            break
-                    i = max(cls.param_spec[0], len(args) - i - 1)
-
-                    # take remaining arguments and separate options
-                    args_to_pass = args[:i]
-                    kws = options(args[i:], *cls.op_spec)
-
-                    # check params and raise error if no of args is invalid
-                    if cls.param_spec and not (cls.param_spec[0] <= len(args_to_pass) <= cls.param_spec[1]):
-                        if cls.param_spec[0] == cls.param_spec[1]:
-                            st = f'{cls.__name__} takes {cls.param_spec[0]} ' \
-                                 f'arguments but {len(args_to_pass)} were given.'
-                        else:
-                            st = f'{cls.__name__} takes {cls.param_spec[0]} to {cls.param_spec[1]} ' \
-                                 f'arguments but {len(args_to_pass)} were given.'
-                        raise TypeError(st)
-
-                    # pass args and options as kws
-                    return cls.exec(*args_to_pass, **kws)
-                return cls.exec(*args)
-
-            except FunctionException as x:
-                # TODO: Pass error to converse.py
-                print(f'FunctionException: {x.args[0]}\n')
-                return None
-
-            except TypeError as t:
-                if str(t).startswith('exec()'):
-                    t = str(t).replace('exec()', cls.__name__)
-                    t = t.translate(str.maketrans({x: str(int(x) - 1) for x in filter(str.isdigit, t)}))
-                print(f'TypeError: {t}\n')
-                return None
-
-            except NotImplementedError as e:
-                print(f'NotImlementedError: {e}\n')
-                return None
-
-        return None
+        return exec_func(cls, *args)
 
 
 class ExplicitFunction(s.Function):
     """
     Functions that need to be called with the arguments unevaluated.
     """
+    op_spec = None
+    param_spec = (0, s.oo)
+    rule_param = False
 
-    # @classmethod
-    # def eval(cls, *args):
-    #     if hasattr(cls, 'exec'):
-    #         return cls.exec(*args)
-    #     return None
+    @classmethod
+    def eval(cls, *args):
+        return exec_func(cls, *args)
 
 
 class LazyFunction(s.Function):
