@@ -1,6 +1,7 @@
 import sympy as s
 # TODO: check others
 # TODO: LaTeX printing
+# TODO: Rule Delayed (@property)
 
 
 class RuleException(Exception):

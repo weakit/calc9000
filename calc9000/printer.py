@@ -1,8 +1,9 @@
 import sympy as s
 from calc9000.functions import Dot, Cross, Limit
 from calc9000.datatypes import List
+from calc9000.references import FunctionWrappersReverse
 from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
-    precedence_traditional, PRECEDENCE
+    precedence_traditional, PRECEDENCE, pretty_atom, stringPict
 
 
 class Printer9000(PrettyPrinter):
@@ -44,8 +45,44 @@ class Printer9000(PrettyPrinter):
             return super()._print_Function(l)
         return super()._print_Limit(l)
 
-    def _print_List(self, e):
-        return self._print_seq(e.value, '{', '}')
+    # def _print_List(self, e):
+    #     return self._print_seq(e.value, '{', '}')
+
+    def _helper_print_function(self, func, args, sort=False, func_name=None, delimiter=', ', elementwise=False):
+        if sort:
+            args = sorted(args, key=s.utilities.default_sort_key)
+
+        if not func_name and hasattr(func, "__name__"):
+            func_name = func.__name__
+
+        if func_name:
+            if func_name in FunctionWrappersReverse:
+                func_name = FunctionWrappersReverse[func_name]
+            prettyFunc = self._print(s.Symbol(func_name))
+        else:
+            prettyFunc = prettyForm(*self._print(func).parens(left='[', right=']'))
+
+        if elementwise:
+            if self._use_unicode:
+                circ = pretty_atom('Modifier Letter Low Ring')
+            else:
+                circ = '.'
+            circ = self._print(circ)
+            prettyFunc = prettyForm(
+                binding=prettyForm.LINE,
+                *stringPict.next(prettyFunc, circ)
+            )
+
+        prettyArgs = prettyForm(*self._print_seq(args, delimiter=delimiter).parens(left='[', right=']'))
+
+        pform = prettyForm(
+            binding=prettyForm.FUNC, *stringPict.next(prettyFunc, prettyArgs))
+
+        # store pform parts so it can be reassembled e.g. when powered
+        pform.prettyFunc = prettyFunc
+        pform.prettyArgs = prettyArgs
+
+        return pform
 
 
 def pretty_print(expr, **settings):

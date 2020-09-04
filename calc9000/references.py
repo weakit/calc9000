@@ -99,6 +99,8 @@ FunctionWrappers = {
     'Zeta': 'zeta',
 }
 
+FunctionWrappersReverse = {v: k for k, v in FunctionWrappers.items()}
+
 NoCache = [
     "Out",
     "ReplaceAll",

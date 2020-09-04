@@ -42,7 +42,7 @@ class NormalFunction(s.Function):
         return x
 
     op_spec = None
-    param_spec = None
+    param_spec = (0, s.oo)
     rule_param = False
 
     @classmethod
@@ -53,20 +53,17 @@ class NormalFunction(s.Function):
             try:
                 if cls.op_spec:  # check if function accepts options
 
-                    if cls.rule_param:
-                        # if function accepts rules as params,
-                        # don't assume all rule args to be options
-                        def checker(d):
-                            if isinstance(d, Rule):  # check if rule
-                                return isinstance(d.lhs, s.Symbol) and \
-                                       d.lhs.name in cls.op_spec[0]  # check if rule is accepted option
-                            return False
-                        kws = options(filter(checker, args), *cls.op_spec)
-                        args_to_pass = tuple(filter(lambda d: not checker(d), args))
+                    # find first rule (option) occurrence
+                    i = len(args)
+                    for i, v in enumerate(reversed(args)):
+                        if not isinstance(v, Rule):
+                            i -= 1
+                            break
+                    i = max(cls.param_spec[0], len(args) - i - 1)
 
-                    else:  # assume all rule args to be options
-                        kws = options(filter(lambda d: isinstance(d, Rule), args), *cls.op_spec)
-                        args_to_pass = tuple(filter(lambda d: not isinstance(d, Rule), args))
+                    # take remaining arguments and separate options
+                    args_to_pass = args[:i]
+                    kws = options(args[i:], *cls.op_spec)
 
                     # check params and raise error if no of args is invalid
                     if cls.param_spec and not (cls.param_spec[0] <= len(args_to_pass) <= cls.param_spec[1]):
@@ -78,6 +75,7 @@ class NormalFunction(s.Function):
                                  f'arguments but {len(args_to_pass)} were given.'
                         raise TypeError(st)
 
+                    # pass args and options as kws
                     return cls.exec(*args_to_pass, **kws)
                 return cls.exec(*args)
 
@@ -2332,7 +2330,7 @@ class RandomReal(NormalFunction):
         return cls.repeat(spec, rep, p=precision)
 
     @classmethod
-    def repeat(cls, spec, rep, p=None):
+    def repeat(cls, spec, rep, p=16):
         precision = p
         if is_integer(rep):
             return List(*[cls.exec(spec, p=precision) for _ in range(int(rep))])
@@ -2370,7 +2368,7 @@ class RandomComplex(RandomReal):
     param_spec = (0, 2)
 
     @classmethod
-    def exec(cls, spec, rep, p=15):
+    def exec(cls, spec, rep, p=16):
         precision = p
 
         if not spec:
