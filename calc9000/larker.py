@@ -42,10 +42,10 @@ grammar = """
          | relation (RELATIONAL addsub)+
 
 RELATIONAL: "=="
-          | ">"
-          | "<"
           | ">="
           | "<="
+          | ">"
+          | "<"
 
 ?addsub: muldiv
        | addsub ("+" muldiv)+ -> plus

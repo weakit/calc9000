@@ -166,7 +166,7 @@ class References:
         return self.Out[n - 1]
 
     def add_message(self, tag, e):  # WIP
-        self.Messages[-1].append(f'{tag}: {e}')
+        self.Messages[-1].append((tag, e))
         if self.Messenger:
             self.Messenger.show(tag, e)
 

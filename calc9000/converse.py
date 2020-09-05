@@ -1,6 +1,7 @@
-import sympy as s
+from lark.exceptions import LarkError
 from calc9000 import references as r, larker
 from calc9000.printer import pretty_print
+from calc9000.datatypes import Tag
 
 
 parser = larker.parser
@@ -13,7 +14,13 @@ def process(input_text: str):
         refs.add_def('', '')
         return None
 
-    out = parser.evaluate(input_text)
+    try:
+        out = parser.evaluate(input_text)
+    except LarkError as e:
+        e = ''.join((x + '\n\t' for x in str(e).split('\n')[:4] if x)).rstrip('\n')
+        refs.add_message(Tag('Synatx::err'), e)
+        refs.add_def(input_text, None)
+        return None
 
     if isinstance(out, (r.NoOutput,)):
         refs.add_def(input_text, out.value)

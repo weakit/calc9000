@@ -646,12 +646,12 @@ class In(NormalFunction):
     @staticmethod
     def _in(n):
         if n is None:
-            return r.refs.get_in()
+            return String(r.refs.get_in())
         if is_integer(n):
             if 0 < n < r.refs.Line:
-                return r.refs.get_in(n)
+                return String(r.refs.get_in(n))
             if -r.refs.Line < n < 0:
-                return r.refs.get_in(r.refs.Line + n)
+                return String(r.refs.get_in(r.refs.Line + n))
         return None
 
     @classmethod
