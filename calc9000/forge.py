@@ -2,7 +2,7 @@ import sympy as s
 from functools import reduce
 import operator as op
 from calc9000 import functions
-from calc9000.datatypes import List, Rule
+from calc9000.datatypes import List, Rule, Tag, String
 from lark import Tree
 
 
@@ -36,6 +36,17 @@ def float_(n: str):
 
 def symbol(n):
     return functions.get_symbol_value(n)
+
+
+def tag(a, b):
+    t = functions.get_tag_value(a, b)
+    if isinstance(t, str):
+        return String(t)
+    return t
+
+
+def lazy_tag(a, b):
+    return Tag(f'{a}::{b}')
 
 
 def function(n):
@@ -149,6 +160,8 @@ def lazy(tree: Tree):
         return Rule(*(lazy(x) for x in tree.children))
     if tree.data == 'part':
         return Functions.lazy_call('Part', *(lazy(x) for x in tree.children))
+    if tree.data == 'out':
+        return out(tree.children)
     if tree.data == 'set':
         return Functions.lazy_call('Set', lazy(tree.children[0]), lazy(tree.children[1]))
     if tree.data == 'set_delayed':
@@ -161,7 +174,8 @@ def lazy(tree: Tree):
         return str(tree.children[0])
     if tree.data == 'relation':
         return relations([lazy(x) for x in tree.children])
-    return None  # shouldn't probably do that
+    if tree.data == 'tag':
+        return lazy_tag(*(lazy(x) for x in tree.children))
 
 
 def operate(tree: Tree):
@@ -185,7 +199,7 @@ def operate(tree: Tree):
     if tree.data == 'out':
         return out(tree.children)
     if tree.data == 'set':
-        return functions.real_set(lazy(tree.children[0]), operate(tree.children[1]))
+        return Functions.call('Set', lazy(tree.children[0]), operate(tree.children[1]))
     if tree.data == 'set_delayed':
         return Functions.call('SetDelayed', lazy(tree.children[0]), lazy(tree.children[1]))
     if tree.data == 'replace':  # see ReplaceAll
@@ -200,4 +214,6 @@ def operate(tree: Tree):
         return str(tree.children[0])
     if tree.data == 'relation':
         return relations([operate(x) for x in tree.children])
+    if tree.data == 'tag':
+        return tag(*(operate(x) for x in tree.children))
     return tree

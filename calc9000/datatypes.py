@@ -126,7 +126,7 @@ class List(s.Basic):
         return List.create(list(x) + list(y))
 
     def append(self, *x):
-        self.value += list(x)
+        self.value += list(filter(s.Symbol('Nothing').__ne__, x))
 
 
 class Rule(s.AtomicExpr):
@@ -162,3 +162,28 @@ class Rule(s.AtomicExpr):
     @classmethod
     def from_dict(cls, d, head=lambda *x: tuple(x)):
         return head(*(Rule(x, d[x]) for x in d))
+
+
+class Tag(s.Symbol):
+
+    @property
+    def symbol(self):
+        return self.name.split('::')[0]
+
+    @property
+    def tag(self):
+        return self.name.split('::')[-1]
+
+
+class String(s.AtomicExpr):
+    def __init__(self, x: str):
+        self.value = str(x)
+
+    def __hash__(self):
+        self.value.__hash__()
+
+    def __str__(self):
+        return f'"{self.value}"'
+
+    def __repr__(self):
+        return self.__str__()

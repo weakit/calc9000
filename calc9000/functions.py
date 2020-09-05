@@ -1,9 +1,9 @@
+import secrets
+import sympy as s
 import operator as op
 from functools import reduce
 from calc9000 import references as r
-from calc9000.datatypes import List, Rule
-import sympy as s
-import secrets
+from calc9000.datatypes import List, Rule, Tag, String
 from itertools import permutations, combinations
 from iteration_utilities import deepflatten, accumulate
 
@@ -13,26 +13,47 @@ random = secrets.SystemRandom()
 
 class FunctionException(Exception):
     """General class for function related exceptions"""
+    def __init__(self, tag: str, m=None):
+        if not isinstance(tag, Tag):
+            tag = Tag(tag)
+        self.tag = tag
+        self.message = m or get_tag_value(tag.symbol, tag.tag)
 
 
 def get_symbol_value(n):
     """
     Returns value of symbol if present, else returns symbol.
     """
-    if n in r.refs.Constants.Dict:
-        return r.refs.Constants.Dict[n]
-    if n not in r.refs.Symbols:
+    refs = r.refs
+    if n in refs.Constants.Dict:
+        return refs.Constants.Dict[n]
+    if n not in refs.OwnValues:
         return s.Symbol(n)
-    ret = r.refs.Symbols[n]
+    ret = refs.OwnValues[n]
     if type(ret) is Delay:
         return LazyFunction.evaluate(ret.args[0])
     return LazyFunction.evaluate(ret)
 
 
+def get_tag_value(symbol, tag):
+    symbol, tag = str(symbol), str(tag)
+    refs = r.refs
+    if symbol in refs.BuiltIns:
+        if hasattr(refs.BuiltIns[symbol], 'tags') and tag in refs.BuiltIns[symbol].tags:
+            return refs.BuiltIns[symbol].tags[tag]
+    t = Tag(f'{symbol}::{tag}')
+    if t in refs.TagValues:
+        return refs.TagValues[t]
+    return t
+
+
+def message(tag, e):
+    r.refs.add_message(tag, e)
+
+
 def exec_func(cls, *args):
+    clear_cache = False
     if hasattr(cls, 'exec'):
-        # TODO: Reset cache on exception
-        # TODO: fix messed up options processing
         try:
             if cls.op_spec:  # check if function accepts options
 
@@ -63,20 +84,26 @@ def exec_func(cls, *args):
             return cls.exec(*args)
 
         except FunctionException as x:
-            # TODO: Pass error to converse.py
-            print(f'FunctionException: {x.args[0]}\n')
+            message(x.tag,  x.message)
+            clear_cache = True
             return None
 
         except TypeError as t:
             if str(t).startswith('exec()'):
                 t = str(t).replace('exec()', cls.__name__)
                 t = t.translate(str.maketrans({x: str(int(x) - 1) for x in filter(str.isdigit, t)}))
-            print(f'TypeError: {t}\n')
+            message(f'{cls.__name__}', f'{t}')
+            clear_cache = True
             return None
 
         except NotImplementedError as e:
-            print(f'Not ImlementedError: {e}\n')
+            message('NotImplementedError', f'{e}')
+            clear_cache = True
             return None
+
+        finally:
+            if clear_cache:
+                r.refs.CacheClearQueued = True
     return None
 
 
@@ -123,7 +150,7 @@ class LazyFunction(s.Function):
             return expr
 
         expr = expr.subs(r.refs.Constants.Dict)
-        expr = expr.subs(r.refs.Symbols)
+        expr = expr.subs(r.refs.OwnValues)
 
         def extend(ex):
             if not hasattr(ex, 'args') or not isinstance(ex.args, iterables):
@@ -188,7 +215,7 @@ def thread(func, *args, **kwargs):
         if isinstance(arg, iterables):
             if length is not None:
                 if length != len(arg):
-                    raise FunctionException("Cannot Thread over Lists of Unequal Length")
+                    raise FunctionException('General::thread', "Cannot Thread over Lists of Unequal Length")
             else:
                 length = len(arg)
 
@@ -259,7 +286,7 @@ def ands(x):
 
 def in_options(arg, ops):
     if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ops:
-        raise FunctionException(f"Unexpected option {arg.lhs}")
+        raise FunctionException('General::options', f"Unexpected option {arg.lhs}")
     return True
 
 
@@ -267,7 +294,7 @@ def options(args, ops: dict, defaults=None):
     ret = {}
     for arg in args:
         if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ops:
-            raise FunctionException(f"Unexpected option {arg.lhs}")
+            raise FunctionException('General::options', f"Unexpected option {arg.lhs}")
         if str(arg.rhs) in ("True", "False"):
             arg.rhs = boolean(arg.rhs)
         ret[ops[arg.lhs.name]] = arg.rhs
@@ -588,6 +615,11 @@ class Quotient(NormalFunction):
 
 class Rescale(NormalFunction):
     # TODO: clean
+
+    tags = {
+        'rescale': 'Invalid Arguments for Rescale.'
+    }
+
     @classmethod
     def exec(cls, x, x_range=None, y_range=None):
         if x_range is None and isinstance(x, iterables) and y_range is None:
@@ -602,7 +634,7 @@ class Rescale(NormalFunction):
                 if y_range is None:
                     y_range = (0, 1)
                 return ((x - x_range[0]) * y_range[1] + (x_range[1] - x) * y_range[0]) / (x_range[1] - x_range[0])
-        raise FunctionException('Invalid Arguments for Rescale.')  # TODO: ?
+        raise FunctionException('Rescale::rescale')  # TODO: ?
 
 
 class In(NormalFunction):
@@ -651,7 +683,7 @@ class Out(NormalFunction):
             elif -r.refs.Line < n < 0:
                 out = r.refs.get_out(r.refs.Line + n)
         if isinstance(out, s.Expr):  # TODO: Replace with Subs func.
-            out = out.subs(r.refs.Symbols)
+            out = out.subs(r.refs.OwnValues)
         return out
 
     @classmethod
@@ -1135,6 +1167,17 @@ class Equal(NormalFunction):
         return s.And(*[s.Eq(args[x], args[x + 1]) for x in range(len(args) - 1)])
 
 
+def set_tag_value(tag: Tag, m):
+    if not isinstance(m, String):
+        raise FunctionException('Set::set_tag', f'{tag} can ony be set to a string.')
+    refs = r.refs
+    if tag.symbol in refs.BuiltIns:
+        if hasattr(refs.BuiltIns[tag.symbol], 'tags'):
+            refs.BuiltIns[tag.symbol].tags[tag.tag] = m.value
+    else:
+        refs.TagValues[tag] = m
+
+
 def real_set(x, n):
     refs = r.refs
     for ref in [
@@ -1143,12 +1186,15 @@ def real_set(x, n):
         refs.Protected.Dict
     ]:
         if str(x) in ref:
-            raise FunctionException(f'Symbol {x} cannot be Assigned to.')
+            raise FunctionException('Set::set', f'Symbol {x} cannot be Assigned to.')
     if isinstance(x, s.Symbol):
+        if isinstance(x, Tag):
+            set_tag_value(x, n)
+            return n
         if isinstance(n, s.Expr):
             if x in n.atoms():
                 return None
-        refs.Symbols[x.name] = n
+        refs.OwnValues[x.name] = n
         return n
     if isinstance(x, s.Function):
         # process pattern
@@ -1164,10 +1210,10 @@ def real_set(x, n):
             else:
                 f_args.append(arg)
         # create patterns list if not present
-        if name not in refs.Functions:
-            refs.Functions[name] = {tuple(f_args): (expr, ())}
+        if name not in refs.DownValues:
+            refs.DownValues[name] = {tuple(f_args): (expr, ())}
         else:  # else add pattern to list
-            refs.Functions[name].update({tuple(f_args): (expr, ())})
+            refs.DownValues[name].update({tuple(f_args): (expr, ())})
         return n
     if isinstance(x, iterables):
         if isinstance(x, iterables) and len(x) == len(n):
@@ -1198,8 +1244,8 @@ class Unset(NormalFunction):
     def exec(cls, n):
         if isinstance(n, iterables):
             return List.create(Unset(x) for x in n)
-        if isinstance(n, s.Symbol) and str(n) in r.refs.Symbols:
-            del r.refs.Symbols[str(n)]
+        if isinstance(n, s.Symbol) and str(n) in r.refs.OwnValues:
+            del r.refs.OwnValues[str(n)]
         # TODO: return 'Nothing' when done
         return None
 
@@ -1331,12 +1377,12 @@ class Subs(NormalFunction):
             if isinstance(replacements[0], iterables):
                 for x in replacements:
                     if not isinstance(x, iterables):
-                        raise FunctionException(f'{replacements} is a mixture of Lists and Non-Lists.')
+                        raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
                     return List(*(Subs(expr, replacement) for replacement in replacements))
             else:
                 for x in replacements:
                     if isinstance(x, iterables):
-                        raise FunctionException(f'{replacements} is a mixture of Lists and Non-Lists.')
+                        raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
         if isinstance(expr, (s.Expr, List, s.Matrix, Rule)):
             expr = expr.subs(replacements)
             replacement_dict = Subs.func_replacement_helper(replacements)
@@ -1688,10 +1734,15 @@ class FractionalPart(NormalFunction):
 
 
 class Limit(NormalFunction):
+    tags = {
+        'lim': 'Invalid Limit.',
+        'dir': 'Invalid Limit Direction.'
+    }
+
     @staticmethod
     def lim(expr, lim, d='+-'):
         if not isinstance(lim, Rule):
-            raise FunctionException('Invalid Limit.')
+            raise FunctionException('Limit::lim')
         try:
             return s.limit(expr, lim.lhs, lim.rhs, d)
         except ValueError as e:
@@ -1704,18 +1755,27 @@ class Limit(NormalFunction):
 
     @classmethod
     def exec(cls, expr, lim, d='+-'):
-        if str(d) in ("Reals", "TwoSided"):
-            d = '+-'
-        elif str(d) in ("FromAbove", "Right") or d == -1:
-            d = '+'
-        elif str(d) in ("FromBelow", "Left") or d == 1:
-            d = '-'
+        if isinstance(d, String):
+            if d.value in ("Reals", "TwoSided"):
+                d = '+-'
+            elif d.value in ("FromAbove", "Right") or d == -1:
+                d = '+'
+            elif d.value in ("FromBelow", "Left") or d == 1:
+                d = '-'
+        elif is_integer(d):
+            if d == -1:
+                d = '+'
+            elif d == 1:
+                d = '-'
         if d not in ('+', '-', '+-'):
-            raise FunctionException("Invalid Limit Direction")
+            raise FunctionException('Limit::dir')
         return thread(lambda x: Limit.lim(x, lim, d), expr)
 
 
 class Sum(NormalFunction):
+
+    tags = {'sum': 'Invalid Limits.'}
+
     @classmethod
     def limits(cls, a, b):
         if isinstance(a, s.Symbol) or (isinstance(b, s.Symbol) and is_integer(a)):
@@ -1730,14 +1790,14 @@ class Sum(NormalFunction):
     def process(cls, s_, i):
         if isinstance(i, iterables):
             if not isinstance(i[0], s.Symbol):
-                raise FunctionException("Invalid Limits.")
+                raise FunctionException('Sum::sum')
             if len(i) == 2:
                 return s_, (i[0], *cls.limits(s.S.One, i[1]))
             if len(i) == 3:
                 return s_, (i[0], *cls.limits(i[1], i[2]))
             if len(i) == 4:
                 return cls.process_skip(s_, i)
-        raise FunctionException("Invalid Limits.")
+        raise FunctionException('Sum::sum')
 
     @classmethod
     def exec(cls, f, i, *xi):
@@ -1793,6 +1853,10 @@ class Range(NormalFunction):
      Uses step di.
     """
 
+    tags = {
+        'range': 'Invalid range specification.'
+    }
+
     @staticmethod
     def single_range(i, n, di):
         ret = List()
@@ -1805,7 +1869,7 @@ class Range(NormalFunction):
                 i += di
         except TypeError as e:
             if e.args[0].startswith('cannot determine truth value'):
-                raise FunctionException('Invalid/Unsupported Range bounds.')
+                raise FunctionException('Range::range')
         return List.create(ret)
 
     @classmethod
@@ -1836,7 +1900,7 @@ class Permutations(NormalFunction):
                 n = Range(*n)
             else:
                 if not is_integer(n):
-                    raise FunctionException("n should be an integer.")
+                    raise FunctionException('Permutations::exec', 'n should be an integer.')
                 n = List.create(range(int(n) + 1))
         if isinstance(n, iterables):
             # TODO: manually remove duplicates
@@ -1884,9 +1948,9 @@ class Table(ExplicitFunction):
         elif len(arg) >= 2:
             args = Range(*arg[1:])
         else:
-            raise FunctionException('Invalid Bounds.')  # TODO: Warning
+            raise FunctionException('Table::range', 'Invalid Bounds.')  # TODO: Warning
         if not isinstance(arg[0], (s.Symbol, s.Function)):
-            raise FunctionException(f'Cannot use {arg[0]} as an Iterator.')
+            raise FunctionException('Table::iter', f'Cannot use {arg[0]} as an Iterator.')
         return Table._table(expr, arg[0], args)
 
     @classmethod
@@ -1922,6 +1986,10 @@ class Subdivide(NormalFunction):
      Generates the list of values from subdividing the interval min to max.
     """
 
+    tags = {
+        'div': 'Number of Subdivisions should be an Integer.'
+    }
+
     @classmethod
     def exec(cls, one, two=None, three=None):
         if three is None:
@@ -1939,7 +2007,7 @@ class Subdivide(NormalFunction):
             div = three
 
         if not is_integer(div):
-            raise FunctionException("Number of Subdivisions should be an Integer.")
+            raise FunctionException('Subdivide::div')
 
         div = s.Number(int(div))
 
@@ -1971,7 +2039,7 @@ class Subsets(NormalFunction):
             n_spec = range(len(li) + 1)
         elif n_spec.is_number:
             if not is_integer(n_spec):
-                raise FunctionException(f'{n_spec} is not an integer.')
+                raise FunctionException('Subsets::exec', f'{n_spec} is not an integer.')
             n_spec = range(int(n_spec) + 1)
         else:
             n_spec = Range(*n_spec)
@@ -1993,12 +2061,16 @@ class FromPolarCoordinates(NormalFunction):
      coordinates {r, θ1, …, θn - 2, ϕ}
     """
 
+    tags = {
+        'dim': 'Polar Coordinates can only be defined for dimensions of 2 and greater.'
+    }
+
     @classmethod
     def exec(cls, list_):
         # TODO: Thread
         length = len(list_)
         if length == 1:
-            raise FunctionException('Polar Coordinates can only be defined for dimesions of 2 and greater.')
+            raise FunctionException('FromPolarCoordinates::dim')
         ret = List.create(list_[:1] * length)
         for pos, angle in enumerate(list_[1:]):
             ret[pos] *= s.cos(angle)
@@ -2018,13 +2090,17 @@ class ToPolarCoordinates(NormalFunction):
      coordinates {x1, x2, …, xn}.
     """
 
+    tags = {
+        'dim': 'Polar Coordinates can only be defined for dimensions of 2 and greater.'
+    }
+
     @classmethod
     def exec(cls, list_):
         # TODO: Thread
         list_ = List(*list_)
         length = len(list_)
         if length == 1:
-            raise FunctionException('Polar Coordinates can only be defined for dimesions of 2 and greater.')
+            raise FunctionException('ToPolarCoordinates::dim')
         ret = List(Sqrt(Total(list_ ** 2)))
         for x in range(length - 2):
             ret.append(s.acos(list_[x] / Sqrt(Total(list_[x:] ** 2))))
@@ -2057,13 +2133,17 @@ class Collect(NormalFunction):
 
     """
 
+    tags = {
+        'head': 'Invalid Function.'
+    }
+
     @staticmethod
     def collect_func(expr, v, h):
         unevaluated_expr = s.collect(s.expand(expr), v, evaluate=False)
         expr = 0
         if h:
             if not isinstance(h, (s.Symbol, s.Function)):
-                raise FunctionException('Invalid Function.')
+                raise FunctionException('Collect::head')
             for c in unevaluated_expr:
                 expr += Functions.call(str(h), unevaluated_expr[c]) * c
         else:
@@ -2118,8 +2198,8 @@ class Part(NormalFunction):
                     return expr[int(n - 1)]
                 return expr[int(n)]
             except IndexError:
-                raise FunctionException(f'Part {n} of {expr} does not exist.')
-        raise FunctionException(f'{n} is not a valid Part specification.')
+                raise FunctionException('Part::dim', f'Part {n} of {expr} does not exist.')
+        raise FunctionException('Part::part', f'{n} is not a valid Part specification.')
 
     @classmethod
     def exec(cls, expr, *args):
@@ -2136,7 +2216,7 @@ class Part(NormalFunction):
         if arg == s.S.Zero:
             return s.Symbol(type(expr).__name__)
         if not part:
-            raise FunctionException(f'{expr} does not have Part {arg}')
+            raise FunctionException('Part::dim', f'{expr} does not have Part {arg}')
         if arg == r.refs.Constants.All:  # TODO: add None
             arg = Range(len(expr))
         if isinstance(arg, iterables):
@@ -2170,7 +2250,7 @@ class Take(NormalFunction):
             upper = seq[1]
             step = 1
             if 0 in (lower, upper, step) or not (is_integer(lower) and is_integer(upper) and is_integer(step)):
-                raise FunctionException('Invalid Bounds for Take.')
+                raise FunctionException('Take::dim', 'Invalid Bounds for Take.')
             if len(seq) == 3:
                 step = seq[2]
             if step > 0:
@@ -2183,7 +2263,7 @@ class Take(NormalFunction):
             if seq > 0:
                 return take[:seq]
             return take[seq:]
-        raise FunctionException(f'{seq} is not a valid Take specification.')
+        raise FunctionException('Take::take' ,f'{seq} is not a valid Take specification.')
 
     @classmethod
     def exec(cls, expr, *seqs):
@@ -2219,7 +2299,7 @@ class First(ExplicitFunction):
             return Part(x, 1)
         if d is not None:
             return LazyFunction.evaluate(d)
-        raise FunctionException(f'{x} has zero length, and no first element.')
+        raise FunctionException('First::first', f'{x} has zero length, and no first element.')
 
 
 class Last(ExplicitFunction):
@@ -2238,7 +2318,7 @@ class Last(ExplicitFunction):
             return Part(x, -1)
         if d is not None:
             return LazyFunction.evaluate(d)
-        raise FunctionException(f'{x} has zero length, and no last element.')
+        raise FunctionException('Last::last', f'{x} has zero length, and no last element.')
 
 
 class RandomInteger(NormalFunction):
@@ -2268,12 +2348,12 @@ class RandomInteger(NormalFunction):
         if not rep:
             if isinstance(spec, iterables):
                 if len(spec) != 2:
-                    raise FunctionException('Invalid Bounds')
+                    raise FunctionException('RandomInteger::bounds', 'Invalid Bounds')
                 limit = spec
             else:
                 limit = [0, spec]
             if not (is_integer(limit[0]) and is_integer(limit[1])):
-                raise FunctionException('Limits for RandomInteger should be an Integer.')
+                raise FunctionException('RandomInteger::limits', 'Limits for RandomInteger should be an Integer.')
             return s.Rational(random.randint(limit[0], limit[1]))
         return cls.repeat(spec, rep, RandomInteger)
 
@@ -2285,7 +2365,7 @@ class RandomInteger(NormalFunction):
             if len(rep) == 1:
                 return func.exec(spec, rep[0])
             return List(*[func.exec(spec, rep[1:]) for _ in range(int(rep[0]))])
-        raise FunctionException("Invalid Bounds")
+        raise FunctionException('RandomInteger::bounds', "Invalid Bounds")
 
 
 class RandomReal(NormalFunction):
@@ -2320,7 +2400,7 @@ class RandomReal(NormalFunction):
         if not rep:
             if isinstance(spec, iterables):
                 if len(spec) != 2:
-                    raise FunctionException('Invalid Bounds')
+                    raise FunctionException('RandomReal::bounds', 'Invalid Bounds')
                 lower, upper = spec
             else:
                 lower, upper = 0, spec
@@ -2336,7 +2416,7 @@ class RandomReal(NormalFunction):
             if len(rep) == 1:
                 return cls.exec(spec, rep[0], p=precision)
             return List(*[cls.exec(spec, rep[1:], p=precision) for _ in range(int(rep[0]))])
-        raise FunctionException("Invalid Bounds")
+        raise FunctionException('RandomReal::bounds', "Invalid Bounds")
 
 
 class RandomComplex(RandomReal):
@@ -2418,7 +2498,6 @@ class Functions:
     # TODO: Matrix Row Operations
     # TODO: Remaining Matrix Operations
 
-    # TODO: Warnings
     # TODO: Fix Compound Expressions (f[x][y][z])
 
     # TODO: Clear Function from References
@@ -2455,39 +2534,43 @@ class Functions:
     @classmethod
     def call(cls, f: str, *a):
         refs = r.refs
-        if f in refs.NoCache or cls.not_normal(f):
+        # clear cache if necessary
+        if refs.CacheClearQueued:
+            s.core.cache.clear_cache()
+            refs.CacheClearQueued = False
+        elif f in refs.NoCache or cls.not_normal(f):
             s.core.cache.clear_cache()
         if f in refs.BuiltIns:
             return refs.BuiltIns[f](*a)
-        if f in refs.Functions:
-            priority = {}
-            for header in list(refs.Functions[f])[::-1]:
-                match = True
-                matches = 0
-                if len(a) != len(header):
-                    continue
-                for ar, br in zip(a, header):
-                    if ar == br:
-                        matches += 1
-                        continue
-                    if isinstance(br, s.Symbol) and br.name.startswith('*'):
-                        continue
-                    match = False
-                    break
-                if match:
-                    priority[matches] = header
-            if priority:
-                header = priority[max(priority)]
-                expr = refs.Functions[f][header][0]
-                # reps = refs.Functions[f][header][1]
-                for ar, br in zip(a, header):
-                    if isinstance(br, s.Symbol) and br.name.startswith('*'):
-                        expr = Subs(expr, Rule(br, ar))
-                expr = Subs(expr, Rule.from_dict(vars(r.refs.Symbols)))  # + Rule.from_dict({x: x for x in reps}))
-                if type(expr) is Delay:
-                    # TODO: improve naive approach
-                    return LazyFunction.evaluate(expr.args[0])
-                return expr
+        # if f in refs.DownValues:
+        #     priority = {}
+        #     for header in list(refs.DownValues[f])[::-1]:
+        #         match = True
+        #         matches = 0
+        #         if len(a) != len(header):
+        #             continue
+        #         for ar, br in zip(a, header):
+        #             if ar == br:
+        #                 matches += 1
+        #                 continue
+        #             if isinstance(br, s.Symbol) and br.name.startswith('*'):
+        #                 continue
+        #             match = False
+        #             break
+        #         if match:
+        #             priority[matches] = header
+        #     if priority:
+        #         header = priority[max(priority)]
+        #         expr = refs.DownValues[f][header][0]
+        #         # reps = refs.Functions[f][header][1]
+        #         for ar, br in zip(a, header):
+        #             if isinstance(br, s.Symbol) and br.name.startswith('*'):
+        #                 expr = Subs(expr, Rule(br, ar))
+        #         expr = Subs(expr, Rule.from_dict(vars(r.refs.Symbols)))  # + Rule.from_dict({x: x for x in reps}))
+        #         if type(expr) is Delay:
+        #             # TODO: improve naive approach
+        #             return LazyFunction.evaluate(expr.args[0])
+        #         return expr
         return type(f, (NormalFunction,), {})(*a)
 
     @classmethod

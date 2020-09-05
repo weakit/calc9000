@@ -1,19 +1,25 @@
+import sympy as s
 from calc9000 import references as r, larker
 from calc9000.printer import pretty_print
 
+
 parser = larker.parser
+refs = r.refs
 
 
 def process(input_text: str):
+
     if not input_text or input_text.isspace():
-        r.refs.add_def("", "")
+        refs.add_def('', '')
         return None
+
     out = parser.evaluate(input_text)
+
     if isinstance(out, (r.NoOutput,)):
-        r.refs.add_def(input_text, out.value)
+        refs.add_def(input_text, out.value)
         out = None
     else:
-        r.refs.add_def(input_text, out)
+        refs.add_def(input_text, out)
     return out
 
 
@@ -28,8 +34,14 @@ def process_pretty(input_text):
 
 
 def current_line():
-    return r.refs.Line
+    return refs.Line
 
 
 def previous_line():
-    return r.refs.Line - 1
+    return refs.Line - 1
+
+
+def set_messenger(m):
+    if not hasattr(m, 'show'):
+        pass  # Raise Exception
+    r.refs.Messenger = m

@@ -1,4 +1,18 @@
 import platform
+from sys import stderr
+
+try:
+    import colorama
+    colorama.init()
+    st, ed = colorama.Fore.RED, colorama.Fore.RESET
+except ImportError:
+    st, ed = '', ''
+
+
+class StderrMessenger:
+    @staticmethod
+    def show(tag, m):
+        print(f'{st}{tag}: {m}{ed}', file=stderr)
 
 
 if __name__.endswith('main'):
@@ -6,6 +20,7 @@ if __name__.endswith('main'):
     from calc9000 import converse as c
     import sympy as s
     import lark
+    c.set_messenger(StderrMessenger())
     print(f'\b\b, using sympy {s.__version__}]\n')
     try:
         while True:

@@ -1,4 +1,5 @@
 import sympy as s
+from calc9000.datatypes import List
 
 
 class NoOutput:
@@ -51,11 +52,15 @@ setattr(Constants, 'False', False)
 Constants.Dict = {x: Constants.__dict__[x] for x in dir(Constants) if not x.startswith('__')}
 
 
-class Symbols(dict):
+class OwnValues(dict):
     pass
 
 
-class Functions(dict):
+class DownValues(dict):
+    pass
+
+
+class TagValues(dict):
     pass
 
 
@@ -116,39 +121,59 @@ NoCache = [
 ]
 
 
+class BaseMessenger:
+    def show(self, tag, e):
+        pass
+
+
 class References:
     def __init__(self):
-        self.In = [None]
-        self.Out = [None]
-        self.Symbols = Symbols()
+        self.In = []
+        self.Out = []
+        self.Messages = [List()]
+        self.OwnValues = OwnValues()
         self.NoCache = NoCache
-        self.BuiltIns = Functions()
-        self.Functions = Functions()
+        self.BuiltIns = DownValues()
+        self.DownValues = DownValues()
+        self.TagValues = TagValues()
         self.FunctionWrappers = FunctionWrappers
         self.Constants = Constants
         self.Protected = Protected
         self.Line = 1
+        self.CacheClearQueued = False  # dirty, but works
         self.Parser = None
+        self.Messenger = None
 
     def add_def(self, _in, out):
         self.In.append(_in)
         self.Out.append(out)
+        self.Messages.append(List())
         self.Line += 1
 
     def get_def(self, n=None):
         if n is None:
             n = self.Line - 1
-        return self.In[n], self.Out[n]
+        return self.In[n - 1], self.Out[n - 1]
 
     def get_in(self, n=None):
         if n is None:
             n = self.Line - 1
-        return self.In[n]
+        return self.In[n - 1]
 
     def get_out(self, n=None):
         if n is None:
             n = self.Line - 1
-        return self.Out[n]
+        return self.Out[n - 1]
+
+    def add_message(self, tag, e):  # WIP
+        self.Messages[-1].append(f'{tag}: {e}')
+        if self.Messenger:
+            self.Messenger.show(tag, e)
+
+    def get_messages(self, n=None):
+        if n is None:
+            n = self.Line - 1
+        return self.Messages[n - 1]
 
 
 refs = References()
