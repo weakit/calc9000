@@ -116,6 +116,7 @@ NoCache = [
     "RandomInteger",
     "RandomReal",
     "RandomComplex",
+    "RandomPrime",
     "ComplexExpression",
     "SemicolonStatement"
 ]

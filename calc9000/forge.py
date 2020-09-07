@@ -2,8 +2,8 @@ import sympy as s
 from functools import reduce
 import operator as op
 from calc9000 import functions
-from calc9000.datatypes import List, Rule, Tag, String
-from lark import Tree
+from calc9000.datatypes import List, Rule, Tag, String, Span
+from lark import Tree, Token
 
 
 Functions = functions.Functions
@@ -142,6 +142,31 @@ def delayed(n, f):
     return Functions.call('DelayedSet', f, *n)
 
 
+def spanner(n, x):
+    i = 0
+    w = n[:]
+    t = Token('SPAN', ';;')
+
+    # flatten span
+    while i < len(w):
+        if hasattr(w[i], 'data') and w[i].data == 'span':
+            w = w[:i] + w[i].children + w[i+1:]
+        i += 1
+
+    if len(list(filter(lambda a: not t.__ne__(a), w))) > 2:
+        raise SyntaxError('Invalid Span specification')
+
+    # get args
+    indices = [i for i, x in enumerate(w) if x == t]
+    args = [(w[i+1:j] or [None])[0] for i, j in zip([-1] + indices, indices + [None])]
+
+    # operate
+    args = [x(y) for y in args]
+
+    # return span
+    return Span(*args)
+
+
 # TODO: Part and Logical Operators
 
 def lazy(tree: Tree):
@@ -176,6 +201,8 @@ def lazy(tree: Tree):
         return relations([lazy(x) for x in tree.children])
     if tree.data == 'tag':
         return lazy_tag(*(lazy(x) for x in tree.children))
+    if tree.data == 'span':
+        return spanner(tree.children, lazy)
 
 
 def operate(tree: Tree):
@@ -216,4 +243,6 @@ def operate(tree: Tree):
         return relations([operate(x) for x in tree.children])
     if tree.data == 'tag':
         return tag(*(operate(x) for x in tree.children))
+    if tree.data == 'span':
+        return spanner(tree.children, operate)
     return tree

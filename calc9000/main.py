@@ -28,7 +28,7 @@ if __name__.endswith('main'):
             try:
                 out = c.process_pretty(i)
                 if out is None:
-                    # print('')
+                    print('')
                     continue
             except KeyboardInterrupt as e:
                 if isinstance(e, lark.exceptions.UnexpectedInput):

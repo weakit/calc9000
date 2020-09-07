@@ -18,6 +18,7 @@ grammar = """
 // unset: expression "=" "."
 
 ?expression: assign
+           | span
 
 ?assign: replace "=" assign -> set
        | replace ("=" "."|"=.") -> unset
@@ -28,7 +29,6 @@ grammar = """
         | logic
 
 ?logic: rule
-      | "!" logic -> not_
       | logic ("&&" rule)+ -> and_
       | logic ("||" rule)+ -> or_
 
@@ -84,14 +84,14 @@ function: atom "[" (compound_statement)? ("," compound_statement)* "]"
 
 tag: symbol "::" symbol
 
-list: "{" (expression ("," expression)*)? "}"
+// makeshift span, tree is altered after parsing
+// does not work the same way as mathematica, but works decently
 
-?assign_atom: function
-            | assign_list
-            | numeric
-            | CNAME
+span: expression? (SPAN expression?)+
 
-assign_list: "{" (CNAME|assign_list) ("," (CNAME|assign_list))* "}"
+SPAN: ";;"
+
+list: "{" (compound_statement ("," compound_statement )*)? "}"
 
 factorial: unary "!"
 

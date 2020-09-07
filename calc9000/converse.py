@@ -16,7 +16,7 @@ def process(input_text: str):
 
     try:
         out = parser.evaluate(input_text)
-    except LarkError as e:
+    except (LarkError, SyntaxError) as e:
         e = ''.join((x + '\n\t' for x in str(e).split('\n')[:4] if x)).rstrip('\n')
         refs.add_message(Tag('Synatx::err'), e)
         refs.add_def(input_text, None)
@@ -37,6 +37,8 @@ def process_pretty(input_text):
     try:
         return pretty_print(raw)
     except TypeError:
+        if hasattr(raw, 'pretty'):
+            return raw.pretty()
         return raw
 
 

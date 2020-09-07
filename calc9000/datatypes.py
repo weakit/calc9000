@@ -175,6 +175,32 @@ class Tag(s.Symbol):
         return self.name.split('::')[-1]
 
 
+class Span(s.AtomicExpr):
+    # accept only 3 arguments to keep it simple
+    def __init__(self, a=None, b=None, c=None):
+        if a is None:
+            a = 1
+        if b is None:
+            b = s.Symbol('All')
+
+        self.a, self.b, self.c = a, b, c
+
+    def __str__(self):
+        if self.c:
+            return f'{self.a};;{self.b};;{self.c}'
+        return f'{self.a};;{self.b}'
+
+    def __repr__(self):
+        return self.__str__()
+
+    def take_spec(self):
+        if self.b == s.Symbol('All'):
+            b = -1
+        else:
+            b = self.b
+        return List(self.a, b, self.c or 1)
+
+
 class String(s.AtomicExpr):
     def __init__(self, x: str):
         self.value = str(x)

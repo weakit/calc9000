@@ -45,8 +45,8 @@ class Printer9000(PrettyPrinter):
             return super()._print_Function(l)
         return super()._print_Limit(l)
 
-    # def _print_List(self, e):
-    #     return self._print_seq(e.value, '{', '}')
+    def _print_List(self, e):
+        return self._print_seq(e.value, '{', '}')
 
     def _helper_print_function(self, func, args, sort=False, func_name=None, delimiter=', ', elementwise=False):
         if sort:

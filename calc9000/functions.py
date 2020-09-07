@@ -3,7 +3,7 @@ import sympy as s
 import operator as op
 from functools import reduce
 from calc9000 import references as r
-from calc9000.datatypes import List, Rule, Tag, String
+from calc9000.datatypes import List, Rule, Tag, String, Span
 from itertools import permutations, combinations
 from iteration_utilities import deepflatten, accumulate
 
@@ -157,7 +157,9 @@ class LazyFunction(s.Function):
                 return ex
 
             if Functions.is_explicit(type(ex).__name__):
-                return ex.land()
+                if isinstance(ex, LazyFunction):
+                    return ex.land()
+                return ex
 
             rep = {x: extend(x) for x in ex.args}
             ex = ex.subs(rep)
@@ -1941,6 +1943,8 @@ class Table(ExplicitFunction):
 
     @staticmethod
     def _range_parse(expr, arg):
+        if hasattr(arg, '__len__') and len(arg) == 1:
+            arg = arg[0]
         if arg.is_number:
             return List(*(LazyFunction.evaluate(expr) for _ in range(arg)))
         if len(arg) == 2 and isinstance(arg[1], iterables):
@@ -2219,6 +2223,8 @@ class Part(NormalFunction):
             raise FunctionException('Part::dim', f'{expr} does not have Part {arg}')
         if arg == r.refs.Constants.All:  # TODO: add None
             arg = Range(len(expr))
+        if isinstance(arg, Span):
+            return Part(Take(expr, arg), *args[1:])  # pass expr with head
         if isinstance(arg, iterables):
             return head(*(Part(cls.get_part(part, x), *args[1:]) for x in arg))
         return Part(cls.get_part(part, arg), *args[1:])
@@ -2243,16 +2249,19 @@ class Take(NormalFunction):
         if seq == r.refs.Constants.All:
             return take
         # TODO: add None
+        if isinstance(seq, Span):
+            seq = seq.take_spec()
         if isinstance(seq, iterables):
             if len(seq) == 1:
                 return Part(take, seq)
             lower = seq[0]
             upper = seq[1]
             step = 1
-            if 0 in (lower, upper, step) or not (is_integer(lower) and is_integer(upper) and is_integer(step)):
-                raise FunctionException('Take::dim', 'Invalid Bounds for Take.')
             if len(seq) == 3:
                 step = seq[2]
+            if (0 in (lower, upper, step) or not (is_integer(lower) and is_integer(upper) and is_integer(step)))\
+                    or len(seq) > 3:
+                raise FunctionException('Take::dim', 'Invalid Bounds for Take.')
             if step > 0:
                 upper, lower = cls.ul(upper, lower)
             else:
@@ -2263,7 +2272,7 @@ class Take(NormalFunction):
             if seq > 0:
                 return take[:seq]
             return take[seq:]
-        raise FunctionException('Take::take' ,f'{seq} is not a valid Take specification.')
+        raise FunctionException('Take::take', f'{seq} is not a valid Take specification.')
 
     @classmethod
     def exec(cls, expr, *seqs):
@@ -2446,7 +2455,7 @@ class RandomComplex(RandomReal):
     param_spec = (0, 2)
 
     @classmethod
-    def exec(cls, spec, rep, p=16):
+    def exec(cls, spec=None, rep=None, p=16):
         precision = p
 
         if not spec:
@@ -2473,6 +2482,189 @@ class Timing(ExplicitFunction):
         return List(s.Float(end) - s.Float(start), result)
 
 
+class Prime(NormalFunction):
+    """
+    Prime [n]
+     Gives the nth prime number.
+
+    Equivalent to sympy.prime()
+    """
+
+    param_spec = (1, 1)
+    tags = {
+        'int': 'A positive integer is expected as input.'
+    }
+
+    prime_func = s.prime
+
+    @classmethod
+    def prime(cls, n):
+        if is_integer(n):
+            if n < 1:
+                raise FunctionException(f'{cls.__name__}::int')
+            return cls.prime_func(n)
+        if hasattr(n, 'is_number') and n.is_number:
+            raise FunctionException(f'{cls.__name__}::int')
+        return None
+
+    @classmethod
+    def exec(cls, n):
+        return thread(cls.prime, n)
+
+
+class PrimePi(Prime):
+    """
+    PrimePi [n]
+     Gives the number of primes less than or equal to x.
+
+    Equivalent to sympy.primepi()
+    """
+    prime_func = s.primepi
+
+
+class PrimeOmega(Prime):
+    """
+    PrimeOmega [x]
+     Gives the number of prime factors counting multiplicities in x.
+
+    Uses sympy.factorint()
+    """
+    @staticmethod
+    def prime_func(n):
+        return sum(s.factorint(n).values())
+
+
+class PrimeNu(Prime):
+    """
+    PrimeNu [x]
+     Gives the number of distinct primes in x.
+
+    Uses sympy.primefactors()
+    """
+    @staticmethod
+    def prime_func(n):
+        return len(s.primefactors(n))
+
+
+class NextPrime(NormalFunction):
+    """
+    NextPrime [x]
+     Gives the smallest prime above x.
+
+    NextPrime [x, i]
+     Gives the ith-next prime above x.
+
+    """
+
+    tags = {
+        'int': 'A positive integer is expected as input.'
+    }
+
+    prime_func = s.nextprime
+
+    @classmethod
+    def prime(cls, n, k):
+        if is_integer(n) and is_integer(k):
+            if n < 1:
+                raise FunctionException(f'{cls.__name__}::int')
+            return cls.prime_func(n, k)
+        if hasattr(n, 'is_number') and n.is_number\
+                or (hasattr(k, 'is_number') and k.is_number):
+            raise FunctionException(f'{cls.__name__}::int')
+        return None
+
+    @classmethod
+    def exec(cls, n, k=1):
+        return thread(cls.prime, n, k)
+
+
+class PreviousPrime(Prime):
+    """
+    PreviousPrime [x]
+     Gives the greatest prime below x.
+    """
+    prime_func = s.prevprime
+
+
+class RandomPrime(NormalFunction):
+    """
+    RandomPrime [{a, b}]
+     Gives a pseudorandom prime number in the range a to b.
+
+    RandomPrime [x]
+     Gives a pseudorandom prime number in the range 2 to x.
+
+    RandomPrime [range, n]
+     Gives a list of n pseudorandom primes.
+
+    Uses sympy.randprime().
+    """
+
+    tags = {
+        'int': 'A positive integer is expected as input.'
+    }
+
+    @classmethod
+    def exec(cls, spec, n=None):
+        if not isinstance(spec, iterables):
+            spec = List(2, spec)
+        if not is_integer(spec[0]) and not is_integer(spec[1]):
+            FunctionException(f'RandomPrime::int')
+
+        if n:
+            if is_integer(n):
+                return List(*(cls.exec(spec) for _ in range(n)))
+            if isinstance(n, iterables):
+                return List(*(cls.exec(spec, n[1:]) for _ in range(n[0])))
+        return s.randprime(spec[0], spec[1])
+
+
+class Mobius(Prime):  # for ease of use
+    """
+    Mobius [n]
+     Gives the Möbius function μ(n).
+    """
+    prime_func = s.mobius
+
+
+class MoebiusMu(Prime):
+    """
+    MoebiusMu [n]
+     Gives the Möbius function μ(n).
+    """
+    prime_func = s.mobius
+
+
+class FactorInteger(NormalFunction):
+    """
+    FactorInteger [n]
+     Gives a list of the prime factors of the integer n, together with their exponents.
+
+    FactorInteger [n, k]
+     Foes partial factorization, pulling out at most k distinct factors.
+
+    Equivalent to sympy.factorint()
+    """
+    tags = {
+        'int': 'Inputs should be positive integers.'
+    }
+
+    @classmethod
+    def factor(cls, n, k):
+        if is_integer(n) and (is_integer(k) or k is None):
+            if n < 1:
+                raise FunctionException(f'{cls.__name__}::int')
+            return List.create(List(*x) for x in s.factorint(n, limit=k).items())
+        if hasattr(n, 'is_number') and n.is_number \
+                or (hasattr(k, 'is_number') and k.is_number):
+            raise FunctionException(f'{cls.__name__}::int')
+        return None
+
+    @classmethod
+    def exec(cls, n, k=None):
+        return thread(cls.factor, n, k)
+
+
 class Functions:
     # TODO: Convert all code function calls to Functions.call / Function.exec
     # TODO: Finish Explicit Functions
@@ -2480,7 +2672,7 @@ class Functions:
     # TODO: Double Check
     # TODO: Figure out Custom Functions
 
-    # TODO: Span
+    # TODO: Divisible
     # TODO: Prime Notation
     # TODO: Part, Assignment
 
