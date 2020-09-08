@@ -48,6 +48,11 @@ class Printer9000(PrettyPrinter):
     def _print_List(self, e):
         return self._print_seq(e.value, '{', '}')
 
+    def _print_Mod(self, expr):
+        if len(expr.args) > 2:
+            return self._print_Function(expr)
+        return super()._print_Mod(expr)
+
     def _helper_print_function(self, func, args, sort=False, func_name=None, delimiter=', ', elementwise=False):
         if sort:
             args = sorted(args, key=s.utilities.default_sort_key)

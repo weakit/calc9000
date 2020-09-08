@@ -825,10 +825,36 @@ class Power(NormalFunction):
         return reduce(op.pow, args)
 
 
-class PowerMod(NormalFunction):
+class Mod(NormalFunction):
+    """
+    Mod [m, n]
+     Gives m mod n.
+
+    Mod [m, n, d]
+     Uses an offset d.
+
+    Uses sympy.Mod().
+    """
     @classmethod
-    def exec(cls, a, b, m):
-        return pow(a, b, m)
+    def exec(cls, a, n, d=s.S.Zero):
+        if any(isinstance(x, iterables) for x in (a, n, d)):
+            return thread(Mod, a, n, d)
+        if d:
+            if a.is_number and n.is_number and d.is_number:
+                return a - n * Floor((a - d) / n)
+            return None
+        return s.Mod(a, n)
+
+    def _eval_is_nonnegative(self):
+        if self.args[1].is_positive:
+            return True
+
+    def _eval_is_nonpositive(self):
+        if self.args[1].is_negative:
+            return True
+
+    def _eval_rewrite_as_floor(self, a, n, d, **kwargs):
+        return a - n * s.floor((a - d) / n)
 
 
 class Subtract(NormalFunction):
@@ -995,7 +1021,7 @@ class Cross(NormalFunction):
             if isinstance(args[0], iterables) and len(args[0]) == 2:
                 return List(args[0][1] * -1, args[0][0])
         elif len(args) == 2:
-            if isinstance(args[0], iterables) and isinstance(args[1], iterables):
+            if all(isinstance(x, iterables) for x in args):
                 if len(args[0]) == len(args[1]) == 3:
                     return List.create(s.Matrix(args[0]).cross(s.Matrix(args[1])))
         raise NotImplementedError('Not Implemented')
@@ -1876,7 +1902,7 @@ class Range(NormalFunction):
 
     @classmethod
     def exec(cls, i, n=None, di=1):
-        if isinstance(i, iterables) or isinstance(n, iterables) or isinstance(di, iterables):
+        if any(isinstance(x, iterables) for x in (i, n, di)):
             return thread(cls.exec, i, n, di)
         return cls.single_range(i, n, di)
 
@@ -2651,10 +2677,9 @@ class FactorInteger(NormalFunction):
 
     @classmethod
     def factor(cls, n, k):
-        if is_integer(n) and (is_integer(k) or k is None):
-            if n < 1:
-                raise FunctionException(f'{cls.__name__}::int')
-            return List.create(List(*x) for x in s.factorint(n, limit=k).items())
+        if is_integer(k) or k is None:
+            if hasattr(n, 'is_Rational') and n.is_Rational:
+                return List.create(List(*x) for x in s.factorrat(n, limit=k).items())
         if hasattr(n, 'is_number') and n.is_number \
                 or (hasattr(k, 'is_number') and k.is_number):
             raise FunctionException(f'{cls.__name__}::int')
@@ -2665,6 +2690,21 @@ class FactorInteger(NormalFunction):
         return thread(cls.factor, n, k)
 
 
+class Divisible(NormalFunction):
+    tags = {
+        'rat': 'Rational numbers are expected as input.'
+    }
+
+    @staticmethod
+    def div(n, d):
+        if hasattr(n, 'is_Rational') and hasattr(d, 'is_Rational'):
+            if n.is_Rational and d.is_Rational:
+                if Mod:
+                    return True
+                return False
+            raise FunctionException('Divisible::rat')
+
+
 class Functions:
     # TODO: Convert all code function calls to Functions.call / Function.exec
     # TODO: Finish Explicit Functions
@@ -2672,7 +2712,7 @@ class Functions:
     # TODO: Double Check
     # TODO: Figure out Custom Functions
 
-    # TODO: Divisible
+    # TODO: Thread Everything
     # TODO: Prime Notation
     # TODO: Part, Assignment
 
@@ -2705,7 +2745,7 @@ class Functions:
     # TODO: Arithmetic Functions: Ratios, Differences
     # TODO: Booleans, Conditions, Boole
     # TODO: Cross of > 3 dimensional vectors
-    # TODO: Implement Fully: Total, Quotient, Mod, Factor
+    # TODO: Implement Fully: Total, Quotient, Factor
 
     # for now, until I find something better
     r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)
