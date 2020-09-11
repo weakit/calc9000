@@ -1068,7 +1068,9 @@ class Sqrt(NormalFunction):
 
 class StieltjesGamma(NormalFunction):
     @classmethod
-    def exec(cls, x):
+    def exec(cls, x, a=None):
+        if a:
+            return thread(s.stieltjes, x, a)
         return thread(s.stieltjes, x)
 
 
@@ -1411,7 +1413,7 @@ class Subs(NormalFunction):
                 for x in replacements:
                     if isinstance(x, iterables):
                         raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
-        if isinstance(expr, (s.Expr, List, s.Matrix, Rule)):
+        if isinstance(expr, (s.Expr, s.Rel, List, s.Matrix, Rule)):
             expr = expr.subs(replacements)
             replacement_dict = Subs.func_replacement_helper(replacements)
             for func in expr.atoms(s.Function):
@@ -1618,9 +1620,7 @@ class HeavisideTheta(NormalFunction):
     def exec(cls, x):
         return thread(s.Heaviside, x)
 
-
 # TODO: Proper Logic Functions w/ True and False
-
 
 class And(NormalFunction):
     @classmethod
@@ -1669,6 +1669,7 @@ class Equivalent(NormalFunction):
     def exec(cls, *args):
         return s.Equivalent(*args)
 
+# TODO: Relational Functions
 
 # class Boole(NormalFunction):
 #     @classmethod
@@ -1859,7 +1860,7 @@ class Zeta(NormalFunction):
      Gives the Riemann zeta function ζ(s).
 
     Zeta [s, a]
-     Gives the Generalized (Hurwitz) Riemann zeta function ζ(s, a).
+     Gives the Generalized Riemann zeta function ζ(s, a).
 
     Equivalent to sympy.zeta().
     """

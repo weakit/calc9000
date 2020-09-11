@@ -42,6 +42,7 @@ grammar = """
          | relation (RELATIONAL addsub)+
 
 RELATIONAL: "=="
+          | "!="
           | ">="
           | "<="
           | ">"

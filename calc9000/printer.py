@@ -1,6 +1,6 @@
 import sympy as s
-from calc9000.functions import Dot, Cross, Limit
-from calc9000.datatypes import List
+from calc9000.functions import Dot, Cross, Limit, Subs
+# from calc9000.datatypes import List
 from calc9000.references import FunctionWrappersReverse
 from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
     precedence_traditional, PRECEDENCE, pretty_atom, stringPict
@@ -47,6 +47,11 @@ class Printer9000(PrettyPrinter):
 
     def _print_List(self, e):
         return self._print_seq(e.value, '{', '}')
+
+    def _print_Subs(self, e):
+        if isinstance(e, Subs):
+            return super()._print_Function(e)
+        return super()._print_Subs(e)
 
     def _print_Mod(self, expr):
         if len(expr.args) > 2:
