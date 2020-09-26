@@ -1,7 +1,7 @@
 from lark.exceptions import LarkError
 from calc9000 import references as r, larker
 from calc9000.printer import pretty_print
-from calc9000.datatypes import Tag
+from calc9000.custom import Tag
 
 
 parser = larker.parser

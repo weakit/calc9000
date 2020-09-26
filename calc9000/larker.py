@@ -1,6 +1,6 @@
 from calc9000 import forge as op
 from lark import Lark, Transformer, Token
-from calc9000.datatypes import String
+from calc9000.custom import String
 
 
 grammar = """
@@ -141,13 +141,28 @@ class AssignTransformer(Transformer):
         return super().transform(tree)
 
 
+def remove_comments(s: str):
+    bef, aft = '', s
+    while '(*' in aft or '*)' in aft:
+        start = aft.find('(*')
+        end = aft.find('*)')
+        if start >= 0:
+            if end == -1:
+                raise SyntaxError('Unterminated comment.')
+            bef += aft[:start]
+            aft = aft[end + 2:]
+            continue
+        raise SyntaxError('Unexpected comment terminator. *).')
+    return bef + aft
+
+
 class SymbolTransformer(AssignTransformer):
     def __init__(self):
         super().__init__()
         self.parser = Lark(grammar, start='start', parser="lalr")
 
     def evaluate(self, t):
-        parsed = self.parser.parse(t)
+        parsed = self.parser.parse(remove_comments(t))
         result = op.operate(self.transform(parsed))
         return result
 

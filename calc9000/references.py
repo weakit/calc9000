@@ -1,5 +1,5 @@
 import sympy as s
-from calc9000.datatypes import List
+from calc9000.custom import List, Primes
 
 
 class NoOutput:
@@ -33,14 +33,18 @@ class Constants:
     Infinity = s.oo
     ComplexInfinity = s.zoo
     Indeterminate = s.nan
+
+    # sets
+    Rationals = s.Rationals
     Complexes = s.Complexes
     Reals = s.Reals
     Integers = s.Integers
+    Primes = Primes()
+
     Integer = None
     Real = None
     Head = None
     Complex = None
-    Rationals = s.Rationals
     All = s.Symbol('All')
     Nothing = s.Symbol('Nothing')
     Degree = Pi / 180
@@ -144,6 +148,8 @@ class References:
         self.CacheClearQueued = False  # dirty, but works
         self.Parser = None
         self.Messenger = None
+        self.DefaultPrecision = 6
+        self.ExtraPrecision = 2
 
     def add_def(self, _in, out):
         self.In.append(_in)

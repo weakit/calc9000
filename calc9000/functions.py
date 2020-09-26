@@ -3,12 +3,14 @@ import sympy as s
 import operator as op
 from functools import reduce
 from calc9000 import references as r
-from calc9000.datatypes import List, Rule, Tag, String, Span
+from calc9000.custom import List, Rule, Tag, String, Span
 from itertools import permutations, combinations
 from iteration_utilities import deepflatten, accumulate
 
 iterables = (s.Tuple, List, s.Matrix, list, tuple)
 random = secrets.SystemRandom()
+ExtraPrecision = r.refs.ExtraPrecision
+DefaultPrecision = r.refs.DefaultPrecision
 
 
 class FunctionException(Exception):
@@ -1525,9 +1527,9 @@ class N(NormalFunction):
     """
 
     @classmethod
-    def exec(cls, expr, p=16, *args):
+    def exec(cls, expr, p=DefaultPrecision, *args):
         # return thread(lambda x: s.N(x, *args), n)
-        return r_thread(s.N, expr, p + 4, *args)
+        return r_thread(s.N, expr, p + ExtraPrecision, *args)
 
 
 class D(NormalFunction):
@@ -1728,6 +1730,13 @@ class Simplify(NormalFunction):
             #     assum = assumptions(assum)
             #     expr = thread(lambda x: s.refine(x, assum), expr)
         return r_thread(s.simplify, expr)
+
+
+class Element(NormalFunction):
+    """
+    Element [expr, dom]
+
+    """
 
 
 class IntegerPart(NormalFunction):
@@ -2428,8 +2437,8 @@ class RandomReal(NormalFunction):
     param_spec = (0, 2)
 
     @classmethod
-    def exec(cls, spec=None, rep=None, p=16):
-        precision = p + 4
+    def exec(cls, spec=None, rep=None, p=DefaultPrecision):
+        precision = p + ExtraPrecision
 
         if not spec:
             return random.randint(0, 10 ** precision) * s.N(10 ** (-precision), precision)
@@ -2482,7 +2491,7 @@ class RandomComplex(RandomReal):
     param_spec = (0, 2)
 
     @classmethod
-    def exec(cls, spec=None, rep=None, p=16):
+    def exec(cls, spec=None, rep=None, p=DefaultPrecision):
         precision = p
 
         if not spec:
@@ -2721,7 +2730,6 @@ class Functions:
     # TODO: Series
     # TODO: NSolve, DSolve
     # TODO: Roots (Solve)
-    # TODO: Series
     # TODO: Unit Conversions
 
     # TODO: Simple List Functions

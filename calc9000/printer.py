@@ -1,6 +1,5 @@
 import sympy as s
 from calc9000.functions import Dot, Cross, Limit, Subs
-# from calc9000.datatypes import List
 from calc9000.references import FunctionWrappersReverse
 from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
     precedence_traditional, PRECEDENCE, pretty_atom, stringPict
@@ -10,7 +9,7 @@ class Printer9000(PrettyPrinter):
 
     def _print_Float(self, e):
         # TODO: fix float printing in List
-        e = s.Float(e, precision=max(e._prec-13, 1))
+        e = s.Float(e, precision=max(e._prec-7, 1))
         full_prec = self._settings["full_prec"]
         if full_prec == "auto":
             full_prec = self._print_level == 1

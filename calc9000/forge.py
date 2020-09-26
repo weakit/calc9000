@@ -2,7 +2,7 @@ import sympy as s
 from functools import reduce
 import operator as op
 from calc9000 import functions
-from calc9000.datatypes import List, Rule, Tag, String, Span
+from calc9000.custom import List, Rule, Tag, String, Span
 from lark import Tree, Token
 
 
@@ -31,7 +31,8 @@ def numeric(n):
 
 
 def float_(n: str):
-    return s.Float(n, max(20, len(n.lstrip('0').replace('.', '')) + 4))
+    return s.Float(n, max(functions.DefaultPrecision + functions.ExtraPrecision,
+                          len(n.lstrip('0').replace('.', '')) + functions.ExtraPrecision))
 
 
 def symbol(n):

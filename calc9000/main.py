@@ -15,13 +15,20 @@ class StderrMessenger:
         print(f'{st}{tag}: {m}{ed}', file=stderr)
 
 
+def _quit(*args):
+    print('\n\n--- calc9000\n')
+    exit(0)
+
+
 if __name__.endswith('main'):
     print(f'\n--- calc9000 [running on {platform.python_implementation()} {platform.python_version()}] ', end='')
     from calc9000 import converse as c
     import sympy as s
     import lark
+
     c.set_messenger(StderrMessenger())
     print(f'\b\b, using sympy {s.__version__}]\n')
+
     try:
         while True:
             i = input(f'IN  {c.current_line()}: ')
@@ -30,7 +37,7 @@ if __name__.endswith('main'):
                 if out is None:
                     print('')
                     continue
-            except KeyboardInterrupt as e:
+            except (KeyboardInterrupt, lark.exceptions.UnexpectedInput) as e:
                 if isinstance(e, lark.exceptions.UnexpectedInput):
                     print(str(e)[:str(e).rindex('Expect')-2])
                 else:
@@ -44,5 +51,4 @@ if __name__.endswith('main'):
             else:
                 print(f'OUT {c.previous_line()}: {out}\n')
     except KeyboardInterrupt:
-        print('\n\n--- Have a nice day!\n')
-        exit(0)
+        _quit()

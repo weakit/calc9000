@@ -1,5 +1,5 @@
 from . import p, f
-from calc9000.datatypes import List, Rule
+from calc9000.custom import List, Rule
 
 
 def test_list():

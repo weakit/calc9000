@@ -213,3 +213,33 @@ class String(s.AtomicExpr):
 
     def __repr__(self):
         return self.__str__()
+
+
+class Primes(s.Set):
+    # This won't work
+    is_iterable = True
+    is_empty = False
+    _inf = s.Integer(2)
+    _sup = s.S.Infinity
+    is_finite_set = False
+
+    def _contains(self, other):
+        if not isinstance(other, s.Expr):
+            return s.S.false
+        return other.is_prime
+
+    def __iter__(self):
+        i = 1
+        while True:
+            yield s.prime(i)
+            i += 1
+
+    @property
+    def _boundary(self):
+        return s.Interval(2, s.S.Infinity)
+
+    def _eval_is_subset(self, other):
+        return s.Range(s.oo).is_subset(other)
+
+    def _eval_is_superset(self, other):
+        return s.Range(s.oo).is_superset(other)
