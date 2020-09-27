@@ -76,10 +76,10 @@ def exec_func(cls, *args):
                 if cls.param_spec and not (cls.param_spec[0] <= len(args_to_pass) <= cls.param_spec[1]):
                     if cls.param_spec[0] == cls.param_spec[1]:
                         st = f'{cls.__name__} takes {cls.param_spec[0]} ' \
-                             f'arguments but {len(args_to_pass)} were given.'
+                             f'arguments but was given {len(args_to_pass)}.'
                     else:
                         st = f'{cls.__name__} takes {cls.param_spec[0]} to {cls.param_spec[1]} ' \
-                             f'arguments but {len(args_to_pass)} were given.'
+                             f'arguments but was given {len(args_to_pass)}.'
                     raise TypeError(st)
 
                 # pass args and options as kws
@@ -1553,6 +1553,10 @@ class D(NormalFunction):
     Uses sympy.diff().
     """
 
+    tags = {
+        'argx': 'No variable of differentiation was specified to differentiate a multi-variate expression.'
+    }
+
     @classmethod
     def exec(cls, f, *args):
         def threaded_diff(x, *d):
@@ -1561,7 +1565,10 @@ class D(NormalFunction):
             return s.diff(x, *d)
 
         if not args:
-            return s.diff(f)
+            try:
+                return s.diff(f)
+            except ValueError:
+                raise FunctionException('D::argx')
 
         for arg in args:
             if isinstance(arg, iterables):
@@ -1582,6 +1589,11 @@ class D(NormalFunction):
 
 class Integrate(NormalFunction):
     # TODO: Doc
+
+    tags = {
+        'argx': 'No variable of integration was specified to integrate a multi-variate expression.'
+    }
+
     @classmethod
     def exec(cls, f, *args):
         def threaded_int(x, *i):
@@ -1590,7 +1602,10 @@ class Integrate(NormalFunction):
             return s.integrate(x, *i)
 
         if not args:
-            return s.integrate(f)
+            try:
+                return s.integrate(f)
+            except ValueError:
+                raise FunctionException('Integrate::argx')
 
         return threaded_int(f, *args)
 
@@ -2726,6 +2741,7 @@ class Functions:
     # TODO: Thread Everything
     # TODO: Prime Notation
     # TODO: Part, Assignment
+    # TODO: Integral, Derivative
 
     # TODO: Polar Complex Number Representation
     # TODO: Series
