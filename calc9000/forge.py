@@ -31,8 +31,7 @@ def numeric(n):
 
 
 def float_(n: str):
-    return s.Float(n, max(functions.DefaultPrecision + functions.ExtraPrecision,
-                          len(n.lstrip('0').replace('.', '')) + functions.ExtraPrecision))
+    return s.Float(n, max(functions.WorkingPrecision, len(n.lstrip('0').replace('.', '')) + functions.ExtraPrecision))
 
 
 def symbol(n):

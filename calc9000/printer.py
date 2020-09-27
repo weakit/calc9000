@@ -1,15 +1,17 @@
 import sympy as s
 from calc9000.functions import Dot, Cross, Limit, Subs
-from calc9000.references import FunctionWrappersReverse
+from mpmath.libmp.libmpf import dps_to_prec
+from calc9000.references import FunctionWrappersReverse, refs
 from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
     precedence_traditional, PRECEDENCE, pretty_atom, stringPict
 
 
 class Printer9000(PrettyPrinter):
+    _float_cutoff = dps_to_prec(refs.ExtraPrecision) - 4
 
     def _print_Float(self, e):
         # TODO: fix float printing in List
-        e = s.Float(e, precision=max(e._prec-7, 1))
+        e = s.Float(e, precision=max(e._prec-self._float_cutoff, 1))
         full_prec = self._settings["full_prec"]
         if full_prec == "auto":
             full_prec = self._print_level == 1

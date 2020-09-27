@@ -36,7 +36,7 @@ def update_startup(v):
 
 
 def quit_prompt():
-    pft(HTML('\n --- <i>Have a nice day!</i>\n'))
+    pft(HTML('\n--- <i>Have a nice day!</i>\n'))
     exit(0)
 
 

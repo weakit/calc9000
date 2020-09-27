@@ -11,6 +11,7 @@ iterables = (s.Tuple, List, s.Matrix, list, tuple)
 random = secrets.SystemRandom()
 ExtraPrecision = r.refs.ExtraPrecision
 DefaultPrecision = r.refs.DefaultPrecision
+WorkingPrecision = r.refs.WorkingPrecision
 
 
 class FunctionException(Exception):
@@ -2433,7 +2434,7 @@ class RandomReal(NormalFunction):
     Uses python's SystemRandom().
     """
 
-    op_spec = ({'WorkingPrecision': 'p'}, {'p': 16})
+    op_spec = ({'WorkingPrecision': 'p'}, {'p': DefaultPrecision})
     param_spec = (0, 2)
 
     @classmethod
@@ -2453,7 +2454,7 @@ class RandomReal(NormalFunction):
         return cls.repeat(spec, rep, p=precision)
 
     @classmethod
-    def repeat(cls, spec, rep, p=16):
+    def repeat(cls, spec, rep, p=DefaultPrecision):
         precision = p
         if is_integer(rep):
             return List(*[cls.exec(spec, p=precision) for _ in range(int(rep))])
@@ -2487,7 +2488,7 @@ class RandomComplex(RandomReal):
     Uses python's SystemRandom().
     """
 
-    op_spec = ({'WorkingPrecision': 'p'}, {'p': 15})
+    op_spec = ({'WorkingPrecision': 'p'}, {'p': DefaultPrecision})
     param_spec = (0, 2)
 
     @classmethod
