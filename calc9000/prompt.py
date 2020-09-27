@@ -1,4 +1,6 @@
 import platform
+import html
+import pdb
 
 try:
     from prompt_toolkit import *
@@ -10,9 +12,10 @@ except ImportError:
 
 lex = None
 style = None
+e = html.escape
 
 
-def setup_lexer(builtins: None):
+def setup_lexer(builtins=None):
     global lex, style
     try:
         from pygments.style import Style
@@ -58,6 +61,22 @@ def quit_prompt():
 def setup_prompt_sessions(con):
     from prompt_toolkit.completion import WordCompleter
     from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit.keys import Keys
+
+    bindings = KeyBindings()
+
+    @bindings.add(Keys.ControlZ)
+    def _(event):
+        pft()
+        quit_prompt()
+
+    @bindings.add(Keys.ControlO)
+    def _(event):
+        pass
+
+    def prompt_continuation(width, line_number, is_soft_wrap):
+        return HTML('<green>' + ' ' * (width - 5) + '...: </green>')
 
     class LimitedWordCompleter(WordCompleter):
         @staticmethod
@@ -77,6 +96,8 @@ def setup_prompt_sessions(con):
         completer=builtins_completer,
         complete_in_thread=True,
         auto_suggest=AutoSuggestFromHistory(),
+        key_bindings=bindings,
+        prompt_continuation=prompt_continuation
     )
 
 
@@ -106,7 +127,7 @@ def display_output(out, line):
 class PromptMessenger:
     @staticmethod
     def show(tag, message):
-        pft(HTML(f'<red>{tag}: {message}</red>'))
+        pft(HTML(f'<red>{e(str(tag))}: {e(str(message))}</red>'))
 
 
 def handle_prompt(con, prompt_session):

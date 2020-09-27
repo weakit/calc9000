@@ -7,7 +7,12 @@ from calc9000.custom import Tag
 parser = larker.parser
 refs = r.refs
 
-def _remove_comments(s: str):
+
+def _pre_process(s: str):
+    # remove newlines
+    s = s.replace('\n', '')
+
+    # remove comments
     bef, aft = '', s
     while '(*' in aft or '*)' in aft:
         start = aft.find('(*')
@@ -25,7 +30,7 @@ def _remove_comments(s: str):
 def process(input_text: str):
 
     try:
-        input_text = _remove_comments(input_text)
+        input_text = _pre_process(input_text)
     except SyntaxError as e:
         refs.add_message(Tag('Synatx::err'), str(e))
         return None
