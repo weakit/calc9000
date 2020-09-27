@@ -7,8 +7,28 @@ from calc9000.custom import Tag
 parser = larker.parser
 refs = r.refs
 
+def _remove_comments(s: str):
+    bef, aft = '', s
+    while '(*' in aft or '*)' in aft:
+        start = aft.find('(*')
+        end = aft.find('*)')
+        if start >= 0:
+            if end == -1:
+                raise SyntaxError('Unterminated comment.')
+            bef += aft[:start]
+            aft = aft[end + 2:]
+            continue
+        raise SyntaxError('Unexpected comment terminator. *).')
+    return bef + aft
+
 
 def process(input_text: str):
+
+    try:
+        input_text = _remove_comments(input_text)
+    except SyntaxError as e:
+        refs.add_message(Tag('Synatx::err'), str(e))
+        return None
 
     if not input_text or input_text.isspace():
         refs.add_def('', '')
@@ -17,9 +37,8 @@ def process(input_text: str):
     try:
         out = parser.evaluate(input_text)
     except (LarkError, SyntaxError) as e:
-        e = ''.join((x + '\n\t' for x in str(e).split('\n')[:4] if x)).rstrip('\n')
+        e = ''.join((x + '\n\t' for x in str(e).split('\n')[:4] if x)).rstrip('\n\t')
         refs.add_message(Tag('Synatx::err'), e)
-        refs.add_def(input_text, None)
         return None
 
     if isinstance(out, (r.NoOutput,)):
@@ -54,3 +73,7 @@ def set_messenger(m):
     if not hasattr(m, 'show'):
         pass  # Raise Exception
     r.refs.Messenger = m
+
+
+def get_builtins():
+    return list(r.refs.BuiltIns.keys())

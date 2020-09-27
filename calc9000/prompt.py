@@ -2,28 +2,43 @@ import platform
 
 try:
     from prompt_toolkit import *
+
     pft = print_formatted_text
 except ImportError:
     print('Please install prompt_toolkit.')
     exit(-1)
 
-
-# try:
-#     from mathematica import MathematicaLexer
-#     from mathematica.lexer import MToken
-#     from prompt_toolkit.lexers import PygmentsLexer
-#     from pygments.style import Style
-#     from prompt_toolkit.styles.pygments import style_from_pygments_cls
-#     # lex = PygmentsLexer(MathematicaLexer)
-#     # style = style_from_pygments_cls(PromptStyle)
-# except ImportError:
-#     lex = None
-#     style = None
-
 lex = None
 style = None
 
-p = PromptSession(lexer=lex, style=style)
+
+def setup_lexer(builtins: None):
+    global lex, style
+    try:
+        from pygments.style import Style
+        from pygments.lexer import RegexLexer, bygroups
+        import pygments.token as tk
+        from prompt_toolkit.lexers import PygmentsLexer
+        from prompt_toolkit.styles import style_from_pygments_cls
+
+        # stupid, but works
+        builtins_regex = \
+            r'\b(' + builtins[0] + ''.join([f'|{x}' for x in builtins[1:]]) + r')\b'
+
+        class SimpleLexer(RegexLexer):
+            tokens = {
+                'root': [
+                    (r'\s+', tk.Text),
+                    (r'\(\*[^(\*\))]*(\*\))?', tk.Comment),
+                    # (builtins_regex, tk.Keyword),
+                    # (r'((\d+)?(\.\d+)|(\d+)\.?)(`\d+)?', tk.Number),
+                    (r'"[^"]*"?', tk.String),
+                ]
+            }
+
+        lex = PygmentsLexer(SimpleLexer)
+    except ImportError:
+        pass
 
 
 def print_startup():
@@ -40,9 +55,34 @@ def quit_prompt():
     exit(0)
 
 
-def get_input(line):
+def setup_prompt_sessions(con):
+    from prompt_toolkit.completion import WordCompleter
+    from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+
+    class LimitedWordCompleter(WordCompleter):
+        @staticmethod
+        def denier():
+            return
+            yield
+
+        def get_completions(self, document, complete_event):
+            if len(document.get_word_before_cursor()) > 2:
+                return super().get_completions(document, complete_event)
+            return self.denier()
+
+    builtins_completer = LimitedWordCompleter(con.get_builtins())
+    return PromptSession(
+        lexer=lex,
+        style=style,
+        completer=builtins_completer,
+        complete_in_thread=True,
+        auto_suggest=AutoSuggestFromHistory(),
+    )
+
+
+def get_input(line, prompt_session):
     prompt_text = HTML(f'<green>In [<lime>{line}</lime>]:</green> ')
-    return p.prompt(prompt_text, lexer=lex)
+    return prompt_session.prompt(prompt_text, lexer=lex)
 
 
 def display_output(out, line):
@@ -69,8 +109,8 @@ class PromptMessenger:
         pft(HTML(f'<red>{tag}: {message}</red>'))
 
 
-def handle_prompt(con):
-    i = get_input(con.current_line())
+def handle_prompt(con, prompt_session):
+    i = get_input(con.current_line(), prompt_session)
 
     try:
         out = con.process_pretty(i)
@@ -85,10 +125,12 @@ def main():
     import sympy as s
     from calc9000 import converse as c
     update_startup(s.__version__)
+    setup_lexer(c.get_builtins())
+    p = setup_prompt_sessions(c)
     c.set_messenger(PromptMessenger())
 
     try:
         while True:
-            handle_prompt(c)
+            handle_prompt(c, p)
     except KeyboardInterrupt:
         quit_prompt()
