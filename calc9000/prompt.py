@@ -1,14 +1,12 @@
 import platform
 import html
-import pdb
 
 try:
     from prompt_toolkit import *
 
     pft = print_formatted_text
 except ImportError:
-    print('Please install prompt_toolkit.')
-    exit(-1)
+    raise EnvironmentError
 
 lex = None
 style = None
@@ -42,6 +40,14 @@ def setup_lexer(builtins=None):
         lex = PygmentsLexer(SimpleLexer)
     except ImportError:
         pass
+
+
+def check_console():
+    from prompt_toolkit.output.win32 import NoConsoleScreenBufferError as win_err
+    try:
+        pft('', end='')
+    except win_err:
+        raise EnvironmentError('Fallback', -1)
 
 
 def print_startup():
@@ -90,7 +96,7 @@ def setup_prompt_sessions(con):
             return self.denier()
 
     builtins_completer = LimitedWordCompleter(con.get_builtins())
-    return PromptSession(
+    session = PromptSession(
         lexer=lex,
         style=style,
         completer=builtins_completer,
@@ -99,6 +105,7 @@ def setup_prompt_sessions(con):
         key_bindings=bindings,
         prompt_continuation=prompt_continuation
     )
+    return session
 
 
 def get_input(line, prompt_session):
@@ -142,6 +149,7 @@ def handle_prompt(con, prompt_session):
 
 
 def main():
+    check_console()
     print_startup()
     import sympy as s
     from calc9000 import converse as c
