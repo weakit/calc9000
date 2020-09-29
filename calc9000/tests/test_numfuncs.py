@@ -1,4 +1,4 @@
-from . import s, p, p_str, f
+from . import s, p, p_str, f, extra_p
 from calc9000.custom import List
 
 
@@ -72,7 +72,7 @@ def test_min():
     assert p('Min[9, 2]') == 2
     assert p('Min[{4, 1, 7, 2}]') == 1
     assert p_str('Min[5.56, -4.8, 7.3]').startswith('-4.8')
-    assert p_str('N[Min[1/7, 4/5, 1], 50-4]') == '0.14285714285714285714285714285714285714285714285714'
+    assert p_str(f'N[Min[1/7, 4/5, 1], 50-{extra_p}]') == '0.14285714285714285714285714285714285714285714285714'
     assert p('Min[{{-1, 0, 1, 2}, {0, 2, 4, 6}, {-3, -2, -1, 0}}]') == -3
     assert p('Min[Infinity, 5]') == 5
     assert p('Min[-Infinity, -5]') == -1 * s.oo

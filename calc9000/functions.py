@@ -3,9 +3,13 @@ import sympy as s
 import operator as op
 from functools import reduce
 from calc9000 import references as r
+from calc9000.units import from_str_find_unit
 from calc9000.custom import List, Rule, Tag, String, Span
 from itertools import permutations, combinations
 from iteration_utilities import deepflatten, accumulate
+
+# additional imports
+from sympy.matrices.common import NonInvertibleMatrixError
 
 iterables = (s.Tuple, List, s.Matrix, list, tuple)
 random = secrets.SystemRandom()
@@ -200,7 +204,6 @@ class Delay(LazyFunction):
     """
 
 
-# TODO: add warnings
 def toList(m):
     temp_list = List()
     for row in range(m.rows):
@@ -565,7 +568,6 @@ class Clip(NormalFunction):
      Gives v_min for x < min and v_max for x > max.
     """
 
-    # TODO: Raise exception for complex values
     @classmethod
     def exec(cls, x, limits=(s.S.NegativeOne, s.S.One), limit_return=None):
         if isinstance(x, iterables):
@@ -573,6 +575,8 @@ class Clip(NormalFunction):
         if limit_return is None:
             limit_return = limits
         if x.is_number:
+            if not x.is_extended_real:
+                raise FunctionException('Clip::com', 'Cannot clip complex values.')
             if x < limits[0]:
                 return limit_return[0]
             if x > limits[1]:
@@ -720,16 +724,17 @@ class Det(NormalFunction):
     Equivalent to sympy.Matrix.det().
     """
 
+    tags = {
+        'sqr': 'Cannot find determinant of non-square matrix.'
+    }
+
     @classmethod
     def exec(cls, x):
         if isinstance(x, iterables):
-            try:
-                m = s.Matrix(x)
-                if m.is_square:
-                    return m.det()
-            except ValueError:
-                # TODO: Warning
-                return None
+            m = s.Matrix(x)
+            if m.is_square:
+                return m.det()
+            raise FunctionException('Det::sqr')
         return None
 
 
@@ -741,15 +746,21 @@ class Inverse(NormalFunction):
     Equivalent to sympy.Matrix.inv().
     """
 
+    tags = {
+        'sqr': 'Cannot find inverse of non-square matrix.',
+        'val': 'Cannot find inverse of singular matrix.'
+    }
+
     @classmethod
     def exec(cls, x):
         if isinstance(x, iterables):
             try:
                 m = s.Matrix(x)
-                return toList(m.inv())
-            except ValueError:
-                # TODO: Warning
-                return None
+                if m.is_square:
+                    return toList(m.inv())
+                raise FunctionException('Inverse::sqr')
+            except NonInvertibleMatrixError:
+                raise FunctionException('Inverse::val')
         return None
 
 
@@ -764,12 +775,8 @@ class Transpose(NormalFunction):
     @classmethod
     def exec(cls, x):
         if isinstance(x, iterables):
-            try:
-                m = s.Matrix(x)
-                return toList(m.transpose())
-            except ValueError:
-                # TODO: Warning
-                return None
+            m = s.Matrix(x)
+            return toList(m.transpose())
         return None
 
 
@@ -1554,7 +1561,8 @@ class D(NormalFunction):
     """
 
     tags = {
-        'argx': 'No variable of differentiation was specified to differentiate a multi-variate expression.'
+        'argx': 'No variable of differentiation was specified to differentiate a multi-variate expression.',
+        'spec': 'Invalid specification for D.'
     }
 
     @classmethod
@@ -1580,8 +1588,7 @@ class D(NormalFunction):
                     else:
                         f = threaded_diff(f, (arg[0], arg[1]))
                 else:
-                    # TODO: warning
-                    return None
+                    raise FunctionException('D::spec')
             else:
                 f = threaded_diff(f, arg)
         return f

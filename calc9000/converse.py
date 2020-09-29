@@ -81,4 +81,6 @@ def set_messenger(m):
 
 
 def get_builtins():
-    return list(r.refs.BuiltIns.keys())
+    return list(r.refs.BuiltIns.keys()) +\
+           list(r.refs.Constants.Dict.keys()) +\
+           list(r.refs.Protected.Dict.keys())
