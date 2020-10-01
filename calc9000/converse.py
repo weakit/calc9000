@@ -1,7 +1,7 @@
 from lark.exceptions import LarkError
 from calc9000 import references as r, larker
 from calc9000.printer import pretty_print
-from calc9000.custom import Tag
+from calc9000.custom import Tag, CustomException
 
 
 parser = larker.parser
@@ -44,6 +44,9 @@ def process(input_text: str):
     except (LarkError, SyntaxError) as e:
         e = ''.join((x + '\n\t' for x in str(e).split('\n')[:4] if x)).rstrip('\n\t')
         refs.add_message(Tag('Synatx::err'), e)
+        return None
+    except CustomException as e:  # TODO: switch to FunctionException
+        refs.add_message(Tag(f'{e.message_symbol}::{e.message_tag or "err"}'), e.args[0])
         return None
 
     if isinstance(out, (r.NoOutput,)):

@@ -1,6 +1,6 @@
 from calc9000 import forge as op
 from lark import Lark, Transformer, Token
-from calc9000.custom import String
+from calc9000.custom import String, CustomException
 
 
 grammar = """

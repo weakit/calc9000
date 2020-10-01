@@ -3,13 +3,13 @@ import sympy as s
 import operator as op
 from functools import reduce
 from calc9000 import references as r
-from calc9000.units import from_str_find_unit
 from calc9000.custom import List, Rule, Tag, String, Span
+from calc9000.custom import ListException, RuleException
 from itertools import permutations, combinations
 from iteration_utilities import deepflatten, accumulate
 
 # additional imports
-from sympy.matrices.common import NonInvertibleMatrixError
+from sympy.matrices.common import NonInvertibleMatrixError, ShapeError
 
 iterables = (s.Tuple, List, s.Matrix, list, tuple)
 random = secrets.SystemRandom()
@@ -108,6 +108,16 @@ def exec_func(cls, *args):
             clear_cache = True
             return None
 
+        except ListException as e:
+            message('List', e.args[0])
+            clear_cache = True
+            return None
+
+        except RuleException as e:
+            message('Rule', e.args[0])
+            clear_cache = True
+            return None
+
         finally:
             if clear_cache:
                 r.refs.CacheClearQueued = True
@@ -202,6 +212,18 @@ class Delay(LazyFunction):
     A delayed expression.
     Use first arg as expression.
     """
+
+
+def isVector(m):
+    if isinstance(m, List):
+        return all(not isinstance(x, List) for x in m)
+
+
+def toVectorList(m):
+    """
+    Converts A vector matrix into a single row list.
+    """
+    return List.create(m)
 
 
 def toList(m):
@@ -701,16 +723,37 @@ class Out(NormalFunction):
 
 
 class Dot(NormalFunction):
-    @classmethod
-    def exec(cls, m, n):
-        if not isinstance(m, iterables) or not isinstance(n, iterables):
-            return None
-        m = s.Matrix(m)
-        n = s.Matrix(n)
 
-        if m.shape[1] == n.shape[1] == 1:
-            return m.dot(n)
-        return m * n
+    tags = {
+        'shap': 'Invalid matrix shapes for Dot.',
+        'rect': 'Non-rectangular tensor encountered.'
+    }
+
+    @classmethod
+    def exec(cls, a, b):
+        if not isinstance(a, iterables) or not isinstance(b, iterables):
+            return None
+
+        v1 = isVector(a)
+        v2 = isVector(b)
+
+        try:
+            if v1 and v2:
+                # perform scalar dot product when both matrices are vectors
+                return s.simplify(sum(List.create(a) * List.create(b)))
+            if v1 or v2:
+                # return a vector
+                if v1:
+                    return toVectorList(s.Matrix(List(a)) * s.Matrix(b))
+                return toVectorList(s.Matrix(a) * s.Matrix(b))
+            return toList(s.Matrix(a) * s.Matrix(b))
+        except (ShapeError, ValueError) as e:
+            if isinstance(e, ValueError):
+                if e.args[0].startswith('expecting list of lists') \
+                        or e.args[0].startswith('mismatched dimensions'):
+                    raise FunctionException('Dot::rect')
+            # TODO: replace with more verbose info
+            raise FunctionException('Dot::shap')
 
     def _sympystr(self, printer=None):
         return ''.join(str(i) + '.' for i in (printer.doprint(i) for i in self.args))[:-1]
@@ -771,6 +814,8 @@ class Transpose(NormalFunction):
 
     Equivalent to sympy.Matrix.transpose().
     """
+
+    # TODO: don't allow vector transpose
 
     @classmethod
     def exec(cls, x):
@@ -1025,6 +1070,11 @@ class Ramp(NormalFunction):
 
 
 class Cross(NormalFunction):
+
+    tags = {
+        'dim': 'Cross product of vectors greater than 3 dimensions is not supported.'
+    }
+
     @classmethod
     def exec(cls, *args):
         if len(args) == 1:
@@ -1034,7 +1084,7 @@ class Cross(NormalFunction):
             if all(isinstance(x, iterables) for x in args):
                 if len(args[0]) == len(args[1]) == 3:
                     return List.create(s.Matrix(args[0]).cross(s.Matrix(args[1])))
-        raise NotImplementedError('Not Implemented')
+        raise FunctionException('Cross::dim')
 
     def _sympystr(self, printer=None):
         return 'Cross['.join(str(i) + ', ' for i in (printer.doprint(i) for i in self.args))[:-2] + ']'

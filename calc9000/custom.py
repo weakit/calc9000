@@ -4,12 +4,17 @@ import sympy as s
 # TODO: Rule Delayed (@property)
 
 
-class RuleException(Exception):
-    pass
+class CustomException(Exception):
+    message_symbol = None
+    message_tag = None
 
 
-class ListException(Exception):
-    pass
+class RuleException(CustomException):
+    message_symbol = 'Rule'
+
+
+class ListException(CustomException):
+    message_symbol = 'List'
 
 
 class List(s.Basic):
@@ -41,7 +46,7 @@ class List(s.Basic):
     def __add__(self, other):
         if isinstance(other, List):
             if len(other) != len(self.value):
-                raise ListException("Lists are of Unequal Length")
+                raise ListException(f'{self} and {other} have incompatible shapes.')
             return List(*(self.value[i] + other[i] for i in range(len(self.value))))
         return List(*(x + other for x in self.value))
 
@@ -52,7 +57,7 @@ class List(s.Basic):
         if isinstance(other, List):
             new = list(self)
             if len(other) != len(new):
-                raise ListException("Lists are of Unequal Length")
+                raise ListException(f'{self} and {other} have incompatible shapes.')
             return List(*(self.value[i] - other[i] for i in range(len(self.value))))
         return List(*(x - other for x in self.value))
 
@@ -63,7 +68,7 @@ class List(s.Basic):
         if isinstance(other, List):
             new = list(self)
             if len(other) != len(new):
-                raise ListException("Lists are of Unequal Length")
+                raise ListException(f'{self} and {other} have incompatible shapes.')
             return List(*(self.value[i] * other[i] for i in range(len(self.value))))
         return List(*(x * other for x in self.value))
 
@@ -74,7 +79,7 @@ class List(s.Basic):
         if isinstance(other, List):
             new = list(self)
             if len(other) != len(new):
-                raise ListException("Lists are of Unequal Length")
+                raise ListException(f'{self} and {other} have incompatible shapes.')
             return List(*(self.value[i] / other[i] for i in range(len(self.value))))
         return List(*(x / other for x in self.value))
 
@@ -91,7 +96,7 @@ class List(s.Basic):
         if isinstance(other, List):
             new = list(self)
             if len(other) != len(new):
-                raise ListException("Lists are of Unequal Length")
+                raise ListException(f'{self} and {other} have incompatible shapes.')
             return List(*(pow(self.value[i], other[i]) for i in range(len(self.value))))
         return List(*(pow(x, other) for x in self.value))
 
@@ -140,7 +145,7 @@ class Rule(s.AtomicExpr):
             return self.lhs
         if item == 1:
             return self.rhs
-        raise RuleException
+        raise RuleException(f'Rule does not have part {item}')
 
     def __eq__(self, other):
         if isinstance(other, Rule):
