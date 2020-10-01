@@ -106,6 +106,12 @@ class List(s.Basic):
     def __hash__(self):
         return (List, *self.value).__hash__()
 
+    def _eval_Eq(self, other):
+        if isinstance(other, List):
+            if len(self.value) != len(other.value):
+                return False
+        return None
+
     def __eq__(self, other):
         if isinstance(other, List):
             return self.value == other.value

@@ -1772,14 +1772,28 @@ class Solve(NormalFunction):
         # TODO: fix (?)
         # if dom is None:
         #     dom = s.Complexes
-        if isinstance(expr, s.And):
-            expr = expr.args
-        # if not isinstance(expr, iterables + (s.core.relational._Inequality,)):
-        #     ret = s.solveset(expr, v, dom)
-        # else:
-        # if isinstance(expr, iterables):
-        #     expr = ands(expr)
-        ret = s.solve(expr, v or expr.free_symbols, dict=True)
+        if not isinstance(expr, iterables):
+            expr = List(expr)
+
+        flat_expr = []
+
+        # flatten ands
+        for ex in expr:
+            if isinstance(ex, s.And):
+                for x in ex.args:
+                    flat_expr.append(x)
+            else:
+                flat_expr.append(ex)
+
+        solveset = []
+        for ex in flat_expr:
+            if isinstance(ex, s.Eq) and any(isinstance(x, iterables) for x in ex.args):
+                solveset += list(thread(s.Eq, ex.args[0], ex.args[1]))
+            else:
+                solveset.append(ex)
+
+        ret = s.solve(solveset, v, dict=True)
+
         return List(*[Rule.from_dict(x, head=List) for x in ret])
 
 
@@ -2795,7 +2809,7 @@ class Functions:
     # TODO: Double Check
     # TODO: Figure out Custom Functions
 
-    # TODO: Thread Everything
+    # TODO: Norm
     # TODO: Prime Notation
     # TODO: Part, Assignment
     # TODO: Integral, Derivative
