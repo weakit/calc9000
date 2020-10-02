@@ -50,7 +50,7 @@ RELATIONAL: "=="
 
 ?addsub: muldiv
        | addsub ("+" muldiv)+ -> plus
-       | addsub ("-" muldiv)+ -> subtract
+       | addsub "-" muldiv -> subtract
 
 ?muldiv: prefix
        | muldiv "/" prefix -> divide

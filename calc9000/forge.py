@@ -58,15 +58,15 @@ def unset_function(n):
 
 
 def plus(n):
-    return reduce(op.add, n)
+    return Functions.call('Plus', *n)
 
 
 def subtract(n):
-    return reduce(op.sub, n)
+    return Functions.call('Plus', n[0], Functions.call('Times', -1, n[1]))
 
 
 def times(n):
-    return reduce(op.mul, n)
+    return Functions.call('Times', *n)
 
 
 def dot(n):
@@ -74,11 +74,11 @@ def dot(n):
 
 
 def divide(n):
-    return n[0] / times(n[1:])
+    return Functions.call('Times', n[0], Functions.call('Power', n[1], -1))
 
 
 def factorial(n):
-    return Functions.call('Factorial', n[0])
+    return Functions.call('Factorial', *n)
 
 
 def power(n):

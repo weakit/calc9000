@@ -47,6 +47,7 @@ class Constants:
     Complex = None
     All = s.Symbol('All')
     Nothing = s.Symbol('Nothing')
+    Null = s.Symbol('Null')
     Degree = Pi / 180
 
 

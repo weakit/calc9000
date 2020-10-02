@@ -1,7 +1,5 @@
 import secrets
 import sympy as s
-import operator as op
-from functools import reduce
 from calc9000 import references as r
 from calc9000.custom import List, Rule, Tag, String, Span
 from calc9000.custom import ListException, RuleException
@@ -245,7 +243,7 @@ def thread(func, *args, **kwargs):
         if isinstance(arg, iterables):
             if length is not None:
                 if length != len(arg):
-                    raise FunctionException('General::thread', "Cannot Thread over Lists of Unequal Length")
+                    raise FunctionException('General::thread', "Cannot Thread over Lists of Unequal Length.")
             else:
                 length = len(arg)
 
@@ -865,19 +863,19 @@ class ReIm(NormalFunction):
 class Plus(NormalFunction):
     @classmethod
     def exec(cls, *args):
-        return reduce(op.add, args)
+        return thread(s.Add, *args)
 
 
 class Times(NormalFunction):
     @classmethod
     def exec(cls, *args):
-        return reduce(op.mul, args)
+        return thread(s.Mul, *args)
 
 
 class Power(NormalFunction):
     @classmethod
     def exec(cls, *args):
-        return reduce(op.pow, args)
+        return thread(s.Pow, *args)
 
 
 class Mod(NormalFunction):
@@ -890,10 +888,19 @@ class Mod(NormalFunction):
 
     Uses sympy.Mod().
     """
+
+    tags = {
+        'complex': 'Mod does not support complex arguments.'
+    }
+
     @classmethod
     def exec(cls, a, n, d=s.S.Zero):
         if any(isinstance(x, iterables) for x in (a, n, d)):
             return thread(Mod, a, n, d)
+
+        if any(not x.is_extended_real for x in (a, n, d)):
+            raise FunctionException('Mod::complex')
+
         if d:
             if a.is_number and n.is_number and d.is_number:
                 return a - n * Floor((a - d) / n)
@@ -915,13 +922,13 @@ class Mod(NormalFunction):
 class Subtract(NormalFunction):
     @classmethod
     def exec(cls, x, y):
-        return x - y
+        return thread(s.Add, x, thread(s.Mul, -1, y))
 
 
 class Divide(NormalFunction):
     @classmethod
     def exec(cls, x, y):
-        return x / y
+        return thread(s.Mul, x, thread(s.Pow, y, -1))
 
 
 class Abs(NormalFunction):
@@ -2602,7 +2609,10 @@ class Timing(ExplicitFunction):
         start = time.time()
         result = LazyFunction.evaluate(expr)
         end = time.time()
-        return List(s.Float(end) - s.Float(start), result)
+        return List(
+            s.Float(end) - s.Float(start),
+            result if not isinstance(result, r.NoOutput) else r.Constants.Null
+        )
 
 
 class Prime(NormalFunction):
@@ -2794,12 +2804,23 @@ class Divisible(NormalFunction):
 
     @staticmethod
     def div(n, d):
-        if hasattr(n, 'is_Rational') and hasattr(d, 'is_Rational'):
-            if n.is_Rational and d.is_Rational:
-                if Mod:
-                    return True
-                return False
-            raise FunctionException('Divisible::rat')
+        if n.is_number and d.is_number:
+            if n.is_real and d.is_real:
+                if n.is_Float or d.is_Float:  # make sure input is symbolic
+                    raise FunctionException('Divisible::rat')
+                return not bool(s.Mod(n, d))
+            else:
+                div = n / d
+                if s.re(div).is_Rational and s.im(div).is_Rational:
+                    return s.re(div).is_Integer and s.im(div).is_Integer
+                raise FunctionException('Divisible::rat')
+        return None
+
+    @classmethod
+    def exec(cls, n, k):
+        if isinstance(n, iterables) or isinstance(k, iterables):
+            return thread(Divisible, n, k)
+        return cls.div(n, k)
 
 
 class Functions:

@@ -59,6 +59,16 @@ class Printer9000(PrettyPrinter):
             return self._print_Function(expr)
         return super()._print_Mod(expr)
 
+    # TODO: Print Plus
+    # def _print_Plus(self, expr):
+    #     return super()._print_Add(s.Add(*expr.args, evaluate=False))
+
+    def _print_Power(self, expr):
+        return super()._print_Pow(s.Pow(*expr.args, evaluate=False))
+
+    def _print_Times(self, expr):
+        return super()._print_Mul(s.Mul(*expr.args, evaluate=False))
+
     def _helper_print_function(self, func, args, sort=False, func_name=None, delimiter=', ', elementwise=False):
         if sort:
             args = sorted(args, key=s.utilities.default_sort_key)

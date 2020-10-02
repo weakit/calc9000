@@ -43,6 +43,8 @@ class List(s.Basic):
     def __len__(self):
         return self.value.__len__()
 
+    # Lists have operations for internal functionality.
+
     def __add__(self, other):
         if isinstance(other, List):
             if len(other) != len(self.value):
