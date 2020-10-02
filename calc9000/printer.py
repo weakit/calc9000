@@ -1,5 +1,5 @@
 import sympy as s
-from calc9000.functions import Dot, Cross, Limit, Subs
+from calc9000.functions.__init__ import Dot, Cross, Limit, Subs
 from mpmath.libmp.libmpf import dps_to_prec
 from calc9000.references import FunctionWrappersReverse, refs
 from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
