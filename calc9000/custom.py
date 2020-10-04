@@ -215,6 +215,12 @@ class Span(s.AtomicExpr):
             b = self.b
         return List(self.a, b, self.c or 1)
 
+    def atoms(self):
+        a = (hasattr(self.a, 'atoms') and self.a.atoms()) or set()
+        b = (hasattr(self.b, 'atoms') and self.b.atoms()) or set()
+        c = (hasattr(self.c, 'atoms') and self.c.atoms()) or set()
+        return a.union(b.union(c))
+
 
 class String(s.AtomicExpr):
     def __init__(self, x: str):

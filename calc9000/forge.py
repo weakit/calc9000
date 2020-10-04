@@ -195,6 +195,8 @@ def lazy(tree: Tree):
         return Functions.lazy_call('SemicolonStatement', *(lazy(x) for x in tree.children))
     if tree.data == 'compound_statement':
         return Functions.lazy_call('CompoundExpression', *(lazy(x) for x in tree.children))
+    if tree.data == 'postfix':
+        return Functions.lazy_call(str(tree.children[-1].children[0]), *(lazy(x) for x in tree.children[:-1]))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':
@@ -237,6 +239,11 @@ def operate(tree: Tree):
         return Functions.call('SemicolonStatement', *(lazy(x) for x in tree.children))
     if tree.data == 'compound_statement':
         return Functions.call('CompoundExpression', *(lazy(x) for x in tree.children))
+    if tree.data == 'postfix':
+        name = str(tree.children[-1].children[0])
+        if Functions.is_explicit(name):
+            return Functions.call(name, *(lazy(x) for x in tree.children[:-1]))
+        return Functions.call(name, *(operate(x) for x in tree.children[:-1]))
     if tree.data == 'RELATIONAL':
         return str(tree.children[0])
     if tree.data == 'relation':

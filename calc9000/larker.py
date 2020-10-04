@@ -25,7 +25,18 @@ grammar = """
        | replace ":=" assign -> set_delayed
        | replace
 
-?replace: replace "/." logic
+// makeshift span, tree is altered after parsing
+// does not work the same way as mathematica, but works decently enough
+// cannot assign, or use in other ways
+
+span: expression? (SPAN expression?)+
+
+SPAN: ";;"
+
+?replace: replace "/." postfix
+        | postfix
+
+?postfix: logic "//" postfix
         | logic
 
 ?logic: rule
@@ -84,13 +95,6 @@ function: atom "[" (compound_statement)? ("," compound_statement)* "]"
      | tag
 
 tag: symbol "::" symbol
-
-// makeshift span, tree is altered after parsing
-// does not work the same way as mathematica, but works decently
-
-span: expression? (SPAN expression?)+
-
-SPAN: ";;"
 
 list: "{" (compound_statement ("," compound_statement )*)? "}"
 
