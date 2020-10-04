@@ -10,7 +10,7 @@ def test_list():
     assert d[:2] == List(1, 2)
     d[0] = 2
     assert d[0] == 2
-    d.append(6)
+    d = d.concat(List(6))
     assert d == List(2, 2, 3).concat(List(4, 5, 6))
     assert p('{1, 2} + {3, 4}') == List(4, 6)
     assert p('{1, 2} - {3, 4}') == List(-2, -2)

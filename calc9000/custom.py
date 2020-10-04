@@ -43,6 +43,9 @@ class List(s.Basic):
     def __len__(self):
         return self.value.__len__()
 
+    def __contains__(self, item):
+        return self.value.__contains__(item)
+
     # Lists have operations for internal functionality.
 
     def __add__(self, other):
@@ -131,14 +134,13 @@ class List(s.Basic):
         return string + '}'
 
     def concat(self, y):
-        x = self
-        if isinstance(self, List):
-            x = x.value
-        if isinstance(y, List):
-            y = y.value
-        return List.create(list(x) + list(y))
+        return List.create(self.value + list(y))
 
+    # TODO: remove append from code
     def append(self, *x):
+        """
+        DO NOT USE.
+        """
         self.value += list(filter(s.Symbol('Nothing').__ne__, x))
 
 

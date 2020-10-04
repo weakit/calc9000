@@ -173,7 +173,7 @@ class ToPolarCoordinates(NormalFunction):
 
     @classmethod
     def exec(cls, list_):
-        # TODO: Thread
+        # TODO: Thread, don't use append
         list_ = List(*list_)
         length = len(list_)
         if length == 1:
@@ -182,7 +182,7 @@ class ToPolarCoordinates(NormalFunction):
         for x in range(length - 2):
             ret.append(s.acos(list_[x] / Sqrt(Total(list_[x:] ** 2))))
         ret.append(ArcTan(list_[-2], list_[-1]))
-        return ret
+        return List(*ret)
 
 
 class Timing(ExplicitFunction):

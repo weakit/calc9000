@@ -15,11 +15,11 @@ def toVectorList(m):
     return List.create(m)
 
 
-def toList(m):
-    temp_list = List()
+def matrixToList(m):
+    temp_list = []
     for row in range(m.rows):
         temp_list.append(List(*m.row(row)))
-    return temp_list
+    return List(*temp_list)
 
 
 class Dot(NormalFunction):
@@ -46,7 +46,7 @@ class Dot(NormalFunction):
                 if v1:
                     return toVectorList(s.Matrix(List(a)) * s.Matrix(b))
                 return toVectorList(s.Matrix(a) * s.Matrix(b))
-            return toList(s.Matrix(a) * s.Matrix(b))
+            return matrixToList(s.Matrix(a) * s.Matrix(b))
         except (ShapeError, ValueError) as e:
             if isinstance(e, ValueError):
                 if e.args[0].startswith('expecting list of lists') \
@@ -100,7 +100,7 @@ class Inverse(NormalFunction):
             try:
                 m = s.Matrix(x)
                 if m.is_square:
-                    return toList(m.inv())
+                    return matrixToList(m.inv())
                 raise FunctionException('Inverse::sqr')
             except NonInvertibleMatrixError:
                 raise FunctionException('Inverse::val')
@@ -121,7 +121,7 @@ class Transpose(NormalFunction):
     def exec(cls, x):
         if isinstance(x, iterables):
             m = s.Matrix(x)
-            return toList(m.transpose())
+            return matrixToList(m.transpose())
         return None
 
 

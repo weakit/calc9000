@@ -1,7 +1,122 @@
 from calc9000.functions.core import *
-from calc9000.functions.base import Part
 from iteration_utilities import deepflatten, accumulate
 from itertools import permutations, combinations
+
+
+class Part(NormalFunction):
+    # TODO: Raise exception on {a, b, c}[[;;;;-1]]
+    @staticmethod
+    def get_part(expr, n):
+        if not isinstance(expr, iterables):
+            # TODO: Associations and other Heads
+            raise NotImplementedError
+        if is_integer(n):
+            try:
+                if n > 0:
+                    return expr[int(n - 1)]
+                return expr[int(n)]
+            except IndexError:
+                raise FunctionException('Part::dim', f'Part {n} of {expr} does not exist.')
+        raise FunctionException('Part::part', f'{n} is not a valid Part specification.')
+
+    @classmethod
+    def exec(cls, expr, *args):
+        part = head = None
+        if not args:
+            return expr
+        if hasattr(expr, 'args'):
+            part = expr.args
+            head = expr.__class__
+        elif hasattr(expr, '__getitem__'):
+            part = expr
+            head = List
+        arg = args[0]
+        if arg == s.S.Zero:
+            return s.Symbol(type(expr).__name__)
+        if not part:
+            raise FunctionException('Part::dim', f'{expr} does not have Part {arg}')
+        if arg == r.refs.Constants.All:  # TODO: add None
+            arg = Range(len(expr))
+        if isinstance(arg, Span):
+            return Part(Take(expr, arg), *args[1:])  # pass expr with head
+        if isinstance(arg, iterables):
+            return head(*(Part(cls.get_part(part, x), *args[1:]) for x in arg))
+        return Part(cls.get_part(part, arg), *args[1:])
+
+
+class Take(NormalFunction):
+    @staticmethod
+    def ul(upper, lower):
+        # I don't know how to do this better
+        if lower > 0:
+            lower -= 1
+        if upper < 0:
+            upper += 1
+        if upper == 0:
+            upper = None
+        if lower == 0:
+            lower = None
+        return upper, lower
+
+    @classmethod
+    def get_take(cls, take, seq):
+        if seq == r.refs.Constants.All:
+            return take
+        # TODO: add None
+        if isinstance(seq, Span):
+            seq = seq.take_spec()
+        if isinstance(seq, iterables):
+            if len(seq) == 1:
+                return Part(take, seq)
+            lower = seq[0]
+            upper = seq[1]
+            step = 1
+            if len(seq) == 3:
+                step = seq[2]
+            if (0 in (lower, upper, step) or not (is_integer(lower) and is_integer(upper) and is_integer(step))) \
+                    or len(seq) > 3:
+                raise FunctionException('Take::dim', 'Invalid Bounds for Take.')
+            if step > 0:
+                upper, lower = cls.ul(upper, lower)
+            else:
+                upper -= 1
+                lower, upper = cls.ul(lower, upper)
+            return take[lower:upper:step]
+        if is_integer(seq):
+            if seq > 0:
+                return take[:seq]
+            return take[seq:]
+        raise FunctionException('Take::take', f'{seq} is not a valid Take specification.')
+
+    @classmethod
+    def exec(cls, expr, *seqs):
+        take = head = None
+
+        if not seqs:
+            return expr
+        if hasattr(expr, 'args'):
+            take = expr.args
+            head = expr.__class__
+        elif hasattr(expr, '__getitem__'):
+            take = expr
+            head = List
+
+        if len(seqs) > 1:
+            return head(*(cls.exec(x, *seqs[1:]) for x in cls.get_take(take, seqs[0])))
+        return head(*cls.get_take(take, seqs[0]))
+
+
+class Head(NormalFunction):
+    """
+    Head [expr]
+     Gives the head of expr.
+    """
+
+    @classmethod
+    def exec(cls, h, f=None):
+        if f is not None:
+            return Functions.call(str(f), Part(h, 0))
+        return Part(h, 0)
 
 
 class Min(NormalFunction):
@@ -89,7 +204,7 @@ class Range(NormalFunction):
 
     @staticmethod
     def single_range(i, n, di):
-        ret = List()
+        ret = []
         if n is None:
             n = i
             i = 1
@@ -100,7 +215,7 @@ class Range(NormalFunction):
         except TypeError as e:
             if e.args[0].startswith('cannot determine truth value'):
                 raise FunctionException('Range::range')
-        return List.create(ret)
+        return List(*ret)
 
     @classmethod
     def exec(cls, i, n=None, di=1):
@@ -164,10 +279,10 @@ class Table(ExplicitFunction):
 
     @staticmethod
     def _table(expr, repl, args):
-        li = List()
+        li = []
         for arg in args:
             li.append(LazyFunction.evaluate(Subs(expr, Rule(repl, arg))))
-        return li
+        return List.create(li)
 
     @staticmethod
     def _range_parse(expr, arg):
@@ -195,14 +310,14 @@ class Table(ExplicitFunction):
         if len(args) == 1:
             return cls._range_parse(expr, args[0])
 
-        li = List()
+        li = []
         for expr_, specs in zip(
                 cls._range_parse(expr, args[0]),
                 cls._range_parse(args[1:], args[0])
         ):
             li.append(Table(expr_, *specs))
 
-        return li
+        return List(*li)
 
 
 class Subdivide(NormalFunction):
@@ -244,11 +359,11 @@ class Subdivide(NormalFunction):
         div = s.Number(int(div))
 
         step = (x_max - x_min) / div
-        li = List(x_min)
+        li = [x_min]
 
         for _ in range(int(div)):
             li.append(li[-1] + step)
-        return li
+        return List(*li)
 
 
 class Subsets(NormalFunction):
@@ -265,7 +380,7 @@ class Subsets(NormalFunction):
 
     @classmethod
     def exec(cls, li, n_spec=None):
-        subsets = List()
+        subsets = []
 
         if n_spec is None:
             n_spec = range(len(li) + 1)
@@ -277,9 +392,9 @@ class Subsets(NormalFunction):
             n_spec = Range(*n_spec)
 
         for spec in n_spec:
-            subsets.append(*(List.create(x) for x in combinations(li, spec)))
+            subsets += [List(*x) for x in combinations(li, spec)]
 
-        return subsets
+        return List(*subsets)
 
 
 class Length(NormalFunction):
@@ -335,209 +450,49 @@ class Last(ExplicitFunction):
         raise FunctionException('Last::last', f'{x} has zero length, and no last element.')
 
 
-class Prime(NormalFunction):
+class Reverse(NormalFunction):
     """
-    Prime [n]
-     Gives the nth prime number.
-
-    Equivalent to sympy.prime()
-    """
-
-    param_spec = (1, 1)
-    tags = {
-        'int': 'A positive integer is expected as input.'
-    }
-
-    prime_func = s.prime
-
-    @classmethod
-    def prime(cls, n):
-        if is_integer(n):
-            if n < 1:
-                raise FunctionException(f'{cls.__name__}::int')
-            return cls.prime_func(n)
-        if hasattr(n, 'is_number') and n.is_number:
-            raise FunctionException(f'{cls.__name__}::int')
-        return None
-
-    @classmethod
-    def exec(cls, n):
-        return thread(cls.prime, n)
-
-
-class PrimePi(Prime):
-    """
-    PrimePi [n]
-     Gives the number of primes less than or equal to x.
-
-    Equivalent to sympy.primepi()
-    """
-    prime_func = s.primepi
-
-
-class PrimeOmega(Prime):
-    """
-    PrimeOmega [x]
-     Gives the number of prime factors counting multiplicities in x.
-
-    Uses sympy.factorint()
-    """
-    @staticmethod
-    def prime_func(n):
-        return sum(s.factorint(n).values())
-
-
-class PrimeNu(Prime):
-    """
-    PrimeNu [x]
-     Gives the number of distinct primes in x.
-
-    Uses sympy.primefactors()
-    """
-    @staticmethod
-    def prime_func(n):
-        return len(s.primefactors(n))
-
-
-class NextPrime(NormalFunction):
-    """
-    NextPrime [x]
-     Gives the smallest prime above x.
-
-    NextPrime [x, i]
-     Gives the ith-next prime above x.
 
     """
 
     tags = {
-        'int': 'A positive integer is expected as input.'
-    }
-
-    prime_func = s.nextprime
-
-    @classmethod
-    def prime(cls, n, k):
-        if is_integer(n) and is_integer(k):
-            if n < 1:
-                raise FunctionException(f'{cls.__name__}::int')
-            return cls.prime_func(n, k)
-        if hasattr(n, 'is_number') and n.is_number \
-                or (hasattr(k, 'is_number') and k.is_number):
-            raise FunctionException(f'{cls.__name__}::int')
-        return None
-
-    @classmethod
-    def exec(cls, n, k=1):
-        return thread(cls.prime, n, k)
-
-
-class PreviousPrime(Prime):
-    """
-    PreviousPrime [x]
-     Gives the greatest prime below x.
-    """
-    prime_func = s.prevprime
-
-
-class RandomPrime(NormalFunction):
-    """
-    RandomPrime [{a, b}]
-     Gives a pseudorandom prime number in the range a to b.
-
-    RandomPrime [x]
-     Gives a pseudorandom prime number in the range 2 to x.
-
-    RandomPrime [range, n]
-     Gives a list of n pseudorandom primes.
-
-    Uses sympy.randprime().
-    """
-
-    tags = {
-        'int': 'A positive integer is expected as input.'
+        'level': 'A positive integer is expected as a level.'
     }
 
     @classmethod
-    def exec(cls, spec, n=None):
-        if not isinstance(spec, iterables):
-            spec = List(2, spec)
-        if not is_integer(spec[0]) and not is_integer(spec[1]):
-            FunctionException(f'RandomPrime::int')
+    def reverse(cls, m, level, levels, max_level):
+        # only works with Lists and (sympy-like) Functions.
 
-        if n:
-            if is_integer(n):
-                return List(*(cls.exec(spec) for _ in range(n)))
-            if isinstance(n, iterables):
-                return List(*(cls.exec(spec, n[1:]) for _ in range(n[0])))
-        return s.randprime(spec[0], spec[1])
+        if not hasattr(m, 'args') or not m.args:
+            return m
+        if level > max_level:
+            return m
 
+        head = m.__class__
 
-class Mobius(Prime):  # for ease of use
-    """
-    Mobius [n]
-     Gives the Möbius function μ(n).
-    """
-    prime_func = s.mobius
+        rev = []
+        dont_go_deeper = True
 
+        for x in m.args:
+            if hasattr(x, 'args') and x.args:
+                dont_go_deeper = False
+                break
+            rev.append(x)
 
-class MoebiusMu(Prime):
-    """
-    MoebiusMu [n]
-     Gives the Möbius function μ(n).
-    """
-    prime_func = s.mobius
+        if dont_go_deeper:
+            return head(*rev)
 
-
-class FactorInteger(NormalFunction):
-    """
-    FactorInteger [n]
-     Gives a list of the prime factors of the integer n, together with their exponents.
-
-    FactorInteger [n, k]
-     Foes partial factorization, pulling out at most k distinct factors.
-
-    Equivalent to sympy.factorint()
-    """
-    tags = {
-        'int': 'Inputs should be positive integers.'
-    }
+        if level in levels:
+            return head(*(cls.reverse(x, level + 1, levels, max_level) for x in reversed(m.args)))
+        return head(*(cls.reverse(x, level + 1, levels, max_level) for x in m.args))
 
     @classmethod
-    def factor(cls, n, k):
-        if is_integer(k) or k is None:
-            if hasattr(n, 'is_Rational') and n.is_Rational:
-                return List.create(List(*x) for x in s.factorrat(n, limit=k).items())
-        if hasattr(n, 'is_number') and n.is_number \
-                or (hasattr(k, 'is_number') and k.is_number):
-            raise FunctionException(f'{cls.__name__}::int')
-        return None
+    def exec(cls, x, levels=List(s.S.One)):
+        if not isinstance(levels, iterables):
+            levels = List(levels)
 
-    @classmethod
-    def exec(cls, n, k=None):
-        return thread(cls.factor, n, k)
+        if not all(x.is_number and x.is_integer and x > 0 for x in levels):
+            raise FunctionException('Reverse::level')
 
+        return cls.reverse(x, 1, levels, Max(levels))
 
-class Divisible(NormalFunction):
-    tags = {
-        'rat': 'Rational numbers.py are expected as input.'
-    }
-
-    @staticmethod
-    def div(n, d):
-        if n.is_number and d.is_number:
-            if n.is_real and d.is_real:
-                if n.is_Float or d.is_Float:  # make sure input is symbolic
-                    raise FunctionException('Divisible::rat')
-                return not bool(s.Mod(n, d))
-            else:
-                div = n / d
-                if s.re(div).is_Rational and s.im(div).is_Rational:
-                    return s.re(div).is_Integer and s.im(div).is_Integer
-                raise FunctionException('Divisible::rat')
-        return None
-
-    @classmethod
-    def exec(cls, n, k):
-        if isinstance(n, iterables) or isinstance(k, iterables):
-            return thread(Divisible, n, k)
-        return cls.div(n, k)
