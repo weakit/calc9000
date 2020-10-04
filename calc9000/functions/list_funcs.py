@@ -36,7 +36,7 @@ class Part(NormalFunction):
         if not part:
             raise FunctionException('Part::dim', f'{expr} does not have Part {arg}')
         if arg == r.refs.Constants.All:  # TODO: add None
-            arg = Range(len(expr))
+            arg = tuple(range(1, len(expr) + 1))
         if isinstance(arg, Span):
             return Part(Take(expr, arg), *args[1:])  # pass expr with head
         if isinstance(arg, iterables):
@@ -495,4 +495,3 @@ class Reverse(NormalFunction):
             raise FunctionException('Reverse::level')
 
         return cls.reverse(x, 1, levels, Max(levels))
-

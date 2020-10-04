@@ -3,7 +3,7 @@ from calc9000.converse import process as p
 from calc9000.references import refs
 
 f = s.Rational
-extra_p = refs.ExtraPrecision
+extra_precision = refs.ExtraPrecision
 
 
 def p_str(input_str: str) -> str:

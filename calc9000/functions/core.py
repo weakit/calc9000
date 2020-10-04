@@ -247,6 +247,27 @@ class NormalFunction(s.Function):
         return exec_func(cls, *args)
 
 
+class DefinedFunction(NormalFunction):
+    def _eval_Eq(self, other):
+        from iteration_utilities import deepflatten
+        from sympy.logic.boolalg import BooleanTrue
+        # TODO: figure out something better
+        try:
+            check = deepflatten(thread(
+                    lambda x, y: s.Eq(x, y) in (True, BooleanTrue),
+                    self.args, other.args))
+            cond = isinstance(other, s.Function) and str(self.__class__) == str(other.__class__) and all(check)
+            return cond or None
+        except FunctionException:
+            return None
+
+    def __eq__(self, other):
+        return bool(self._eval_Eq(other))
+
+    def __hash__(self):
+        return hash((self.class_key(), frozenset(self.args)))
+
+
 class ExplicitFunction(s.Function):
     """
     Functions that need to be called with the arguments unevaluated.
@@ -672,7 +693,7 @@ class Functions:
 
     # TODO: Norm
     # TODO: Prime Notation
-    # TODO: Part, Assignment
+    # TODO: Part, Assignment + Part Assignment tests
     # TODO: Integral, Derivative
 
     # TODO: Polar Complex Number Representation
@@ -761,7 +782,7 @@ class Functions:
         #             # TODO: improve naive approach
         #             return LazyFunction.evaluate(expr.args[0])
         #         return expr
-        return type(f, (NormalFunction,), {})(*a)
+        return type(f, (DefinedFunction,), {})(*a)
 
     @classmethod
     def lazy_call(cls, f: str, *a):
