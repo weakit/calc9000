@@ -1,6 +1,7 @@
 from calc9000.functions.core import *
 from iteration_utilities import deepflatten, accumulate
 from itertools import permutations, combinations
+from sympy.logic.boolalg import BooleanFalse
 
 
 class Part(NormalFunction):
@@ -147,13 +148,49 @@ class Total(NormalFunction):
     """
     Total [list]
      Gives the Total Sum of elements in list.
+
+    Total [list, n]
+     Totals all elements down to level n.
+
+    Total [list, {n}]
+     Totals elements at level n.
+
+    Total [list, {a, b}]
+     Totals elements at levels a through b.
+
+    Negative levels are not supported.
+    Effectively uses sum().
     """
+    # TODO: Proper Levels (including negative)
+    # TODO: Total: AllowedHeads
+
+    tags = {
+        'level': 'A positive integer is expected as a level.'
+    }
 
     @classmethod
-    def exec(cls, _list):
-        if isinstance(_list, iterables):
-            return sum(_list)
-        return None
+    def total(cls, m, level, levels, max_level):
+        if not isinstance(m, iterables):
+            return m
+        if level > max_level:
+            return m
+
+        if level in levels:
+            return sum(cls.total(x, level + 1, levels, max_level) for x in m)
+        return List(*(cls.total(x, level + 1, levels, max_level) for x in m))
+
+    @classmethod
+    def exec(cls, x, levels=List(s.S.One)):
+        if not isinstance(levels, iterables):
+            if levels.is_number and levels.is_integer and levels > 0:
+                levels = Range(levels)
+            else:
+                raise FunctionException('Total::level')
+        else:
+            if not all(x.is_number and x.is_integer and x > 0 for x in levels):
+                raise FunctionException('Total::level')
+
+        return cls.total(x, 1, levels, Max(levels))
 
 
 class Mean(NormalFunction):
@@ -204,18 +241,21 @@ class Range(NormalFunction):
 
     @staticmethod
     def single_range(i, n, di):
-        ret = []
         if n is None:
             n = i
             i = 1
-        try:
-            while (n - i) / di >= 0:
-                ret.append(i)
-                i += di
-        except TypeError as e:
-            if e.args[0].startswith('cannot determine truth value'):
+
+        iters = (n - i) / di
+
+        if not iters.is_number:
+            # try simplifying in case bounds are symbolic
+            iters = s.simplify(iters)
+            if not iters.is_number:
                 raise FunctionException('Range::range')
-        return List(*ret)
+        if not iters > 0:
+            raise FunctionException('Range::range')
+
+        return List(*(i + x * di for x in range(int(iters) + 1)))
 
     @classmethod
     def exec(cls, i, n=None, di=1):
@@ -452,7 +492,14 @@ class Last(ExplicitFunction):
 
 class Reverse(NormalFunction):
     """
+    Reverse [expr]
+     Reverses the order of the elements in expr.
 
+    Reverse [expr, n]
+     Reverses elements at level n in expr.
+
+    Reverse [expr, {a, b, …}]
+     Reverses elements at levels a, b, … in expr.
     """
 
     tags = {
