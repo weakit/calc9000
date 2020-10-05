@@ -1,7 +1,6 @@
 from calc9000.functions.core import *
 from iteration_utilities import deepflatten, accumulate
 from itertools import permutations, combinations
-from sympy.logic.boolalg import BooleanFalse
 
 
 class Part(NormalFunction):
@@ -250,7 +249,7 @@ class Range(NormalFunction):
         if not iters.is_number:
             # try simplifying in case bounds are symbolic
             iters = s.simplify(iters)
-            if not iters.is_number:
+            if not iters.is_number:  # raise if can't iterate
                 raise FunctionException('Range::range')
         if not iters > 0:
             raise FunctionException('Range::range')
@@ -278,6 +277,7 @@ class Permutations(NormalFunction):
     Uses itertools.permutations().
     """
 
+    # TODO: Re-do
     @classmethod
     def exec(cls, li, n=None):
         if n is not None:

@@ -68,28 +68,6 @@ def test_frac_part():
     assert p('FractionalPart[0]') == 0
 
 
-def test_min():
-    assert p('Min[9, 2]') == 2
-    assert p('Min[{4, 1, 7, 2}]') == 1
-    assert p_str('Min[5.56, -4.8, 7.3]').startswith('-4.8')
-    assert p_str(f'N[Min[1/7, 4/5, 1], 50-{extra_precision}]') == '0.14285714285714285714285714285714285714285714285714'
-    assert p('Min[{{-1, 0, 1, 2}, {0, 2, 4, 6}, {-3, -2, -1, 0}}]') == -3
-    assert p('Min[Infinity, 5]') == 5
-    assert p('Min[-Infinity, -5]') == -1 * s.oo
-    assert p_str('Min[{E, Pi, 5}]') == 'E'
-
-
-def test_max():
-    assert p('Max[9, 2]') == 9
-    assert p('Max[{4, 1, 7, 2}]') == 7
-    assert p_str('Max[5.56, -4.8, 7.3]').startswith('7.3')
-    assert p('N[Max[1/7, 4/5, 1], 50-4]') == 1
-    assert p('Max[{{-1, 0, 1, 2}, {0, 2, 4, 6}, {-3, -2, -1, 0}}]') == 6
-    assert p('Max[Infinity, 5]') == s.oo
-    assert p('Max[-Infinity, -5]') == -5
-    assert p('Max[{E, Pi, 5}]') == 5
-
-
 def test_abs():
     assert p_str('Abs[-2.5]').startswith('2.50')
     assert p_str('Abs[3.14]').startswith('3.140')
