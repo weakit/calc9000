@@ -89,6 +89,7 @@ class Solve(NormalFunction):
 
     @classmethod
     def exec(cls, expr, v=None, dom=None):
+        # TODO: universal solution set
         # TODO: fix (?)
         # if dom is None:
         #     dom = s.Complexes
@@ -111,6 +112,9 @@ class Solve(NormalFunction):
                 solveset += list(thread(s.Eq, ex.args[0], ex.args[1]))
             else:
                 solveset.append(ex)
+
+        if len(solveset) == 1:  # TODO: sympy issue #20211
+            solveset = solveset[0]
 
         ret = s.solve(solveset, v, dict=True)
 

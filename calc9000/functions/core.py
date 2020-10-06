@@ -524,30 +524,32 @@ class Subs(NormalFunction):
 
     @classmethod
     def exec(cls, expr, replacements):
+
         if not isinstance(replacements, iterables):
             replacements = (replacements,)
-        else:
+        else:  # TODO: re-do checks
             if isinstance(replacements[0], iterables):
                 for x in replacements:
                     if not isinstance(x, iterables):
                         raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
-                    return List(*(Subs(expr, replacement) for replacement in replacements))
+                    return List(*(cls.exec(expr, replacement) for replacement in replacements))
             else:
                 for x in replacements:
                     if isinstance(x, iterables):
                         raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
-        if isinstance(expr, (s.Expr, s.Rel, List, s.Matrix, Rule)):
-            expr = expr.subs(replacements)
-            replacement_dict = Subs.func_replacement_helper(replacements)
-            for func in expr.atoms(s.Function):
-                if str(func) in replacement_dict:
-                    expr = expr.replace(func, replacement_dict[str(func)])
-                if str(func.func) in replacement_dict:
-                    expr = expr.replace(func, Functions.call(str(replacement_dict[str(func.func)]), *func.args))
-            return LazyFunction.evaluate(expr)
-        if isinstance(expr, iterables):
+
+        if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List.create(Subs(x, replacements) for x in expr)
-        return None
+
+        expr = expr.subs(replacements)
+        replacement_dict = Subs.func_replacement_helper(replacements)
+
+        for func in expr.atoms(s.Function):
+            if str(func) in replacement_dict:
+                expr = expr.replace(func, replacement_dict[str(func)])
+            if str(func.func) in replacement_dict:
+                expr = expr.replace(func, Functions.call(str(replacement_dict[str(func.func)]), *func.args))
+        return LazyFunction.evaluate(expr)
 
 
 class N(NormalFunction):
