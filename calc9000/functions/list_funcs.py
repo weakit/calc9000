@@ -1,5 +1,5 @@
 from calc9000.functions.core import *
-from iteration_utilities import deepflatten, accumulate
+from iteration_utilities import deepflatten, accumulate, unique_everseen
 from itertools import permutations, combinations
 
 
@@ -277,23 +277,41 @@ class Permutations(NormalFunction):
     Uses itertools.permutations().
     """
 
-    # TODO: Re-do
+    @classmethod
+    def permute(cls, obj, perms):
+        ret = []
+
+        if isinstance(obj, iterables):
+            head = List
+            it = obj
+        else:
+            head = obj.__class__
+            it = obj.args
+
+        for per in perms:
+            if not is_integer(per):
+                raise FunctionException('Permutations::int')
+            ret += [head(*x) for x in permutations(it, int(per))]
+
+        return List(*unique_everseen(ret))
+
     @classmethod
     def exec(cls, li, n=None):
-        if n is not None:
-            if isinstance(n, iterables):
-                n = Range(*n)
+        if not isinstance(n, iterables):
+            if not n:
+                n = (Length(li),)
             else:
-                if not is_integer(n):
-                    raise FunctionException('Permutations::exec', 'n should be an integer.')
-                n = List.create(range(int(n) + 1))
-        if isinstance(n, iterables):
-            # TODO: manually remove duplicates
-            ret = List()
-            for i in n:
-                ret = List.concat(ret, List.create(List.create(x) for x in set(permutations(li, int(i)))))
-            return ret
-        return List.create(List.create(x) for x in set(permutations(li, n)))
+                if n.is_number:
+                    n = Range(n)
+                elif n is r.Constants.All:
+                    n = Range(0, Length(li))
+                else:
+                    raise FunctionException('Permutations::num')
+        else:
+            if len(n) > 1:
+                n = Range(*n)
+
+        return cls.permute(li, n)
 
 
 class Table(ExplicitFunction):

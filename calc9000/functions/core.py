@@ -100,7 +100,7 @@ def is_integer(n):
         return bool(n.is_integer)
     if isinstance(n, int):
         return True
-    if isinstance(n, float):
+    if isinstance(n, (Float, float)):
         return int(n) == n
     return False
 
