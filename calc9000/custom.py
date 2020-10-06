@@ -1,4 +1,5 @@
 import sympy as s
+from sympy.logic.boolalg import BooleanTrue, BooleanFalse
 # TODO: check others
 # TODO: LaTeX printing
 # TODO: Rule Delayed (@property)
@@ -115,6 +116,12 @@ class List(s.Basic):
         if isinstance(other, List):
             if len(self.value) != len(other.value):
                 return False
+
+            eqs = [s.Eq(x, y) for x, y in zip(self.value, other.value)]
+
+            if False in eqs or BooleanFalse in eqs:
+                return False
+
         return None
 
     def __eq__(self, other):
@@ -180,7 +187,6 @@ class Rule(s.AtomicExpr):
 
 
 class Tag(s.Symbol):
-
     @property
     def symbol(self):
         return self.name.split('::')[0]

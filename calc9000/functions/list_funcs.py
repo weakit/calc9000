@@ -251,7 +251,7 @@ class Range(NormalFunction):
             iters = s.simplify(iters)
             if not iters.is_number:  # raise if can't iterate
                 raise FunctionException('Range::range')
-        if not iters > 0:
+        if not iters >= 0:
             raise FunctionException('Range::range')
 
         return List(*(i + x * di for x in range(int(iters) + 1)))
