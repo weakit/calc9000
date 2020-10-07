@@ -64,7 +64,7 @@ class ComplexExpand(NormalFunction):
     ComplexExpand [expr, {x1, x2, …}]
      Expands expr assuming that variables matching any of the x are complex.
 
-    Uses sympy.expand_complex().
+    Effectively uses sympy.expand_complex().
     """
 
     @classmethod
@@ -84,7 +84,7 @@ class Solve(NormalFunction):
      Attempts to solve the system expr of equations or inequalities for the
      variables vars.
 
-    Uses sympy.solve().
+    Effectively uses sympy.solve().
     """
 
     @classmethod

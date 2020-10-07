@@ -118,7 +118,7 @@ class PrimeOmega(Prime):
     PrimeOmega [x]
      Gives the number of prime factors counting multiplicities in x.
 
-    Uses sympy.factorint()
+    Effectively uses sympy.factorint()
     """
     @staticmethod
     def prime_func(n):
@@ -130,7 +130,7 @@ class PrimeNu(Prime):
     PrimeNu [x]
      Gives the number of distinct primes in x.
 
-    Uses sympy.primefactors()
+    Effectively uses sympy.primefactors()
     """
     @staticmethod
     def prime_func(n):
@@ -188,7 +188,7 @@ class RandomPrime(NormalFunction):
     RandomPrime [range, n]
      Gives a list of n pseudorandom primes.
 
-    Uses sympy.randprime().
+    Effectively uses sympy.randprime().
     """
 
     tags = {

@@ -10,6 +10,8 @@ class Round(NormalFunction):
 
     Round [x, a]
      Rounds to the nearest multiple of a.
+
+    Effectively uses round().
     """
 
     @classmethod
@@ -31,7 +33,7 @@ class Floor(NormalFunction):
     Floor [x,a]
      Gives the greatest multiple of a less than or equal to x.
 
-    Uses sympy.floor().
+    Effectively uses sympy.floor().
     """
 
     @classmethod
@@ -49,7 +51,7 @@ class Ceiling(NormalFunction):
     Ceiling [x, a]
      Gives the smallest multiple of a greater than or equal to x.
 
-    Uses sympy.ceiling().
+    Effectively uses sympy.ceiling().
     """
 
     @classmethod
@@ -209,7 +211,7 @@ class Rationalize(NormalFunction):
     Rationalize [args, ForceRational -> False]
      Might return a better result that which may not necessarily be a rational.
 
-    Uses sympy.nsimplify().
+    Effectively uses sympy.nsimplify().
     See https://reference.wolfram.com/language/ref/Rationalize
     """
 

@@ -197,7 +197,7 @@ class Mod(NormalFunction):
     Mod [m, n, d]
      Uses an offset d.
 
-    Uses sympy.Mod().
+    Effectively uses sympy.Mod().
     """
 
     tags = {

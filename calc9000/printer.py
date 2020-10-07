@@ -6,6 +6,17 @@ from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
     precedence_traditional, PRECEDENCE, pretty_atom, stringPict
 
 
+class ListSkip:
+    def __init__(self, n):
+        self.n = n
+
+    def __str__(self):
+        return f' ··· {self.n} skipped elements ···'
+
+    def __repr__(self):
+        return self.__str__()
+
+
 class Printer9000(PrettyPrinter):
     _float_cutoff = dps_to_prec(refs.ExtraPrecision) - 4
 
@@ -41,12 +52,17 @@ class Printer9000(PrettyPrinter):
     #         self._print_seq(e.rhs)
     #     ), altchar='->')
 
-    def _print_Limit(self, l):
-        if isinstance(l, Limit):
-            return super()._print_Function(l)
-        return super()._print_Limit(l)
+    def _print_Limit(self, lim):
+        if isinstance(lim, Limit):
+            return super()._print_Function(lim)
+        return super()._print_Limit(lim)
 
     def _print_List(self, e):
+        # for better performance
+        st = str(e.value)
+        if len(st) > 1000:
+            m = int(len(e.value) / len(st) * 200)
+            return self._print_seq(e.value[:m] + [ListSkip(len(e.value) - 2 * m)] + e.value[-m:], '{', '}')
         return self._print_seq(e.value, '{', '}')
 
     def _print_Subs(self, e):

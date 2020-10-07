@@ -1,6 +1,6 @@
 from calc9000.functions.core import *
 from iteration_utilities import deepflatten, accumulate, unique_everseen
-from itertools import permutations, combinations
+from itertools import permutations, combinations, islice
 
 
 class Part(NormalFunction):
@@ -274,8 +274,13 @@ class Permutations(NormalFunction):
     Permutations [list, {n}]
      Gives all permutations containing exactly n elements.
 
-    Uses itertools.permutations().
+    Effectively uses itertools.permutations().
     """
+
+    tags = {
+        'int': '',
+        'num': 'A non-negative Integer is expected as a specification.'
+    }
 
     @classmethod
     def permute(cls, obj, perms):
@@ -434,25 +439,74 @@ class Subsets(NormalFunction):
 
     Subsets [list, {n}]
      Gives all subsets containing exactly n elements.
+
+    Subsets[list, {a, b}]
+     Gives all subsets containing between a and b elements.
+
+    Subsets[list, spec, s]
+     Limits the result to the first s subsets.
+
+    Effectively uses itertools.combinations().
     """
+    # TODO: Treat different occurrences of same element as distinct
+
+    tags = {
+        'int': '',
+        'num': 'A non-negative Integer is expected as a specification.',
+        'lim': 'A non-negative Integer is expected as a limit.'
+    }
 
     @classmethod
-    def exec(cls, li, n_spec=None):
-        subsets = []
+    def combine(cls, obj, perms, limit=None):
+        ret = []
+        limit = limit and int(limit)
 
-        if n_spec is None:
-            n_spec = range(len(li) + 1)
-        elif n_spec.is_number:
-            if not is_integer(n_spec):
-                raise FunctionException('Subsets::exec', f'{n_spec} is not an integer.')
-            n_spec = range(int(n_spec) + 1)
+        if isinstance(obj, iterables):
+            head = List
+            it = obj
         else:
-            n_spec = Range(*n_spec)
+            head = obj.__class__
+            it = obj.args
 
-        for spec in n_spec:
-            subsets += [List(*x) for x in combinations(li, spec)]
+        if limit:
+            for per in perms:
+                if not is_integer(per):
+                    raise FunctionException('Subsets::int')
+                ret += [head(*x) for x in islice(combinations(it, int(per)), limit - len(ret))]
 
-        return List(*subsets)
+                if len(ret) >= limit:
+                    break
+        else:
+            for per in perms:
+                if not is_integer(per):
+                    raise FunctionException('Subsets::int')
+                ret += [head(*x) for x in combinations(it, int(per))]
+
+        return List(*unique_everseen(ret))
+
+    @classmethod
+    def exec(cls, li, n=None, limit=None):
+        if not isinstance(n, iterables):
+            if not n:
+                n = Range(0, Length(li))
+            else:
+                if n.is_number:
+                    n = Range(0, n)
+                elif n is r.Constants.All:
+                    n = Range(0, Length(li))
+                else:
+                    raise FunctionException('Subsets::num')
+        else:
+            if len(n) > 1:
+                n = Range(*n)
+
+        if limit:
+            if limit.is_number and limit.is_Integer:
+                limit = int(limit)
+            else:
+                raise FunctionException('Subsets::lim')
+
+        return cls.combine(li, n, limit)
 
 
 class Length(NormalFunction):

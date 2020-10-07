@@ -11,7 +11,7 @@ class DiracDelta(NormalFunction):
     DiracDelta [x1, x2, …]
      Represents the multidimensional Dirac delta function δ(x1, x2, …).
 
-    Uses sympy.DiracDelta().
+    Equivalent to sympy.DiracDelta().
     """
 
     @classmethod

@@ -182,3 +182,34 @@ def test_table():
     assert p('Table[x, {x, 0, 10, 3}]') == p('{0,3,6,9}')
     from sympy.logic.boolalg import BooleanTrue
     assert p('Table[RandomReal[], {5}]  == Table[RandomReal[], {5}]') not in (True, BooleanTrue)
+
+
+def test_subdivide():
+    assert p('Subdivide[10]') == p('{0, 1/10, 1/5, 3/10, 2/5, 1/2, 3/5, 7/10, 4/5, 9/10, 1}')
+    assert p('Subdivide[10, 5]') == p('{0, 2, 4, 6, 8, 10}')
+    assert p('Subdivide[a, b, 6]') == p('{a, (5*a)/6 + b/6, (2*a)/3 + b/3, a/2 + b/2, a/3 + (2*b)/3, a/6 + (5*b)/6, b}')
+    assert p('Subdivide[E, Pi, 4]') == p('{E, (3*E)/4 + Pi/4, E/2 + Pi/2, E/4 + (3*Pi)/4, Pi}')
+    assert p('Subdivide[-1, 2, 5]') == p('{-1, -2/5, 1/5, 4/5, 7/5, 2}') == p('-1 + (2 - (-1)) Range[0, 5]/5')
+
+
+def test_subsets():
+    assert p('Subsets[{}]') == p('{{}}')
+    assert p('Subsets[{a}]') == p('{{},{a}} ')
+    assert p('Subsets[{a, b, c}]') == p('{{},{a},{b},{c},{a,b},{a,c},{b,c},{a,b,c}} ')
+    assert p('Subsets[{a, b, c, d}, 2]') == p('{{},{a},{b},{c},{d},{a,b},{a,c},{a,d},{b,c},{b,d},{c,d}} ')
+    assert p('Subsets[{a, b, c, d}, {2}]') == p('{{a,b},{a,c},{a,d},{b,c},{b,d},{c,d}}')
+    assert p('Subsets[{a, b, c, d, e}, {3}, 5] ') == p('{{a,b,c},{a,b,d},{a,b,e},{a,c,d},{a,c,e}}')
+    assert p('Subsets[{a, b, c, d, e}, {0, 5, 2}]') == \
+           p("{{},{a,b},{a,c},{a,d},{a,e},{b,c},{b,d},{b,e},{c,d},{c,e},{d,e},"
+             "{a,b,c,d},{a,b,c,e},{a,b,d,e},{a,c,d,e},{b,c,d,e}}")
+    assert p('Subsets[{a, b, c, d}]') == \
+           p("{{},{a},{b},{c},{d},{a,b},{a,c},{a,d},{b,c},{b,d},{c,d},{a,b,c},"
+             "{a,b,d},{a,c,d},{b,c,d},{a,b,c,d}} ")
+    assert p('Subsets[f[a, b, c]]') == p('{f[],f[a],f[b],f[c],f[a,b],f[a,c],f[b,c],f[a,b,c]}')
+    assert p('Subsets[a + b + c]') == p('{0,a,b,c,a+b,a+c,b+c,a+b+c}')
+    assert p('Subsets[{1, 2, 3, 4}, {3}]') == p('{{1,2,3},{1,2,4},{1,3,4},{2,3,4}}')
+    assert p('Total[Subsets[Times[a, b, c, d, e], {3}]]') == \
+           p("a*b*c + a*b*d + a*c*d + b*c*d + a*b*e + a*c*e + b*c*e + a*d*e + b*d*e + c*d*e")
+    # assert p('Subsets[{a, b, b, b}]') == \
+    #        p("{{},{a},{b},{b},{b},{a,b},{a,b},{a,b},{b,b},{b,b},{b,b},"
+    #          "{a,b,b},{a,b,b},{a,b,b},{b,b,b},{a,b,b,b}}")

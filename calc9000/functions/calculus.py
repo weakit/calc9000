@@ -18,7 +18,7 @@ class D(NormalFunction):
     D [f, {{x1, x2, …}}]
      For a scalar f gives the vector derivative (∂f / ∂x1, ∂f / ∂x2, …).
 
-    Uses sympy.diff().
+    Effectively uses sympy.diff().
     """
 
     tags = {

@@ -22,7 +22,7 @@ class RandomInteger(NormalFunction):
     RandomInteger [range, {n1, n2, …}]
      Gives an n1 × n2 × … array of pseudo-random integers.
 
-    Uses python's SystemRandom().
+    Effectively uses secrets.SystemRandom().
     """
 
     @classmethod
@@ -69,7 +69,7 @@ class RandomReal(NormalFunction):
     RandomReal [range, {n1, n2, …}]
      Gives an n1 × n2 × … array of pseudo-random reals.
 
-    Uses python's SystemRandom().
+    Effectively uses secrets.SystemRandom().
     """
 
     op_spec = ({'WorkingPrecision': 'p'}, {'p': DefaultPrecision})
@@ -123,7 +123,7 @@ class RandomComplex(RandomReal):
     RandomComplex [range, {n1, n2, …}]
      Gives an n1 × n2 × … array of pseudo-random complex numbers.py.
 
-    Uses python's SystemRandom().
+    Effectively uses secrets.SystemRandom().
     """
 
     op_spec = ({'WorkingPrecision': 'p'}, {'p': DefaultPrecision})
