@@ -210,6 +210,42 @@ def test_subsets():
     assert p('Subsets[{1, 2, 3, 4}, {3}]') == p('{{1,2,3},{1,2,4},{1,3,4},{2,3,4}}')
     assert p('Total[Subsets[Times[a, b, c, d, e], {3}]]') == \
            p("a*b*c + a*b*d + a*c*d + b*c*d + a*b*e + a*c*e + b*c*e + a*d*e + b*d*e + c*d*e")
+    assert p('Subsets[Range[20], All, {69381}]') == p('{{1, 3, 4, 5, 11, 14, 17}}')
+    assert p('Subsets[{a, b, c, d}, All, {15, 1, -2}]') == p('{{b,c,d},{a,b,d},{c,d},{b,c},{a,c},{d},{b},{}}')
     # assert p('Subsets[{a, b, b, b}]') == \
     #        p("{{},{a},{b},{b},{b},{a,b},{a,b},{a,b},{b,b},{b,b},{b,b},"
     #          "{a,b,b},{a,b,b},{a,b,b},{b,b,b},{a,b,b,b}}")
+
+
+def test_length():
+    assert p('Length[{a, b, c, d}]') == 4
+    assert p('Length[a + b + c + d]') == 4
+    assert p('Length[f[g[x, y], z]]') == 2
+    assert p('Length[Sqrt[x]]') == 2
+
+
+def test_first():
+    assert p('First[{a, b, c}]') == p('a')
+    assert p('First[{{a, b}, {c, d}}]') == p('{a, b}')
+    assert p('First[a^2 + b^2]') == p('a^2')
+    assert p('First[{}, x]') == p('x')
+    assert p('First[{a, b}, x]') == p('a')
+    assert p('First[1/a^2]') == p('a')
+
+
+def test_last():
+    assert p('Last[{a, b, c}]') == p('c')
+    assert p('Last[{{a, b}, {c, d}}]') == p('{c, d}')
+    assert p('Last[a^2 + b^2]') == p('b^2')
+    assert p('Last[{}, x]') == p('x')
+    assert p('Last[{a, b}, x]') == p('b')
+    assert p('Last[1/a^2]') == p('-2')
+
+
+def test_reverse():
+    assert p('Reverse[{a, b, c, d}]') == p('{d,c,b,a}')
+    assert p('Reverse[f[a, b, c]]') == p('f[c,b,a]')
+    assert p('Reverse[Reverse[{a, b, c, d}]]') == p('{a,b,c,d}')
+    assert p('Reverse[{{a,b,c},{d,e,f},{g,h,i}}]') == p('{{g,h,i},{d,e,f},{a,b,c}}')
+    assert p('Reverse[{{a,b,c},{d,e,f},{g,h,i}},2]') == p('{{c,b,a},{f,e,d},{i,h,g}}')
+    assert p('Reverse[{{a,b,c},{d,e,f},{g,h,i}},{1, 2}]') == p('{{i,h,g},{f,e,d},{c,b,a}}')

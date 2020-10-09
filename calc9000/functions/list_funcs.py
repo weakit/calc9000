@@ -1,5 +1,7 @@
+from bisect import bisect_left
+
 from calc9000.functions.core import *
-from iteration_utilities import deepflatten, accumulate, unique_everseen
+from iteration_utilities import deepflatten, accumulate, unique_everseen, nth_combination
 from itertools import permutations, combinations, islice
 
 
@@ -449,12 +451,32 @@ class Subsets(NormalFunction):
     Effectively uses itertools.combinations().
     """
     # TODO: Treat different occurrences of same element as distinct
+    # TODO: Better error messages.
 
     tags = {
         'int': '',
         'num': 'A non-negative Integer is expected as a specification.',
-        'lim': 'A non-negative Integer is expected as a limit.'
+        'lim': 'An invalid limit was encountered.'
     }
+
+    @classmethod
+    def ncr(cls, a, b):
+        return s.factorial(a) / (s.factorial(a - b) * s.factorial(b))
+
+    @classmethod
+    def nth_combine(cls, obj, perms, ns):
+        _len = len(obj)
+        crs = tuple(accumulate([cls.ncr(_len, x) for x in perms]))
+        ret = []
+
+        try:
+            for n in ns:
+                b = bisect_left(crs, n)
+                ret.append(List(*nth_combination(obj, perms[b], n - crs[b] - 1)))
+        except (ValueError, IndexError):
+            raise FunctionException('Subsets::lim')
+
+        return List(*ret)
 
     @classmethod
     def combine(cls, obj, perms, limit=None):
@@ -501,6 +523,10 @@ class Subsets(NormalFunction):
                 n = Range(*n)
 
         if limit:
+            if isinstance(limit, iterables):
+                if len(limit) > 1:
+                    limit = Range(*limit)
+                return cls.nth_combine(li, n, limit)
             if limit.is_number and limit.is_Integer:
                 limit = int(limit)
             else:
@@ -599,6 +625,8 @@ class Reverse(NormalFunction):
             rev.append(x)
 
         if dont_go_deeper:
+            if level in levels:
+                return head(*reversed(rev))
             return head(*rev)
 
         if level in levels:
