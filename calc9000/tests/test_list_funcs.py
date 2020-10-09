@@ -55,6 +55,7 @@ def test_head():
     assert p_str('Head[{a, b, c}]') == 'List'
     assert p_str('Head[45]') == 'Integer'
     assert p_str('Head[x]') == 'Symbol'
+    assert p('Head[{1, 2, 3}, f]') == p('f[List]')
     # TODO: Compound Functions
     # assert p_str('Head[f[x][y][z]]') == 'f[x][y]'
 
@@ -88,6 +89,14 @@ def test_total():
     assert p('Total[{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}, {2}]') == p('{6, 15, 24}')
     assert p('Total[{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}, 2]') == 45
     assert p('Total[{x^2, 3 x^3, 1}]') == p('3x^3 + x^2 + 1')
+
+
+def test_mean():
+    assert p_str('Mean[{1.21, 3.4, 2.15, 4, 1.55}]').startswith('2.462')
+    assert p('Expand[Mean[{a, b, c, d}]]') == p('a/4 + b/4 + c/4 + d/4')
+    assert p('Expand[Mean[{{a,u},{b,v},{c,w}}]]') == p('{a/3 + b/3 + c/3, u/3 + v/3 + w/3}')
+    assert p('Mean[{1,2,3,4}]') == p('5/2')
+    assert p('Expand[Mean[{Pi, E, 2}]]') == p('2/3 + E/3 + Pi/3')
 
 
 def test_accumulate():
@@ -127,6 +136,10 @@ def test_permutations():
     assert p('Permutations[{x, x^2, x + 1}]') == \
            p("{{x, x^2, 1 + x}, {x, 1 + x, x^2}, {x^2, x, 1 + x}, {x^2, 1 + x, x},"
              "{1 + x, x, x^2}, {1 + x, x^2, x}}")
+    assert p('Permutations[{x, x^2, x + 1}, 3]') == \
+           p("{{}, {x}, {x^2}, {1 + x}, {x, x^2}, {x, 1 + x}, {x^2, x}, {x^2, 1 + x}, {1 + x, x},"
+             "{1 + x, x^2}, {x, x^2, 1 + x}, {x, 1 + x, x^2}, {x^2, x, 1 + x}, {x^2, 1 + x, x},"
+             "{1 + x, x, x^2}, {1 + x, x^2, x}}")
     assert p('Permutations[Range[3], All]') == \
            p("{{},{1},{2},{3},{1,2},{1,3},{2,1},{2,3},{3,1},{3,2},{1,2,3},{1,3,2},"
              "{2,1,3},{2,3,1},{3,1,2},{3,2,1}} ")
@@ -160,6 +173,7 @@ def test_permutations():
 
 
 def test_table():
+    assert p('Table[x]') == p('x')
     assert p('Table[i, {i, 1, 10, 2}]') == p('{1,3,5,7,9}')
     assert p('Table[i^2, {i, 10}]') == p('{1,4,9,16,25,36,49,64,81,100}')
     assert p('Table[x^y, {x, 3}, {y, 4}]') == p('{{1,1,1,1},{2,4,8,16},{3,9,27,81}}')
@@ -218,6 +232,7 @@ def test_subsets():
 
 
 def test_length():
+    assert p('Length[x]') == 0
     assert p('Length[{a, b, c, d}]') == 4
     assert p('Length[a + b + c + d]') == 4
     assert p('Length[f[g[x, y], z]]') == 2
@@ -249,3 +264,5 @@ def test_reverse():
     assert p('Reverse[{{a,b,c},{d,e,f},{g,h,i}}]') == p('{{g,h,i},{d,e,f},{a,b,c}}')
     assert p('Reverse[{{a,b,c},{d,e,f},{g,h,i}},2]') == p('{{c,b,a},{f,e,d},{i,h,g}}')
     assert p('Reverse[{{a,b,c},{d,e,f},{g,h,i}},{1, 2}]') == p('{{i,h,g},{f,e,d},{c,b,a}}')
+    assert p('Reverse[{a, b, {c, d}}, 2]') == p('{a,b,{d,c}}')
+    assert p('Reverse[{a, b, {c, {d, e}}}, 3]') == p('{a,b,{c,{e,d}}}')

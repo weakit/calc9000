@@ -203,7 +203,7 @@ class Mean(NormalFunction):
     @classmethod
     def exec(cls, _list):
         if isinstance(_list, iterables):
-            return Total(_list) / len(_list)
+            return sum(_list) / len(_list)
         return None
 
 
@@ -309,7 +309,7 @@ class Permutations(NormalFunction):
                 n = (Length(li),)
             else:
                 if n.is_number:
-                    n = Range(n)
+                    n = Range(0, n)
                 elif n is r.Constants.All:
                     n = Range(0, Length(li))
                 else:

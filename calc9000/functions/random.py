@@ -1,6 +1,7 @@
 from calc9000.functions.core import *
 from calc9000.functions.base import Re, Im
 
+# TODO: Improve performance, switch to pseudo-random
 import secrets
 random = secrets.SystemRandom()
 
