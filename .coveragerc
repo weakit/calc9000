@@ -1,0 +1,9 @@
+[report]
+  exclude_lines =
+    def __repr__
+    def __str__
+    pragma: no cover
+    raise FunctionException
+    raise NotImplementedError
+    raise ValueError
+    raise AssertionError
