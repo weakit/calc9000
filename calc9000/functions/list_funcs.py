@@ -6,7 +6,6 @@ from itertools import permutations, combinations, islice
 
 
 class Part(NormalFunction):
-    # TODO: Raise exception on {a, b, c}[[;;;;-1]]
     @staticmethod
     def get_part(expr, n):
         if not isinstance(expr, iterables):
@@ -129,8 +128,10 @@ class Min(NormalFunction):
 
     @classmethod
     def exec(cls, *x):
-        x = deepflatten(x)
-        return s.Min(*x)
+        try:  # for better performance
+            return min(*deepflatten(x))
+        except TypeError:
+            return s.Min(*deepflatten(x))
 
 
 class Max(NormalFunction):
@@ -141,8 +142,10 @@ class Max(NormalFunction):
 
     @classmethod
     def exec(cls, *x):
-        x = deepflatten(x)
-        return s.Max(*x)
+        try:
+            return max(*deepflatten(x))
+        except TypeError:
+            return s.Max(*deepflatten(x))
 
 
 class Total(NormalFunction):

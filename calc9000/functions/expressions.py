@@ -132,7 +132,7 @@ class Simplify(NormalFunction):
     @classmethod
     def exec(cls, expr, assum=None):
         if assum is not None:
-            raise NotImplementedError("Assumptions not implemented.")
+            raise NotImplementedError("Assumptions are not supported.")
             # if isinstance(assum, iterables):
             #     for i in range(len(assum)):
             #         if isinstance(assum[i], s.core.py.relational.Relational):

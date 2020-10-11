@@ -59,15 +59,17 @@ class Printer9000(PrettyPrinter):
 
     def _print_List(self, e):
         # for better performance
-        st = str(e.value)
-        if len(st) > 1000:
-            m = int(len(e.value) / len(st) * 200)
-            return self._print_seq(e.value[:m] + [ListSkip(len(e.value) - 2 * m)] + e.value[-m:], '{', '}')
+        if len(e) > 10:
+            avg_len = sum([len(pretty_print(e[x])) for x in range(0, len(e), len(e) // 10)]) / 10
+            avg_total_len = (avg_len + 2) * len(e) + 2
+            if avg_total_len > 1000:
+                m = int(75 / avg_len)
+                return self._print_seq(e.value[:m] + [ListSkip(len(e.value) - 2 * m)] + e.value[-m:], '{', '}')
         return self._print_seq(e.value, '{', '}')
 
     def _print_Subs(self, e):
         if isinstance(e, Subs):
-            return super()._print_Function(e)
+            return self._print_Function(e)
         return super()._print_Subs(e)
 
     def _print_Mod(self, expr):
@@ -84,6 +86,12 @@ class Printer9000(PrettyPrinter):
 
     def _print_Times(self, expr):
         return super()._print_Mul(s.Mul(*expr.args, evaluate=False))
+
+    def _print_Max(self, expr):
+        return self._print_Function(expr)
+
+    def _print_Min(self, expr):
+        return self._print_Function(expr)
 
     def _helper_print_function(self, func, args, sort=False, func_name=None, delimiter=', ', elementwise=False):
         if sort:

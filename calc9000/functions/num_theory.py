@@ -177,39 +177,6 @@ class PreviousPrime(Prime):
     prime_func = s.prevprime
 
 
-class RandomPrime(NormalFunction):
-    """
-    RandomPrime [{a, b}]
-     Gives a pseudorandom prime number in the range a to b.
-
-    RandomPrime [x]
-     Gives a pseudorandom prime number in the range 2 to x.
-
-    RandomPrime [range, n]
-     Gives a list of n pseudorandom primes.
-
-    Effectively uses sympy.randprime().
-    """
-
-    tags = {
-        'int': 'A positive integer is expected as input.'
-    }
-
-    @classmethod
-    def exec(cls, spec, n=None):
-        if not isinstance(spec, iterables):
-            spec = List(2, spec)
-        if not is_integer(spec[0]) and not is_integer(spec[1]):
-            FunctionException(f'RandomPrime::int')
-
-        if n:
-            if is_integer(n):
-                return List(*(cls.exec(spec) for _ in range(n)))
-            if isinstance(n, iterables):
-                return List(*(cls.exec(spec, n[1:]) for _ in range(n[0])))
-        return s.randprime(spec[0], spec[1])
-
-
 class Mobius(Prime):  # for ease of use
     """
     Mobius [n]

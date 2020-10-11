@@ -147,6 +147,7 @@ def get_symbol_value(n):
     ret = refs.OwnValues[n]
     if type(ret) is Delay:
         return LazyFunction.evaluate(ret.args[0])
+    # TODO: Improve performance for large (especially float) lists
     return LazyFunction.evaluate(ret)
 
 
@@ -166,7 +167,7 @@ def message(tag, e):
     r.refs.add_message(tag, e)
 
 
-def exec_func(cls, *args):
+def exec_func(cls, *args, **kwargs):
     clear_cache = False
     if hasattr(cls, 'exec'):
         try:
@@ -195,11 +196,17 @@ def exec_func(cls, *args):
                     raise TypeError(st)
 
                 # pass args and options as kws
+                kws.update(kwargs)  # for internal calls
                 return cls.exec(*args_to_pass, **kws)
-            return cls.exec(*args)
+            return cls.exec(*args, **kwargs)
 
         except FunctionException as x:
             message(x.tag,  x.message)
+            clear_cache = True
+            return None
+
+        except ValueError as v:
+            message(f'{cls.__name__}::PythonValueError', str(v))
             clear_cache = True
             return None
 
@@ -207,12 +214,14 @@ def exec_func(cls, *args):
             if str(t).startswith('exec()'):
                 t = str(t).replace('exec()', cls.__name__)
                 t = t.translate(str.maketrans({x: str(int(x) - 1) for x in filter(str.isdigit, t)}))
-            message(f'{cls.__name__}', f'{t}')
+                message(f'{cls.__name__}::PythonArgs', str(t))
+            else:
+                message(f'{cls.__name__}::PythonTypeError', str(t))
             clear_cache = True
             return None
 
         except NotImplementedError as e:
-            message('NotImplementedError', f'{e}')
+            message(f'{cls.__name__}::NotImplementedError', str(e))
             clear_cache = True
             return None
 
@@ -243,8 +252,8 @@ class NormalFunction(s.Function):
     rule_param = False
 
     @classmethod
-    def eval(cls, *args):
-        return exec_func(cls, *args)
+    def eval(cls, *args, **kwargs):
+        return exec_func(cls, *args, **kwargs)
 
 
 class DefinedFunction(NormalFunction):
@@ -524,6 +533,9 @@ class Subs(NormalFunction):
 
     @classmethod
     def exec(cls, expr, replacements):
+
+        # TODO: Rewrite
+        # -> Perform all replacements in one shot for better performance
 
         if not isinstance(replacements, iterables):
             replacements = (replacements,)
