@@ -297,6 +297,8 @@ class LazyFunction(s.Function):
 
     @staticmethod
     def evaluate(expr):
+        # TODO: Fix lazy set.
+
         """Get value of Lazy Function, with other lazy functions as args."""
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List.create(LazyFunction.evaluate(x) for x in expr)

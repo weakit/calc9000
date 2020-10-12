@@ -23,6 +23,9 @@ class List(s.Basic):
     def create(x):
         return List(*x)
 
+    def as_coeff_Mul(self):
+        return s.S.One, self
+
     def __init__(self, *args):
         if args:
             self.value = list(filter(s.Symbol('Nothing').__ne__, args))

@@ -8,21 +8,6 @@ from lark import Tree, Token
 
 Functions = functions.Functions
 
-basic_ops = (
-    'plus',
-    'subtract',
-    'times',
-    'divide',
-    'power',
-    'negative',
-    'positive',
-    'dot',
-    'factorial',
-    'and_',
-    'or_',
-    'not_'
-)
-
 # TODO: remove unused functions
 
 
@@ -57,40 +42,69 @@ def unset_function(n):
     return s.Function(str(n[0]))(*n[1:])
 
 
-def plus(n):
-    return Functions.call('Plus', *n)
+basic_ops = (
+    'plus',
+    'subtract',
+    'times',
+    'divide',
+    'power',
+    'negative',
+    'positive',
+    'dot',
+    'factorial',
+    'and_',
+    'or_',
+    'not_'
+)
+
+normal_basic_ops = {
+    'plus': 'Plus',
+    'times': 'Times',
+    'dot': 'Dot',
+    'factorial': 'Factorial',
+    'power': 'Power',
+    'and_': 'And',
+    'or_': 'Or',
+    'not_:': 'Not'
+}
 
 
-def subtract(n):
-    return Functions.call('Plus', n[0], Functions.call('Times', -1, n[1]))
+def basic(operation, n, lazy_call=False):
+    if lazy_call:
+        caller = Functions.lazy_call
+    else:
+        caller = Functions.call
+
+    if operation in normal_basic_ops:
+        return caller(normal_basic_ops[operation], *n)
+
+    if operation == 'subtract':
+        return caller('Plus', n[0], caller('Times', -1, n[1]))
+
+    if operation == 'divide':
+        return caller('Times', n[0], caller('Power', n[1], -1))
+
+    if operation == 'positive':
+        return n[0]
+
+    if operation == 'negative':
+        return caller('Times', -1, n[0])
 
 
-def times(n):
-    return Functions.call('Times', *n)
+# def subtract(n):
+#     return Functions.call('Plus', n[0], Functions.call('Times', -1, n[1]))
 
 
-def dot(n):
-    return Functions.call('Dot', *n)
+# def divide(n):
+#     return Functions.call('Times', n[0], Functions.call('Power', n[1], -1))
 
 
-def divide(n):
-    return Functions.call('Times', n[0], Functions.call('Power', n[1], -1))
+# def positive(n):
+#     return 1 * n[0]
 
 
-def factorial(n):
-    return Functions.call('Factorial', *n)
-
-
-def power(n):
-    return reduce(op.pow, n)
-
-
-def positive(n):
-    return 1 * n[0]
-
-
-def negative(n):
-    return -1 * n[0]
+# def negative(n):
+#     return -1 * n[0]
 
 
 def out(n):
@@ -116,18 +130,6 @@ def assign(n):
 
 def unset(n):
     return Functions.call('Unset', lazy(n))
-
-
-def and_(n):
-    return Functions.call('And', *n)
-
-
-def or_(n):
-    return Functions.call('Or', *n)
-
-
-def not_(n):
-    return Functions.call('Not', *n)
 
 
 def part(n):
@@ -175,8 +177,7 @@ def lazy(tree: Tree):
     if tree.data == 'symbol':
         return s.Symbol(tree.children[0])
     if tree.data in basic_ops:
-        # TODO: Convert to hold
-        return globals()[tree.data]([lazy(x) for x in tree.children])
+        return basic(tree.data, [lazy(x) for x in tree.children], lazy_call=True)
     if tree.data == 'function':
         return Functions.lazy_call(str(tree.children[0].children[0]), *(lazy(x) for x in tree.children[1:]))
     if tree.data == 'list':
@@ -213,7 +214,7 @@ def operate(tree: Tree):
     if tree.data == 'symbol':
         return symbol(tree.children[0])
     if tree.data in basic_ops:
-        return globals()[tree.data]([operate(x) for x in tree.children])
+        return basic(tree.data, [operate(x) for x in tree.children], lazy_call=False)
     if tree.data == 'function':
         name = str(tree.children[0].children[0])
         if Functions.is_explicit(name):
