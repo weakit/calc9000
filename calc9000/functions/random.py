@@ -7,20 +7,30 @@ from mpmath.libmp import from_man_exp, dps_to_prec
 
 
 random_int = py_random.randint
-get_rand_bits = py_random.getrandbits
+random_bits = py_random.getrandbits
 seed_func = py_random.seed
 random_choices = py_random.choices
+get_random_state = py_random.getstate
+set_random_state = py_random.setstate
 
 
-def rand_float(p):
-    return s.Float._new(from_man_exp(get_rand_bits(p), -p), p)
+def random_float(p):
+    return s.Float._new(from_man_exp(random_bits(p), -p), p)
 
 
 class SeedRandom(NormalFunction):
+    """
+    SeedRandom[n]
+     Resets the pseudorandom generator, using n as a seed.
+
+    SeedRandom[]
+     Resets the generator, using as a seed the time of day as a seed.
+    """
     @classmethod
     def exec(cls, n=None):
         if n is None:
             seed_func()
+            return r.NoOutput(None)
         if isinstance(n, String):
             seed_func(n.value)
         if n.is_Number:
@@ -110,7 +120,7 @@ class RandomReal(NormalFunction):
     @classmethod
     def random(cls, spec=None, rep=None, p=53):
         if spec is None:
-            return rand_float(p)
+            return random_float(p)
         if not rep:
             if isinstance(spec, iterables):
                 if len(spec) != 2:
@@ -118,7 +128,7 @@ class RandomReal(NormalFunction):
                 lower, upper = spec
             else:
                 lower, upper = 0, spec
-            return lower + ((upper - lower) * rand_float(p))
+            return lower + ((upper - lower) * random_float(p))
         return cls.repeat(spec, rep, p=p)
 
     @classmethod
@@ -260,3 +270,16 @@ class RandomChoice(NormalFunction):
             raise FunctionException('RandomChoice::array')
 
         return random_choices(choices, weights)[0]
+
+
+class BlockRandom(ExplicitFunction):
+    """
+    BlockRandom [expr]
+     Evaluates expr with all pseudorandom generators localized.
+    """
+    @classmethod
+    def exec(cls, expr):
+        state = get_random_state()
+        evaluated_expr = LazyFunction.evaluate(expr)
+        set_random_state(state)
+        return evaluated_expr
