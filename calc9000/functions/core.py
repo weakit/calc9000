@@ -94,9 +94,9 @@ def ands(x):
 
 def is_integer(n):
     """Returns true if is integer."""
-    if hasattr(n, 'is_integer'):
-        return bool(n.is_integer)
     if hasattr(n, 'is_Integer'):
+        return bool(n.is_integer)
+    if hasattr(n, 'is_integer'):
         return bool(n.is_integer)
     if isinstance(n, int):
         return True
@@ -297,8 +297,6 @@ class LazyFunction(s.Function):
 
     @staticmethod
     def evaluate(expr):
-        # TODO: Fix lazy set.
-
         """Get value of Lazy Function, with other lazy functions as args."""
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List.create(LazyFunction.evaluate(x) for x in expr)
@@ -306,10 +304,19 @@ class LazyFunction(s.Function):
         if not hasattr(expr, 'subs'):
             return expr
 
-        expr = expr.subs(r.refs.Constants.Dict)
-        expr = expr.subs(r.refs.OwnValues)
-
         def extend(ex):
+            # TODO: replace DownValues, etc.
+
+            if hasattr(ex, 'is_Number') and ex.is_Number:
+                return ex
+
+            if isinstance(ex, s.Symbol):
+                st = str(ex)
+                if st in r.refs.OwnValues:
+                    return r.refs.OwnValues[st]
+                elif st in r.refs.Constants.Dict:
+                    return r.refs.Constants.Dict[st]
+
             if not hasattr(ex, 'args') or not isinstance(ex.args, iterables):
                 return ex
 
@@ -319,7 +326,7 @@ class LazyFunction(s.Function):
                 return ex
 
             rep = {x: extend(x) for x in ex.args}
-            ex = ex.subs(rep)
+            ex = ex.xreplace(rep)
 
             if isinstance(ex, LazyFunction):
                 return ex.land()
@@ -327,15 +334,6 @@ class LazyFunction(s.Function):
             return ex
 
         expr = extend(expr)
-
-        # # land from innermost functions
-        # funcs = sorted(expr.atoms(LazyFunction),
-        #                key=lambda x: len(x.atoms(LazyFunction)))
-        # while funcs:
-        #     r_func = funcs[0]
-        #     func = r_func.land()
-        #     expr = expr.subs(r_func, func)
-        #     funcs = [x.subs(r_func, func) for x in funcs[1:]]
 
         return expr
 
@@ -534,36 +532,38 @@ class Subs(NormalFunction):
         return reps
 
     @classmethod
-    def exec(cls, expr, replacements):
-
-        # TODO: Rewrite
-        # -> Perform all replacements in one shot for better performance
-
-        if not isinstance(replacements, iterables):
-            replacements = (replacements,)
-        else:  # TODO: re-do checks
-            if isinstance(replacements[0], iterables):
-                for x in replacements:
-                    if not isinstance(x, iterables):
-                        raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
-                    return List(*(cls.exec(expr, replacement) for replacement in replacements))
-            else:
-                for x in replacements:
-                    if isinstance(x, iterables):
-                        raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
-
-        if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
-            return List.create(Subs(x, replacements) for x in expr)
-
+    def do_subs(cls, expr, replacements):
         expr = expr.subs(replacements)
+
         replacement_dict = Subs.func_replacement_helper(replacements)
+
+        # TODO: (low) rewrite
 
         for func in expr.atoms(s.Function):
             if str(func) in replacement_dict:
                 expr = expr.replace(func, replacement_dict[str(func)])
             if str(func.func) in replacement_dict:
                 expr = expr.replace(func, Functions.call(str(replacement_dict[str(func.func)]), *func.args))
+
         return LazyFunction.evaluate(expr)
+
+    @classmethod
+    def exec(cls, expr, replacements):
+        if not isinstance(replacements, iterables):
+            replacements = (replacements,)
+        else:
+            if isinstance(replacements[0], iterables):
+                if not all(isinstance(x, iterables) for x in replacements):
+                    raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
+                return List(*(cls.exec(expr, replacement) for replacement in replacements))
+            else:
+                if not all(not isinstance(x, iterables) for x in replacements):
+                    raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
+
+        if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
+            return List(*(cls.do_subs(x, replacements) for x in expr))
+
+        return cls.do_subs(expr, replacements)
 
 
 class N(NormalFunction):

@@ -1,16 +1,34 @@
 from calc9000.functions.core import *
 from calc9000.functions.base import Re, Im
 
+
 import random as py_random
 from mpmath.libmp import from_man_exp, dps_to_prec
 
 
-randint = py_random.randint
+random_int = py_random.randint
 get_rand_bits = py_random.getrandbits
+seed_func = py_random.seed
+random_choices = py_random.choices
 
 
 def rand_float(p):
     return s.Float._new(from_man_exp(get_rand_bits(p), -p), p)
+
+
+class SeedRandom(NormalFunction):
+    @classmethod
+    def exec(cls, n=None):
+        if n is None:
+            seed_func()
+        if isinstance(n, String):
+            seed_func(n.value)
+        if n.is_Number:
+            if n.is_Integer:
+                seed_func(int(n))
+            else:
+                raise FunctionException('SeedRandom::seed')
+        return r.NoOutput(None)
 
 
 class RandomInteger(NormalFunction):
@@ -36,7 +54,7 @@ class RandomInteger(NormalFunction):
     @classmethod
     def exec(cls, spec=None, rep=None):
         if not spec:
-            return s.Integer(randint(0, 1))
+            return s.Integer(random_int(0, 1))
         if not rep:
             if isinstance(spec, iterables):
                 if len(spec) != 2:
@@ -46,7 +64,7 @@ class RandomInteger(NormalFunction):
                 limit = [0, spec]
             if not (is_integer(limit[0]) and is_integer(limit[1])):
                 raise FunctionException('RandomInteger::limits', 'Limits for RandomInteger should be an Integer.')
-            return s.Integer(randint(limit[0], limit[1]))
+            return s.Integer(random_int(limit[0], limit[1]))
         return cls.repeat(spec, rep, RandomInteger)
 
     @classmethod
@@ -165,19 +183,80 @@ class RandomPrime(NormalFunction):
     """
 
     tags = {
-        'int': 'A positive integer is expected as input.'
+        'int': 'A positive integer is expected as input.',
+        'prime': 'There are no primes in the specified interval.'
     }
+
+    @classmethod
+    def randprime(cls, a, b):
+        # shamelessly stolen from sympy.randprime
+        if a >= b:
+            return
+        a, b = map(int, (a, b))
+        n = random_int(a - 1, b)
+        p = s.nextprime(n)
+        if p >= b:
+            p = s.prevprime(b)
+        if p < a:
+            raise FunctionException("RandomPrime::prime")
+        return p
 
     @classmethod
     def exec(cls, spec, n=None):
         if not isinstance(spec, iterables):
             spec = List(2, spec)
-        if not is_integer(spec[0]) and not is_integer(spec[1]):
-            FunctionException(f'RandomPrime::int')
+        if len(spec) != 2:
+            raise FunctionException(f'RandomPrime::spec')
+        if not (is_integer(spec[0]) and is_integer(spec[1])):
+            raise FunctionException(f'RandomPrime::int')
 
         if n:
             if is_integer(n):
                 return List(*(cls.exec(spec) for _ in range(n)))
             if isinstance(n, iterables):
                 return List(*(cls.exec(spec, n[1:]) for _ in range(n[0])))
-        return s.randprime(spec[0], spec[1])
+        return cls.randprime(spec[0], spec[1])
+
+
+def split_into_array(li, ar):
+    if len(ar) > 1:
+        chunk = len(li) // ar[0]
+        return List(*(split(li[i * chunk:(i + 1) * chunk], ar[1:]) for i in range(ar[0])))
+    return List(*li)
+
+
+class RandomChoice(NormalFunction):
+    # TODO: Doc
+
+    tags = {
+        'choices': 'A List of choices or a Rule weights -> choices is expected.',
+        'array': 'Invalid dimensions/number of choices.'
+    }
+
+    @classmethod
+    def exec(cls, choices, n=None):
+        if isinstance(choices, Rule):
+            weights = choices.lhs
+            choices = choices.rhs
+        else:
+            weights = None
+        if not isinstance(choices, iterables):
+            raise FunctionException('RandomChoice::choices')
+
+        if n:
+            if isinstance(n, iterables):
+                if not all(is_integer(x) and x > 0 for x in n):
+                    raise FunctionException('RandomChoice::array')
+
+                k = 1
+                for x in n:
+                    k *= x
+
+                chosen = random_choices(choices, weights, k=k)
+                return split_into_array(chosen, n)
+
+            if is_integer(n):
+                return List(*random_choices(choices, weights, k=n))
+            raise FunctionException('RandomChoice::array')
+
+        return random_choices(choices, weights)[0]

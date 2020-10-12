@@ -236,7 +236,7 @@ class String(s.AtomicExpr):
         self.value = str(x)
 
     def __hash__(self):
-        self.value.__hash__()
+        return self.value.__hash__()
 
     def __str__(self):
         return f'"{self.value}"'
