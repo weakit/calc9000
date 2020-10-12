@@ -231,7 +231,7 @@ class RandomPrime(NormalFunction):
 def split_into_array(li, ar):
     if len(ar) > 1:
         chunk = len(li) // ar[0]
-        return List(*(split(li[i * chunk:(i + 1) * chunk], ar[1:]) for i in range(ar[0])))
+        return List(*(split_into_array(li[i * chunk:(i + 1) * chunk], ar[1:]) for i in range(ar[0])))
     return List(*li)
 
 
