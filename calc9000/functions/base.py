@@ -251,15 +251,18 @@ class Factorial2(NormalFunction):
     Effectively uses sympy.factorial2().
     """
 
-    @staticmethod  # TODO: move to sympy
-    def gamma_fact2_float(z):
-        return (2 ** ((1 + 2*z - s.cos(s.pi*z))/4) * \
-               s.pi ** ((s.cos(s.pi*z) - 1)/4) * \
-               s.gamma(1 + s.S.Half * z))._eval_evalf(z._prec)
+    tags = {
+        'int': 'Factorial2 is defined only for odd and non-negative even integers.'
+    }
 
     @classmethod
     def exec(cls, x):
-        return thread(s.factorial2, x)
+        try:
+            return thread(s.factorial2, x)
+        except ValueError as e:
+            if not e.args[0].startswith('argument must be nonnegative integer or negative'):
+                raise e
+            raise FunctionException('int')
 
 
 class Conjugate(NormalFunction):

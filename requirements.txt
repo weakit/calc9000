@@ -1,5 +1,3 @@
-sympy
-lark-parser
+sympy>=1.6.2
+lark-parser>=0.10.1
 iteration-utilities
-prompt-toolkit
-

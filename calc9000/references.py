@@ -188,8 +188,8 @@ class References:
         self.CacheClearQueued = False  # dirty, but works
         self.Parser = None
         self.Messenger = None
-        self.DefaultPrecision = 8
-        self.ExtraPrecision = 4
+        self.DefaultPrecision = 9
+        self.ExtraPrecision = 5
         self.WorkingPrecision = self.DefaultPrecision + self.ExtraPrecision
 
     def add_def(self, _in, out):
