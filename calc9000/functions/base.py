@@ -233,7 +233,7 @@ class Mod(NormalFunction):
 class Factorial(NormalFunction):
     """
     Factorial [x]
-     Gives the Factorial of x.
+     Gives the factorial of x.
 
     Equivalent to sympy.factorial().
     """
@@ -241,6 +241,25 @@ class Factorial(NormalFunction):
     @classmethod
     def exec(cls, x):
         return thread(s.factorial, x)
+
+
+class Factorial2(NormalFunction):
+    """
+    Factorial2 [x]
+     Gives the double factorial of x.
+
+    Effectively uses sympy.factorial2().
+    """
+
+    @staticmethod  # TODO: move to sympy
+    def gamma_fact2_float(z):
+        return (2 ** ((1 + 2*z - s.cos(s.pi*z))/4) * \
+               s.pi ** ((s.cos(s.pi*z) - 1)/4) * \
+               s.gamma(1 + s.S.Half * z))._eval_evalf(z._prec)
+
+    @classmethod
+    def exec(cls, x):
+        return thread(s.factorial2, x)
 
 
 class Conjugate(NormalFunction):

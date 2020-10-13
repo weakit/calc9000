@@ -69,6 +69,7 @@ class TagValues(dict):
     pass
 
 
+# Build from built-ins at startup
 FunctionWrappers = {
     # Trig Functions
     'Sin': 'sin',
@@ -77,12 +78,24 @@ FunctionWrappers = {
     'Csc': 'csc',
     'Sec': 'sec',
     'Cot': 'cot',
+    'Sinh': 'sinh',
+    'Cosh': 'cosh',
+    'Tanh': 'tanh',
+    'Csch': 'csch',
+    'Sech': 'sech',
+    'Coth': 'coth',
     'ArcSin': 'asin',
     'ArcCos': 'acos',
     'ArcTan': 'atan',
     'ArcCsc': 'acsc',
     'ArcSec': 'asec',
     'ArcCot': 'acot',
+    'ArcSinh': 'asinh',
+    'ArcCosh': 'acosh',
+    'ArcTanh': 'atanh',
+    'ArcCsch': 'acsch',
+    'ArcSech': 'asech',
+    'ArcCoth': 'acoth',
     'Log': 'log',
     'Floor': 'floor',
     'Ceiling': 'ceiling',
@@ -92,10 +105,12 @@ FunctionWrappers = {
     # 'Transpose': 'transpose',
     # 'Inverse': 'inverse',
     'Factorial': 'factorial',
+    'Factorial2': 'factorial2',
     'Conjugate': 'conjugate',
     'Sqrt': 'sqrt',
     'StieltjesGamma': 'stieltjes',
     'Gamma': 'gamma',
+    'PolyGamma': 'polygamma',
     'Surd': 'real_root',
     'GCD': 'gcd',
     'LCM': 'lcm',
@@ -107,9 +122,31 @@ FunctionWrappers = {
     'HeavisideTheta': 'Heaviside',
     'Simplify': 'simplify',
     'Zeta': 'zeta',
+    'LogIntegral': 'li',
+    'ExpIntegralEi': 'Ei',
+    'ExpIntegralE': 'expint',
+    'SinIntegral': 'Si',
+    'CosIntegral': 'Ci',
+    'SinhIntegral': 'Shi',
+    'CoshIntegral': 'Chi',
+    'EllipticK': 'elliptic_k',
+    'EllipticF': 'elliptic_f',
+    'EllipticE': 'elliptic_e',
+    'EllipticPi': 'elliptic_pi',
+    'Erf': 'erf',
+    'Erfc': 'erfc',
+    'Erfi': 'erfi',
+    'InverseErf': 'erfinv',
+    'InverseErfc': 'erfcinv',
+    'FresnelS': 'fresnels',
+    'FresnelC': 'fresnelc'
 }
 
 FunctionWrappersReverse = {v: k for k, v in FunctionWrappers.items()}
+
+FunctionWrappersReverse.update({
+    'erf2': 'Erf',
+})
 
 NoCache = [
     "Out",
@@ -151,8 +188,8 @@ class References:
         self.CacheClearQueued = False  # dirty, but works
         self.Parser = None
         self.Messenger = None
-        self.DefaultPrecision = 9
-        self.ExtraPrecision = 6
+        self.DefaultPrecision = 8
+        self.ExtraPrecision = 4
         self.WorkingPrecision = self.DefaultPrecision + self.ExtraPrecision
 
     def add_def(self, _in, out):

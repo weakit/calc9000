@@ -99,6 +99,7 @@ tag: symbol "::" symbol
 list: "{" (compound_statement ("," compound_statement )*)? "}"
 
 factorial: unary "!"
+         | unary "!!" -> factorial2
 
 ?numeric: FLOAT
         | INT

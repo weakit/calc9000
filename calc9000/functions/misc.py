@@ -39,6 +39,14 @@ class Gamma(NormalFunction):
         return thread(s.gamma, x)
 
 
+class PolyGamma(NormalFunction):
+    @classmethod
+    def exec(cls, n, z=None):
+        if z is None:
+            return Functions.call('PolyGamma', 0, n)
+        return thread(s.polygamma, n, z)
+
+
 class StieltjesGamma(NormalFunction):
     @classmethod
     def exec(cls, x, a=None):

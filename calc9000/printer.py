@@ -93,6 +93,10 @@ class Printer9000(PrettyPrinter):
     def _print_Min(self, expr):
         return self._print_Function(expr)
 
+    @staticmethod
+    def _print_ComplexInfinity(*args):
+        return prettyForm('ComplexInfinity')
+
     def _helper_print_function(self, func, args, sort=False, func_name=None, delimiter=', ', elementwise=False):
         if sort:
             args = sorted(args, key=s.utilities.default_sort_key)

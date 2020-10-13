@@ -52,6 +52,7 @@ basic_ops = (
     'positive',
     'dot',
     'factorial',
+    'factorial2',
     'and_',
     'or_',
     'not_'
@@ -62,6 +63,7 @@ normal_basic_ops = {
     'times': 'Times',
     'dot': 'Dot',
     'factorial': 'Factorial',
+    'factorial2': 'Factorial2',
     'power': 'Power',
     'and_': 'And',
     'or_': 'Or',
