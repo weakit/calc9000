@@ -30,7 +30,7 @@ class SeedRandom(NormalFunction):
     def exec(cls, n=None):
         if n is None:
             seed_func()
-            return r.NoOutput(None)
+            return NoOutput(None)
         if isinstance(n, String):
             seed_func(n.value)
         if n.is_Number:
@@ -38,7 +38,7 @@ class SeedRandom(NormalFunction):
                 seed_func(int(n))
             else:
                 raise FunctionException('SeedRandom::seed')
-        return r.NoOutput(None)
+        return NoOutput(None)
 
 
 class RandomInteger(NormalFunction):

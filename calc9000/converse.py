@@ -1,6 +1,6 @@
 from lark.exceptions import LarkError
 from calc9000 import references as r, larker
-from calc9000.custom import Tag
+from calc9000.custom import Tag, SpecialOutput
 from calc9000.printer import pretty_print
 
 
@@ -46,11 +46,11 @@ def process(input_text: str):
         refs.add_message(Tag('Synatx::err'), e)
         return None
 
-    if isinstance(out, (r.NoOutput,)):
+    if isinstance(out, SpecialOutput):
         refs.add_def(input_text, out.value)
-        out = None
-    else:
-        refs.add_def(input_text, out)
+        return out.value_to_print()
+
+    refs.add_def(input_text, out)
     return out
 
 

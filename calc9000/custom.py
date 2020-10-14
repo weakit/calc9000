@@ -273,3 +273,16 @@ class Primes(s.Set):
 
     def _eval_is_superset(self, other):
         return s.Range(s.oo).is_superset(other)
+
+
+class SpecialOutput(s.AtomicExpr):
+    def __init__(self, value):
+        self.value = value
+
+    def value_to_print(self):
+        return self.value
+
+
+class NoOutput(SpecialOutput):
+    def value_to_print(self):
+        return None

@@ -164,3 +164,14 @@ class Cross(NormalFunction):
     def _sympystr(self, printer=None):
         return 'Cross['.join(str(i) + ', ' for i in (printer.doprint(i) for i in self.args))[:-2] + ']'
 
+
+class MatrixForm(NormalFunction):
+    class MatrixOutput(SpecialOutput):
+        def value_to_print(self):
+            if isinstance(self.value, iterables):
+                return s.Matrix(self.value)
+
+    @classmethod
+    def exec(cls, x):
+        return cls.MatrixOutput(x)
+

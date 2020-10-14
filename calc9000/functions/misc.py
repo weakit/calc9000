@@ -202,5 +202,5 @@ class Timing(ExplicitFunction):
         end = time.time()
         return List(
             s.Float(end) - s.Float(start),
-            result if not isinstance(result, r.NoOutput) else r.Constants.Null
+            result if not isinstance(result, NoOutput) else r.Constants.Null
         )

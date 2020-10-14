@@ -31,3 +31,20 @@ def test_inv():
            p('{{u/(u^2 - v^2), -(v/(u^2 - v^2))}, {-(v/(u^2 - v^2)), u/(u^2 - v^2)}}')
     # doesn't seem to work on pytest for some reason
     # assert p('m = {{a, b}, {c, d}}; Simplify[Inverse[m].m]') == p('{{1, 0}, {0, 1}}')
+
+
+def test_transpose():
+    assert p('Transpose[{{a, b, c}, {x, y, z}}]') == p('{{a, x}, {b, y}, {c, z}}')
+    assert p('Transpose[{{a, x}, {b, y}, {c, z}}]') == p('{{a, b, c}, {x, y, z}}')
+
+
+def test_conjugate_transpose():
+    assert p('ConjugateTranspose[{{1, 2 I, 3}, {3 + 4 I, 5, I}}]') == \
+           p('{{1, 3 - 4*I}, {-2*I, 5}, {3, -I}} ')
+    assert p('ConjugateTranspose[{{a, b}, {c, d}}]') == \
+           p('{{Conjugate[a], Conjugate[c]}, {Conjugate[b], Conjugate[d]}}')
+
+
+def test_cross():
+    assert p('Cross[{a, b, c}, {x, y, z}]') == p('{-(c*y) + b*z, c*x - a*z, -(b*x) + a*y}')
+    assert p('Cross[{x, y}]') == p('{-y, x}')

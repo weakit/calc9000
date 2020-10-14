@@ -2,14 +2,6 @@ import sympy as s
 from calc9000.custom import List, Primes
 
 
-class NoOutput:
-    def __init__(self, value):
-        self.value = value
-
-    def __str__(self):
-        return ''
-
-
 class Protected:
     Symbol = None
     Rule = None

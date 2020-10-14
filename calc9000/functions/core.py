@@ -2,6 +2,7 @@ import sympy as s
 from calc9000 import references as r
 from collections import OrderedDict
 from calc9000.custom import List, Rule, Tag, String, Span
+from calc9000.custom import SpecialOutput, NoOutput
 from calc9000.custom import ListException, RuleException
 
 
@@ -447,7 +448,7 @@ class ArgsPattern:
 class SemicolonStatement(ExplicitFunction):
     @classmethod
     def exec(cls, expr):
-        return r.NoOutput(LazyFunction.evaluate(expr))
+        return NoOutput(LazyFunction.evaluate(expr))
 
 
 def set_tag_value(tag: Tag, m):
@@ -565,7 +566,7 @@ class Unset(NormalFunction):
             return List.create(Unset(x) for x in n)
         if isinstance(n, s.Symbol) and str(n) in r.refs.OwnValues:
             del r.refs.OwnValues[str(n)]
-        return r.NoOutput(None)
+        return NoOutput(None)
 
 
 class Clear(NormalFunction):
@@ -588,7 +589,7 @@ class Clear(NormalFunction):
     def exec(cls, *args):
         for arg in args:
             cls.do_clear(arg)
-        return r.NoOutput(None)
+        return NoOutput(None)
 
 
 class SetDelayed(ExplicitFunction):
