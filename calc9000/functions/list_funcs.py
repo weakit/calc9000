@@ -1,8 +1,25 @@
 from bisect import bisect_left
 
 from calc9000.functions.core import *
+from calc9000.functions.base import Plus, Times
 from iteration_utilities import deepflatten, accumulate, unique_everseen, nth_combination
 from itertools import permutations, combinations, islice
+
+
+def list_to_python_list(n):
+    if isinstance(n, List):
+        return [list_to_python_list(x) for x in n.value]
+    return n
+
+
+def do_list_add_mul(n):  # solve dilemma
+    if isinstance(n, iterables):
+        return List(*(do_list_add_mul(x) for x in n))
+    if isinstance(n, s.Add):
+        return Plus.exec(*(do_list_add_mul(x) for x in n.args))
+    if isinstance(n, s.Mul):
+        return Times.exec(*(do_list_add_mul(x) for x in n.args))
+    return n
 
 
 class Part(NormalFunction):

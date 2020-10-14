@@ -1,5 +1,8 @@
 from calc9000.functions.core import *
 from calc9000.functions.base import Conjugate
+from calc9000.functions.list_funcs import do_list_add_mul
+
+from functools import reduce
 from sympy.matrices.common import NonInvertibleMatrixError, ShapeError
 
 
@@ -12,13 +15,13 @@ def toVectorList(m):
     """
     Converts A vector matrix into a single row list.
     """
-    return List.create(m)
+    return do_list_add_mul(m)
 
 
 def matrixToList(m):
     temp_list = []
     for row in range(m.rows):
-        temp_list.append(List(*m.row(row)))
+        temp_list.append(do_list_add_mul(m.row(row)))
     return List(*temp_list)
 
 
@@ -30,10 +33,7 @@ class Dot(NormalFunction):
     }
 
     @classmethod
-    def exec(cls, a, b):
-        if not isinstance(a, iterables) or not isinstance(b, iterables):
-            return None
-
+    def do_dot(cls, a, b):
         v1 = isVector(a)
         v2 = isVector(b)
 
@@ -44,7 +44,7 @@ class Dot(NormalFunction):
             if v1 or v2:
                 # return a vector
                 if v1:
-                    return toVectorList(s.Matrix(List(a)) * s.Matrix(b))
+                    return toVectorList(s.Matrix([a]) * s.Matrix(b))
                 return toVectorList(s.Matrix(a) * s.Matrix(b))
             return matrixToList(s.Matrix(a) * s.Matrix(b))
         except (ShapeError, ValueError) as e:
@@ -55,8 +55,12 @@ class Dot(NormalFunction):
             # TODO: replace with more verbose info
             raise FunctionException('Dot::shap')
 
-    def _sympystr(self, printer=None):
-        return ''.join(str(i) + '.' for i in (printer.doprint(i) for i in self.args))[:-1]
+    @classmethod
+    def exec(cls, *args):
+        if not all(isinstance(x, iterables) for x in args):
+            return None
+
+        return reduce(cls.do_dot, args)
 
 
 class Det(NormalFunction):
