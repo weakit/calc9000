@@ -107,19 +107,6 @@ class Take(NormalFunction):
         return head(*cls.get_take(take, seqs[0]))
 
 
-class Head(NormalFunction):
-    """
-    Head [expr]
-     Gives the head of expr.
-    """
-
-    @classmethod
-    def exec(cls, h, f=None):
-        if f is not None:
-            return Functions.call(str(f), Part(h, 0))
-        return Part(h, 0)
-
-
 class Min(NormalFunction):
     """
     Min [x1, {x2, x3}, x4, …]

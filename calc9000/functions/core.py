@@ -1,5 +1,6 @@
 import sympy as s
 from calc9000 import references as r
+from collections import OrderedDict
 from calc9000.custom import List, Rule, Tag, String, Span
 from calc9000.custom import ListException, RuleException
 
@@ -350,19 +351,108 @@ class Delay(LazyFunction):
     A delayed expression.
     Use first arg as expression.
     """
+    @classmethod
+    def exec(cls):
+        return None
+
+
+class ArgsPatternSymbolPlaceholder:
+    def __hash__(self):
+        return self.type.__hash__() + 1
+
+    def __init__(self, pat):
+        self.pat = pat
+        pat = pat.split('_')
+
+        if len(pat) > 2:
+            raise FunctionException('Set::nopat')
+
+        if pat[0]:
+            self.subs_var = s.Symbol(pat[0])
+        else:
+            self.subs_var = None
+        self.type = pat[1] or None
+
+    def matches(self, var):
+        if self.type is None:
+            return True
+        return Head.get_head(var) == self.type
+
+    def __repr__(self):
+        return self.pat
+
+
+class ArgsPattern:
+    def __hash__(self):
+        return self.prototype.__hash__() + 1
+
+    def __init__(self, *args):
+        args = (LazyFunction.evaluate(x) for x in args)
+
+        self.explicit_args = 0
+        self.sub_args = 0
+        self.prototype = []
+        self.replacements = {}
+        self.is_pattern = False
+
+        for arg in args:
+            if isinstance(arg, s.Symbol):
+                if '_' in arg.name:
+                    self.is_pattern = True
+                    placeholder = ArgsPatternSymbolPlaceholder(arg.name)
+                    if placeholder.type:
+                        self.sub_args += 1
+                    if placeholder.subs_var:
+                        self.replacements[len(self.prototype)] = placeholder
+                    self.prototype.append(placeholder)
+                    continue
+                self.explicit_args += 1
+            self.prototype.append(arg)
+        self.prototype_length = len(self.prototype)
+        self.prototype = tuple(self.prototype)
+
+    @property
+    def importance(self):
+        return self.explicit_args, self.sub_args
+
+    def __len__(self):
+        return self.prototype.__len__()
+
+    def __iter__(self):
+        return self.prototype.__iter__()
+
+    def match(self, pat):
+        if len(pat) == self.prototype_length:
+            if self.is_pattern:
+                for x, y in zip(self.prototype, pat):
+                    if x != y:
+                        if isinstance(x, ArgsPatternSymbolPlaceholder) and x.matches(y):
+                            continue
+                        return False
+                return True
+            return all(x == y for x, y in zip(self.prototype, pat))
+        return False
+
+    def subs_dict(self, pat):
+        pat = list(pat)
+        subs_dict = {}
+        for pos, placeholder in self.replacements.items():
+            subs_dict[placeholder.subs_var] = pat[pos]
+        return subs_dict
+
+    def __repr__(self):
+        return f'ArgsPattern{self.prototype}'
 
 
 class SemicolonStatement(ExplicitFunction):
-    """
-    !internal
-    """
-
     @classmethod
     def exec(cls, expr):
         return r.NoOutput(LazyFunction.evaluate(expr))
 
 
 def set_tag_value(tag: Tag, m):
+    """sets tag value for current session"""
+    # TODO: Store custom tags in references
     if not isinstance(m, String):
         raise FunctionException('Set::set_tag', f'{tag} can ony be set to a string.')
     refs = r.refs
@@ -373,46 +463,80 @@ def set_tag_value(tag: Tag, m):
         refs.TagValues[tag] = m
 
 
-def real_set(x, n):
+def rdp_check_eq(a, b):
+    """helper function for remove_duplicate_pattern()"""
+    if isinstance(a, ArgsPatternSymbolPlaceholder) and isinstance(b, ArgsPatternSymbolPlaceholder):
+        return a.type == b.type
+    return a == b
+
+
+def remove_duplicate_pattern(d, check_pat):
+    """Removes duplicate ArgPatterns if present """
+    for pat in d.keys():
+        if hash(pat) == hash(check_pat) and \
+           all(rdp_check_eq(x, y) for x, y in zip(pat.prototype, check_pat.prototype)):
+
+            del d[pat]
+
+            # only one duplicate should exist since
+            # duplicates are removed at every assignment
+            return
+
+
+def do_set(x, n):
     refs = r.refs
-    for ref in [
-        refs.Constants.Dict,
-        refs.BuiltIns,
-        refs.Protected.Dict
-    ]:
-        if str(x) in ref:
-            raise FunctionException('Set::set', f'Symbol {x} cannot be Assigned to.')
+
     if isinstance(x, s.Symbol):
+        for ref in (
+            refs.Constants.Dict,
+            refs.BuiltIns,
+            refs.Protected.Dict
+        ):
+            if x.name in ref:
+                raise FunctionException('Set::set', f'Symbol {x} cannot be Assigned to.')
+
         if isinstance(x, Tag):
             set_tag_value(x, n)
             return n
+
         if isinstance(n, s.Expr):
             if x in n.atoms():
-                return None
+                return None  # TODO: raise
+
         refs.OwnValues[x.name] = n
+
         return n
+
     if isinstance(x, s.Function):
-        # process pattern
-        f_args = []
         name = type(x).__name__
-        expr = n
-        num = 1
-        for arg in x.args:
-            if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
-                expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
-                f_args.append(s.Symbol(f'*{num}'))
-                num += 1
-            else:
-                f_args.append(arg)
-        # create patterns list if not present
+
+        # create dict of patterns if not present
         if name not in refs.DownValues:
-            refs.DownValues[name] = {tuple(f_args): (expr, ())}
-        else:  # else add pattern to list
-            refs.DownValues[name].update({tuple(f_args): (expr, ())})
+            refs.DownValues[name] = {ArgsPattern(*x.args): n}
+
+        # else add pattern to existing dict
+        else:
+            pat = ArgsPattern(*x.args)
+
+            # remove duplicate if present
+            remove_duplicate_pattern(refs.DownValues[name], pat)
+
+            # update in place
+            refs.DownValues[name].update({pat: n})
+
+            # sort dict when done
+            # sorting is done during assignment to keep function calls fast
+            refs.DownValues[name] = \
+                OrderedDict(sorted(refs.DownValues[name].items(), key=lambda z: z[0].importance, reverse=True))
+
         return n
+
     if isinstance(x, iterables):
-        if isinstance(x, iterables) and len(x) == len(n):
+        if isinstance(n, iterables) and len(x) == len(n):
             return List.create(Set(a, b) for a, b in zip(x, n))
+        else:
+            raise FunctionException('Set::shape')
+
     return None
 
 
@@ -425,14 +549,14 @@ class Set(ExplicitFunction):
 
     @classmethod
     def exec(cls, x, n):
-        return real_set(x, LazyFunction.evaluate(n))
+        return do_set(x, LazyFunction.evaluate(n))
 
 
 class Unset(NormalFunction):
     """
     Unset [x]
     x =.
-        Deletes a symbol or list of symbols x, if they were previously assigned a value.
+     Deletes a symbol or list of symbols x, if they were previously assigned a value.
     """
 
     @classmethod
@@ -441,17 +565,40 @@ class Unset(NormalFunction):
             return List.create(Unset(x) for x in n)
         if isinstance(n, s.Symbol) and str(n) in r.refs.OwnValues:
             del r.refs.OwnValues[str(n)]
-        # TODO: return 'Nothing' when done
-        return None
+        return r.NoOutput(None)
+
+
+class Clear(NormalFunction):
+    """
+    Clear [x, y, …]
+     Deletes all definitions for x, y, ….
+    """
+
+    @staticmethod
+    def do_clear(n):
+        if isinstance(n, s.Symbol):
+            name = n.name
+            if name in r.refs.OwnValues:
+                del r.refs.OwnValues[name]
+            if name in r.refs.DownValues:
+                del r.refs.DownValues[name]
+            del name
+
+    @classmethod
+    def exec(cls, *args):
+        for arg in args:
+            cls.do_clear(arg)
+        return r.NoOutput(None)
 
 
 class SetDelayed(ExplicitFunction):
     @classmethod
-    # TODO: Delayed function set?
     def exec(cls, x, n):
-        value = real_set(x, Delay(n))
-        if hasattr(value, 'args'):
+        value = do_set(x, Delay(n))
+
+        if value:
             return value.args[0]
+
         return None
 
 
@@ -499,6 +646,26 @@ class Nothing(NormalFunction):
         return r.refs.Constants.Nothing
 
 
+class Head(NormalFunction):
+    """
+    Head [expr]
+     Gives the head of expr.
+    """
+    @staticmethod
+    def get_head(x):
+        if x in (s.S.NegativeOne, s.S.Zero, s.S.One):
+            return 'Integer'
+        if x == s.S.Half:
+            return 'Rational'
+        return type(x).__name__
+
+    @classmethod
+    def exec(cls, h, f=None):
+        if f is not None:
+            return Functions.call(str(f), cls.get_head(h))
+        return s.Symbol(cls.get_head(h))
+
+
 class CompoundExpression(ExplicitFunction):
     """
     !internal
@@ -522,6 +689,9 @@ class Subs(NormalFunction):
 
     @staticmethod
     def func_replacement_helper(replacements):
+        if isinstance(replacements, dict):
+            return replacements
+
         reps = {str(k): v for k, v in replacements}
         fw = r.refs.FunctionWrappers
         for x in list(reps):
@@ -687,7 +857,6 @@ class Equivalent(NormalFunction):
     def exec(cls, *args):
         return s.Equivalent(*args)
 
-# TODO: Relational Functions
 
 # class Boole(NormalFunction):
 #     @classmethod
@@ -705,7 +874,6 @@ class Functions:
     # TODO: Finish Explicit Functions
     # TODO: Convert NormalFunctions to ExplicitFunctions
     # TODO: Double Check
-    # TODO: Figure out Custom Functions
 
     # TODO: Norm
     # TODO: Prime Notation
@@ -716,21 +884,14 @@ class Functions:
     # TODO: Series
     # TODO: NSolve, DSolve
     # TODO: Roots (Solve)
-    # TODO: Unit Conversions
 
-    # TODO: Simple List Functions
-
-    # TODO: Make Matrix Functions use List
     # TODO: Matrix Representation
     # TODO: Matrix Row Operations
     # TODO: Remaining Matrix Operations
 
     # TODO: Fix Compound Expressions (f[x][y][z])
 
-    # TODO: Clear Function from References
-
     # TODO: Latex Printer
-    # TODO: Float Precision
     # TODO: References Storage
 
     # Low Priority
@@ -762,42 +923,40 @@ class Functions:
     def call(cls, f: str, *a):
         refs = r.refs
         # clear cache if necessary
+
         if refs.CacheClearQueued:
             s.core.cache.clear_cache()
             refs.CacheClearQueued = False
+
         elif f in refs.NoCache or cls.not_normal(f):
             s.core.cache.clear_cache()
+
+        # Check in BuiltIns first
         if f in refs.BuiltIns:
             return refs.BuiltIns[f](*a)
-        # if f in refs.DownValues:
-        #     priority = {}
-        #     for header in list(refs.DownValues[f])[::-1]:
-        #         match = True
-        #         matches = 0
-        #         if len(a) != len(header):
-        #             continue
-        #         for ar, br in zip(a, header):
-        #             if ar == br:
-        #                 matches += 1
-        #                 continue
-        #             if isinstance(br, s.Symbol) and br.name.startswith('*'):
-        #                 continue
-        #             match = False
-        #             break
-        #         if match:
-        #             priority[matches] = header
-        #     if priority:
-        #         header = priority[max(priority)]
-        #         expr = refs.DownValues[f][header][0]
-        #         # reps = refs.Functions[f][header][1]
-        #         for ar, br in zip(a, header):
-        #             if isinstance(br, s.Symbol) and br.name.startswith('*'):
-        #                 expr = Subs(expr, Rule(br, ar))
-        #         expr = Subs(expr, Rule.from_dict(vars(r.refs.Symbols)))  # + Rule.from_dict({x: x for x in reps}))
-        #         if type(expr) is Delay:
-        #             # TODO: improve naive approach
-        #             return LazyFunction.evaluate(expr.args[0])
-        #         return expr
+
+        # Check DownValues
+        if f in refs.DownValues:
+            # check all patterns
+            patterns = refs.DownValues[f]
+            for pattern in patterns:
+                if pattern.match(a):
+                    # get substitutions to make
+                    subs_to_do = pattern.subs_dict(a)
+
+                    # thread make subs (thread in-case is list)
+                    ret = thread(Subs.do_subs, patterns[pattern], subs_to_do)
+
+                    # evaluate before returning
+                    # using string comparison because type comparison
+                    # isn't working for some reason.
+                    # TODO: Investigate
+                    if str(type(ret)) == "Delay":
+
+                        return LazyFunction.evaluate(ret.args[0])
+
+                    return LazyFunction.evaluate(ret)
+
         return type(f, (DefinedFunction,), {})(*a)
 
     @classmethod
