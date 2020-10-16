@@ -264,16 +264,18 @@ class DefinedFunction(NormalFunction):
         from sympy.logic.boolalg import BooleanTrue
         # TODO: figure out something better
         try:
-            check = deepflatten(thread(
-                    lambda x, y: s.Eq(x, y) in (True, BooleanTrue),
-                    self.args, other.args))
-            cond = isinstance(other, s.Function) and str(self.__class__) == str(other.__class__) and all(check)
+            cond = isinstance(other, s.Function) and str(self.__class__) == str(other.__class__) and \
+                   all(deepflatten(thread(
+                       lambda x, y: s.Eq(x, y) in (True, BooleanTrue),
+                       self.args, other.args)))
             return cond or None
         except FunctionException:
             return None
 
     def __eq__(self, other):
-        return bool(self._eval_Eq(other))
+        return isinstance(other, s.Function) and \
+               str(self.__class__) == str(other.__class__) and \
+               self.args == other.args
 
     def __hash__(self):
         return hash((self.class_key(), frozenset(self.args)))
@@ -292,6 +294,62 @@ class ExplicitFunction(s.Function):
         return exec_func(cls, *args)
 
 
+def evaluate_no_lazy(expr):
+    """
+    Evaluate an expression with current definitions.
+    Does not evaluate any LazyFunctions in given expression.
+    """
+
+    # if is iterable, apply for each element
+    if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
+        return List.create(evaluate_no_lazy(x) for x in expr)
+
+    # if expr does not have ability to perform substitutions, return
+    if not hasattr(expr, 'xreplace'):
+        return expr
+
+    def extend(ex):
+        # if ex is a number, return
+        if hasattr(ex, 'is_Number') and ex.is_Number:
+            return ex
+
+        # if ex is a symbol, return definitions if present
+        if isinstance(ex, s.Symbol):
+            st = ex.name
+            if st in r.refs.OwnValues:
+                return r.refs.OwnValues[st]
+            elif st in r.refs.Constants.Dict:
+                return r.refs.Constants.Dict[st]
+
+        # if ex does not have any arguments, return
+        if not hasattr(ex, 'args') or not isinstance(ex.args, iterables):
+            return ex
+
+        # ex is supposed to be a function at this point (since args are present)
+        f_name = type(ex).__name__
+
+        # do not make substitutions if function is explicit
+        # since explicit functions require unevaluated args
+        if Functions.is_explicit(f_name):
+            return ex
+
+        # evaluate args
+        rep = {x: extend(x) for x in ex.args}
+        ex = ex.xreplace(rep)
+
+        # built-ins are automatically re-evaluated
+        # when replacements are made by sympy
+
+        # apply definitions if function has any
+        if Functions.is_not_builtin(f_name):
+            ex = Functions.apply_definitions(ex)
+
+        return ex
+
+    # evaluate inside-out
+    return extend(expr)
+
+
 class LazyFunction(s.Function):
     """
     A really bad Lazy Function implementation
@@ -299,7 +357,13 @@ class LazyFunction(s.Function):
 
     @staticmethod
     def evaluate(expr):
-        """Get value of Lazy Function, with other lazy functions as args."""
+        """
+        Evaluate an expression with current definitions.
+        Evaluates all LazyFunctions in given expression.
+        """
+
+        # see evaluate_no_lazy for doc
+
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List.create(LazyFunction.evaluate(x) for x in expr)
 
@@ -307,13 +371,11 @@ class LazyFunction(s.Function):
             return expr
 
         def extend(ex):
-            # TODO: replace DownValues, etc.
-
             if hasattr(ex, 'is_Number') and ex.is_Number:
                 return ex
 
             if isinstance(ex, s.Symbol):
-                st = str(ex)
+                st = ex.name
                 if st in r.refs.OwnValues:
                     return r.refs.OwnValues[st]
                 elif st in r.refs.Constants.Dict:
@@ -322,7 +384,10 @@ class LazyFunction(s.Function):
             if not hasattr(ex, 'args') or not isinstance(ex.args, iterables):
                 return ex
 
-            if Functions.is_explicit(type(ex).__name__):
+            f_name = type(ex).__name__
+
+            if Functions.is_explicit(f_name):
+                # if explicit lazy function, call with args un-evaluated
                 if isinstance(ex, LazyFunction):
                     return ex.land()
                 return ex
@@ -330,14 +395,16 @@ class LazyFunction(s.Function):
             rep = {x: extend(x) for x in ex.args}
             ex = ex.xreplace(rep)
 
+            if Functions.is_not_builtin(f_name):
+                ex = Functions.apply_definitions(ex)
+
+            # if lazy function, call actual function
             if isinstance(ex, LazyFunction):
                 return ex.land()
 
             return ex
 
-        expr = extend(expr)
-
-        return expr
+        return extend(expr)
 
     def land(self):
         return Functions.call(type(self).__name__, *self.args)
@@ -424,14 +491,15 @@ class ArgsPattern:
 
     def match(self, pat):
         if len(pat) == self.prototype_length:
+            current_prototype = evaluate_no_lazy(self.prototype)
             if self.is_pattern:
-                for x, y in zip(self.prototype, pat):
+                for x, y in zip(current_prototype, pat):
                     if x != y:
                         if isinstance(x, ArgsPatternSymbolPlaceholder) and x.matches(y):
                             continue
                         return False
                 return True
-            return all(x == y for x, y in zip(self.prototype, pat))
+            return all(x == y for x, y in zip(current_prototype, pat))
         return False
 
     def subs_dict(self, pat):
@@ -553,11 +621,12 @@ class Set(ExplicitFunction):
         return do_set(x, LazyFunction.evaluate(n))
 
 
-class Unset(NormalFunction):
+class Unset(ExplicitFunction):
     """
     Unset [x]
     x =.
-     Deletes a symbol or list of symbols x, if they were previously assigned a value.
+     Deletes a symbol or list of symbols x,
+     if they were previously assigned a value.
     """
 
     @classmethod
@@ -569,7 +638,7 @@ class Unset(NormalFunction):
         return NoOutput(None)
 
 
-class Clear(NormalFunction):
+class Clear(ExplicitFunction):
     """
     Clear [x, y, …]
      Deletes all definitions for x, y, ….
@@ -603,42 +672,22 @@ class SetDelayed(ExplicitFunction):
         return None
 
 
-# def DelayedSet(f, x, n):
-#     # TODO: again
-#     refs = r.refs
-#     for ref in [
-#         refs.Constants.Dict,
-#         refs.BuiltIns,
-#         refs.Protected.Dict
-#     ]:
-#         if str(x) in ref:
-#             raise FunctionException(f'Symbol {x} cannot be Assigned to.')
-#     if isinstance(x, s.Symbol):
-#         if isinstance(n, s.Expr):
-#             if x in n.atoms():
-#                 return None
-#         refs.Symbols[x.name] = n
-#         return n
-#     if isinstance(x, s.Function):
-#         list_ = []
-#         name = type(x).__name__
-#         expr = n
-#         num = 1
-#         for arg in x.args:
-#             if isinstance(arg, s.Symbol) and arg.name.endswith('_'):
-#                 expr = Subs(expr, Rule(s.Symbol(arg.name[:-1]), s.Symbol(f'*{num}')))
-#                 list_.append(s.Symbol(f'*{num}'))
-#                 num += 1
-#             else:
-#                 list_.append(arg)
-#         if name not in refs.Functions:
-#             refs.Functions[name] = {tuple(list_): (expr, f)}
-#         else:
-#             refs.Functions[name].update({tuple(list_): (expr, f)})
-#         return n
-#     if isinstance(x, iterables):
-#         if isinstance(x, iterables) and len(x) == len(n):
-#             return List.create(DelayedSet(f, a, b) for a, b in zip(x, n))
+class Plus(NormalFunction):
+    @classmethod
+    def exec(cls, *args):
+        return thread(s.Add, *args)
+
+
+class Times(NormalFunction):
+    @classmethod
+    def exec(cls, *args):
+        return thread(s.Mul, *args)
+
+
+class Power(NormalFunction):
+    @classmethod
+    def exec(cls, *args):
+        return thread(s.Pow, *args)
 
 
 class Nothing(NormalFunction):
@@ -679,12 +728,12 @@ class CompoundExpression(ExplicitFunction):
         return LazyFunction.evaluate(args[-1])
 
 
-class Subs(NormalFunction):
+class Replace(NormalFunction):
     """
-    Subs [Expr, Rule]
+    Replace [Expr, Rule]
      Transforms Expression expr with the given Rule.
 
-    Subs [Expr, {Rule1, Rule2, …}]
+    Replace [Expr, {Rule1, Rule2, …}]
      Transforms Expression expr with the given Rules.
     """
 
@@ -706,7 +755,7 @@ class Subs(NormalFunction):
     def do_subs(cls, expr, replacements):
         expr = expr.subs(replacements)
 
-        replacement_dict = Subs.func_replacement_helper(replacements)
+        replacement_dict = Replace.func_replacement_helper(replacements)
 
         # TODO: (low) rewrite
 
@@ -715,6 +764,10 @@ class Subs(NormalFunction):
                 expr = expr.replace(func, replacement_dict[str(func)])
             if str(func.func) in replacement_dict:
                 expr = expr.replace(func, Functions.call(str(replacement_dict[str(func.func)]), *func.args))
+
+        # for lists
+        expr = expr.replace(s.Add, Plus)
+        expr = expr.replace(s.Mul, Times)
 
         return LazyFunction.evaluate(expr)
 
@@ -725,11 +778,11 @@ class Subs(NormalFunction):
         else:
             if isinstance(replacements[0], iterables):
                 if not all(isinstance(x, iterables) for x in replacements):
-                    raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
+                    raise FunctionException('Replace::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
                 return List(*(cls.exec(expr, replacement) for replacement in replacements))
             else:
                 if not all(not isinstance(x, iterables) for x in replacements):
-                    raise FunctionException('Subs::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
+                    raise FunctionException('Replace::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
 
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List(*(cls.do_subs(x, replacements) for x in expr))
@@ -799,8 +852,8 @@ class Out(NormalFunction):
                 out = r.refs.get_out(n)
             elif -r.refs.Line < n < 0:
                 out = r.refs.get_out(r.refs.Line + n)
-        if isinstance(out, s.Expr):  # TODO: Replace with Subs func.
-            out = out.subs(r.refs.OwnValues)
+        if isinstance(out, s.Expr):
+            out = evaluate_no_lazy(out)
         return out
 
     @classmethod
@@ -908,6 +961,11 @@ class Functions:
     r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)
                             and not issubclass(v, LazyFunction)})
 
+    Customs = {
+        'List': List,
+        'Rule': Rule
+    }
+
     @classmethod
     def not_normal(cls, f: str) -> bool:
         if f in r.refs.BuiltIns:
@@ -915,10 +973,45 @@ class Functions:
         return False
 
     @classmethod
+    def is_not_builtin(cls, f: str) -> bool:
+        return f not in r.refs.BuiltIns
+
+    @classmethod
+    def is_builtin(cls, f: str) -> bool:
+        return f in r.refs.BuiltIns
+
+    @classmethod
     def is_explicit(cls, f: str) -> bool:
         if f in r.refs.BuiltIns:
             return issubclass(r.refs.BuiltIns[f], ExplicitFunction)
         return False
+
+    @classmethod
+    def apply_definitions(cls, f):
+        return cls._apply_definitions(r.refs, type(f).__name__, f.args) or f
+
+    @staticmethod
+    def _apply_definitions(refs, f, a):
+        if f in refs.DownValues:
+            # check all patterns
+            patterns = refs.DownValues[f]
+            for pattern in patterns:
+                if pattern.match(a):
+                    # get substitutions to make
+                    subs_to_do = pattern.subs_dict(a)
+
+                    # thread make subs (thread in-case is list)
+                    ret = thread(Replace.do_subs, patterns[pattern], subs_to_do)
+
+                    # evaluate before returning
+                    # using string comparison because type comparison
+                    # isn't working for some reason.
+                    # TODO: Investigate
+                    if str(type(ret)) == "Delay":
+
+                        return LazyFunction.evaluate(ret.args[0])
+
+                    return LazyFunction.evaluate(ret)
 
     @classmethod
     def call(cls, f: str, *a):
@@ -936,27 +1029,14 @@ class Functions:
         if f in refs.BuiltIns:
             return refs.BuiltIns[f](*a)
 
+        if f in cls.Customs:
+            return cls.Customs[f](*a)
+
         # Check DownValues
-        if f in refs.DownValues:
-            # check all patterns
-            patterns = refs.DownValues[f]
-            for pattern in patterns:
-                if pattern.match(a):
-                    # get substitutions to make
-                    subs_to_do = pattern.subs_dict(a)
+        defs = cls._apply_definitions(refs, f, a)
 
-                    # thread make subs (thread in-case is list)
-                    ret = thread(Subs.do_subs, patterns[pattern], subs_to_do)
-
-                    # evaluate before returning
-                    # using string comparison because type comparison
-                    # isn't working for some reason.
-                    # TODO: Investigate
-                    if str(type(ret)) == "Delay":
-
-                        return LazyFunction.evaluate(ret.args[0])
-
-                    return LazyFunction.evaluate(ret)
+        if defs:
+            return defs
 
         return type(f, (DefinedFunction,), {})(*a)
 

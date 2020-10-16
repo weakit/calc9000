@@ -1,6 +1,4 @@
 import sympy as s
-from functools import reduce
-import operator as op
 from calc9000 import functions
 from calc9000.custom import List, Rule, Tag, String, Span
 from lark import Tree, Token
@@ -139,7 +137,7 @@ def part(n):
 
 
 def replace(n):
-    return Functions.call('Subs', *n)
+    return Functions.call('Replace', *n)
 
 
 def delayed(n, f):
@@ -194,6 +192,8 @@ def lazy(tree: Tree):
         return Functions.lazy_call('Set', lazy(tree.children[0]), lazy(tree.children[1]))
     if tree.data == 'set_delayed':
         return Functions.lazy_call('SetDelayed', lazy(tree.children[0]), lazy(tree.children[1]))
+    if tree.data == 'replace':
+        return Functions.lazy_call('Replace', *(lazy(x) for x in tree.children))
     if tree.data == 'semicolon_statement':
         return Functions.lazy_call('SemicolonStatement', *(lazy(x) for x in tree.children))
     if tree.data == 'compound_statement':
@@ -235,7 +235,7 @@ def operate(tree: Tree):
     if tree.data == 'set_delayed':
         return Functions.call('SetDelayed', lazy(tree.children[0]), lazy(tree.children[1]))
     if tree.data == 'replace':  # see ReplaceAll
-        return Functions.call('Subs', *(operate(x) for x in tree.children))
+        return Functions.call('Replace', *(operate(x) for x in tree.children))
     if tree.data == 'unset':
         return Functions.call('Unset', lazy(tree.children[0]))
     if tree.data == 'semicolon_statement':

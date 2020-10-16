@@ -1,7 +1,6 @@
 from bisect import bisect_left
 
 from calc9000.functions.core import *
-from calc9000.functions.base import Plus, Times
 from iteration_utilities import deepflatten, accumulate, unique_everseen, nth_combination
 from itertools import permutations, combinations, islice
 
@@ -251,7 +250,7 @@ class Range(NormalFunction):
     def single_range(i, n, di):
         if n is None:
             n = i
-            i = 1
+            i = s.S.One
 
         iters = (n - i) / di
 
@@ -353,7 +352,7 @@ class Table(ExplicitFunction):
     def _table(expr, repl, args):
         li = []
         for arg in args:
-            li.append(LazyFunction.evaluate(Subs(expr, Rule(repl, arg))))
+            li.append(LazyFunction.evaluate(Replace(expr, Rule(repl, arg))))
         return List.create(li)
 
     @staticmethod

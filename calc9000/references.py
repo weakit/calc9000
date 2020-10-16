@@ -145,7 +145,7 @@ NoCache = [
     "ReplaceAll",
     "Set",
     "SetDelayed",
-    "Subs",
+    "Replace",
     "Unset",
     "Clear",
     "SeedRandom",

@@ -1,5 +1,5 @@
 import sympy as s
-from calc9000.functions.__init__ import Dot, Cross, Limit, Subs
+from calc9000.functions.__init__ import Dot, Cross, Limit
 from mpmath.libmp.libmpf import dps_to_prec
 from calc9000.references import FunctionWrappersReverse, refs
 from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
@@ -11,7 +11,7 @@ class ListSkip:
         self.n = n
 
     def __str__(self):
-        return f' ··· {self.n} skipped elements ···'
+        return f'··· {self.n} skipped elements ···'
 
     def __repr__(self):
         return self.__str__()
@@ -66,11 +66,6 @@ class Printer9000(PrettyPrinter):
                 m = int(75 / avg_len)
                 return self._print_seq(e.value[:m] + [ListSkip(len(e.value) - 2 * m)] + e.value[-m:], '{', '}')
         return self._print_seq(e.value, '{', '}')
-
-    def _print_Subs(self, e):
-        if isinstance(e, Subs):
-            return self._print_Function(e)
-        return super()._print_Subs(e)
 
     def _print_Mod(self, expr):
         if len(expr.args) > 2:

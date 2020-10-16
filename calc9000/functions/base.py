@@ -122,24 +122,6 @@ class ReIm(NormalFunction):
         return thread(lambda b: List(Re(b), Im(b)), x)
 
 
-class Plus(NormalFunction):
-    @classmethod
-    def exec(cls, *args):
-        return thread(s.Add, *args)
-
-
-class Times(NormalFunction):
-    @classmethod
-    def exec(cls, *args):
-        return thread(s.Mul, *args)
-
-
-class Power(NormalFunction):
-    @classmethod
-    def exec(cls, *args):
-        return thread(s.Pow, *args)
-
-
 class Subtract(NormalFunction):
     @classmethod
     def exec(cls, x, y):
