@@ -360,3 +360,39 @@ class InverseErfc(NormalFunction):
 
 FresnelS = threaded("FresnelS", s.fresnels)
 FresnelC = threaded("FresnelC", s.fresnelc)
+
+
+class Series(NormalFunction):
+    """
+    Series[f, x -> x0]
+     Gives the series expansion of f around point x = x0.
+
+    Series[f, {x, x0, n}]
+     Gives the series expansion of f around point x = x0, with n terms.
+
+    Equivalent to sympy.series().
+    """
+
+    tags = {
+        'specx': 'Invalid series specification given.'
+    }
+
+    @classmethod
+    def exec(cls, f, n):
+        if isinstance(n, Rule):
+            x, x0 = n
+            terms = 1
+        elif isinstance(n, iterables):
+            if len(n) != 3:
+                raise FunctionException('Series::specx')
+            x, x0, terms = n
+            terms += 1
+        else:
+            raise FunctionException('Series::specx')
+        try:
+            if isinstance(f, iterables):
+                return List(*(s.series(a, x, x0, terms) for a in f))
+            return s.series(f, x, x0, terms)
+
+        except s.PoleError or NotImplementedError as e:
+            raise FunctionException('Series::sympyx', e.args[0].strip())

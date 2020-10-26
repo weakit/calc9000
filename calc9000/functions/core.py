@@ -239,6 +239,11 @@ def exec_func(cls, *args, **kwargs):
             clear_cache = True
             return None
 
+        except RecursionError as e:
+            message(f"General::PythonRecursionError", str(e))
+            clear_cache = True
+            return None
+
         except ListException as e:
             message("List", e.args[0])
             clear_cache = True
@@ -1084,8 +1089,8 @@ class Functions:
 
     # TODO: Norm
     # TODO: Prime Notation
-    # TODO: Part, Assignment + Part Assignment tests
-    # TODO: Integral, Derivative
+    # TODO: Derivative
+    # TODO: Part Assignment tests
 
     # TODO: Polar Complex Number Representation
     # TODO: Series

@@ -205,3 +205,16 @@ class Timing(ExplicitFunction):
             s.Float(end) - s.Float(start),
             result if not isinstance(result, NoOutput) else r.Constants.Null,
         )
+
+
+class Normal(NormalFunction):
+    @staticmethod
+    def do_normal(expr):
+        if expr.has(s.Order):
+            expr = expr.removeO()
+
+        return expr
+
+    @classmethod
+    def exec(cls, expr):
+        return thread(cls.do_normal, expr)

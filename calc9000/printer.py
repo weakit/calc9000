@@ -69,6 +69,25 @@ class Printer9000(PrettyPrinter):
             return super()._print_Function(lim)
         return super()._print_Limit(lim)
 
+    @staticmethod
+    def pretty_int(x):
+        x = str(x)
+        i = len(x) % 3
+
+        for digit in x:
+            if i > 0:
+                yield digit
+                i -= 1
+            else:
+                i = 2
+                yield " "
+                yield digit
+
+    # def _print_Integer(self, x):
+    #     pretty_int = self.pretty_int(x)
+    #     final_str = ''.join(*pretty_int).strip()
+    #     prettyForm(final_str)
+
     def _print_List(self, e):
         # for better performance
         if len(e) > 10:
