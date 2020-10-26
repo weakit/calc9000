@@ -19,7 +19,8 @@ def test_part():
     assert p('{a, b, c, d, e, f}[[1 ;; -3]]') == p('{a, b, c, d, e, f}[[;; -3]]') == List(a, b, c, d)
     assert p('{a, b, c, d, e, f, g, h, i, j}[[3 ;; -3 ;; 2]]') == List(c, e, g)
     assert p('{a, b, c, d, e, f, g, h, i, j}[[;; ;; 2]]') == List(a, c, e, g, i)
-
+    assert p('{{a, b}, {c, d}, {e, f}}[[1;;2]][[2]]') == List(c, d)
+    assert p('{{a, b}, {c, d}, {e, f}}[[1;;2, 2]]') == List(b, d)
     assert p('f[g[a, b], g[c, d]][[2, 1]]') == c
     assert p('(1 + 2 a^2 + b^2)[[2]]') == b ** 2
     assert p('{a -> c, b -> d}[[1, 2]]') == c

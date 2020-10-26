@@ -39,25 +39,35 @@ class Part(NormalFunction):
     @classmethod
     def exec(cls, expr, *args):
         part = head = None
+
         if not args:
             return expr
+
         if hasattr(expr, 'args'):
             part = expr.args
             head = expr.__class__
+
         elif hasattr(expr, '__getitem__'):
             part = expr
             head = List
+
         arg = args[0]
+
         if arg == s.S.Zero:
             return s.Symbol(type(expr).__name__)
+
         if not part:
             raise FunctionException('Part::dim', f'{expr} does not have Part {arg}')
+
         if arg == r.refs.Constants.All:  # TODO: add None
-            arg = tuple(range(1, len(expr) + 1))
+            arg = Span()
+
         if isinstance(arg, Span):
-            return Part(Take(expr, arg), *args[1:])  # pass expr with head
+            return List(*(Part(x, *args[1:]) for x in Take(expr, arg)))  # pass expr with head
+
         if isinstance(arg, iterables):
             return head(*(Part(cls.get_part(part, x), *args[1:]) for x in arg))
+
         return Part(cls.get_part(part, arg), *args[1:])
 
 

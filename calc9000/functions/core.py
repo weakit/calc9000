@@ -5,6 +5,7 @@ from calc9000.custom import List, Rule, Tag, String, Span
 from calc9000.custom import SpecialOutput, NoOutput
 from calc9000.custom import ListException, RuleException
 
+from math import ceil
 
 iterables = (s.Tuple, List, s.Matrix, list, tuple)
 
@@ -109,6 +110,7 @@ def is_integer(n):
 
 class FunctionException(Exception):
     """General class for function related exceptions"""
+
     def __init__(self, tag: str, m=None):
         if not isinstance(tag, Tag):
             tag = Tag(tag)
@@ -203,7 +205,7 @@ def exec_func(cls, *args, **kwargs):
             return cls.exec(*args, **kwargs)
 
         except FunctionException as x:
-            message(x.tag,  x.message)
+            message(x.tag, x.message)
             clear_cache = True
             return None
 
@@ -362,7 +364,7 @@ class LazyFunction(s.Function):
         Evaluates all LazyFunctions in given expression.
         """
 
-        # see evaluate_no_lazy for doc
+        # see evaluate_no_lazy for explanation
 
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List.create(LazyFunction.evaluate(x) for x in expr)
@@ -419,6 +421,7 @@ class Delay(LazyFunction):
     A delayed expression.
     Use first arg as expression.
     """
+
     @classmethod
     def exec(cls):
         return None
@@ -429,11 +432,15 @@ class ArgsPatternSymbolPlaceholder:
         return self.type.__hash__() + 1
 
     def __init__(self, pat):
+        # self.pat: raw pattern (as str)
+        # self.subs_var: name of variable to be substituted
+        # self.type: type of variable required
+
         self.pat = pat
         pat = pat.split('_')
 
         if len(pat) > 2:
-            raise FunctionException('Set::nopat')
+            raise NotImplementedError(f'Patterns of type {self.pat} are not (yet) supported.')
 
         if pat[0]:
             self.subs_var = s.Symbol(pat[0])
@@ -450,6 +457,25 @@ class ArgsPatternSymbolPlaceholder:
         return self.pat
 
 
+def rdp_check_eq(a, b):
+    """helper function for remove_duplicate_pattern()"""
+    if isinstance(a, ArgsPatternSymbolPlaceholder) and isinstance(b, ArgsPatternSymbolPlaceholder):
+        return a.type == b.type
+    return a == b
+
+
+def remove_duplicate_pattern(d, check_pat):
+    """Removes duplicate ArgPatterns if present """
+    for pat in d.keys():
+        if hash(pat) == hash(check_pat) and \
+                all(rdp_check_eq(x, y) for x, y in zip(pat.prototype, check_pat.prototype)):
+            del d[pat]
+
+            # only one duplicate should exist since
+            # duplicates are removed at every assignment
+            return
+
+
 class ArgsPattern:
     def __hash__(self):
         return self.prototype.__hash__() + 1
@@ -457,31 +483,38 @@ class ArgsPattern:
     def __init__(self, *args):
         args = (LazyFunction.evaluate(x) for x in args)
 
-        self.explicit_args = 0
-        self.sub_args = 0
+        self.explicit_args = 0  # number of explicit args
+        self.type_args = 0  # number of args with specified types
         self.prototype = []
-        self.replacements = {}
+        self.replacements = {}  # positions in prototypes that require replacements
         self.is_pattern = False
 
         for arg in args:
+
             if isinstance(arg, s.Symbol):
                 if '_' in arg.name:
+
                     self.is_pattern = True
                     placeholder = ArgsPatternSymbolPlaceholder(arg.name)
+
                     if placeholder.type:
-                        self.sub_args += 1
+                        self.type_args += 1
+
                     if placeholder.subs_var:
                         self.replacements[len(self.prototype)] = placeholder
+
                     self.prototype.append(placeholder)
                     continue
-                self.explicit_args += 1
+
+            self.explicit_args += 1
             self.prototype.append(arg)
-        self.prototype_length = len(self.prototype)
-        self.prototype = tuple(self.prototype)
+
+        self.prototype_length = len(self.prototype)  # cached length
+        self.prototype = tuple(self.prototype)  # for safety
 
     @property
     def importance(self):
-        return self.explicit_args, self.sub_args
+        return self.explicit_args, self.type_args
 
     def __len__(self):
         return self.prototype.__len__()
@@ -490,17 +523,22 @@ class ArgsPattern:
         return self.prototype.__iter__()
 
     def match(self, pat):
-        if len(pat) == self.prototype_length:
-            current_prototype = evaluate_no_lazy(self.prototype)
-            if self.is_pattern:
-                for x, y in zip(current_prototype, pat):
-                    if x != y:
-                        if isinstance(x, ArgsPatternSymbolPlaceholder) and x.matches(y):
-                            continue
-                        return False
-                return True
-            return all(x == y for x, y in zip(current_prototype, pat))
-        return False
+        if len(pat) != self.prototype_length:
+            return False  # return False if size does not match
+
+        # evaluate to get current definitions
+        current_prototype = evaluate_no_lazy(self.prototype)
+
+        if self.is_pattern:
+            for x, y in zip(current_prototype, pat):
+                if x != y:
+                    if isinstance(x, ArgsPatternSymbolPlaceholder) and x.matches(y):
+                        continue
+                    return False
+            return True
+
+        # if not pattern, compare directly
+        return all(x == y for x, y in zip(current_prototype, pat))
 
     def subs_dict(self, pat):
         pat = list(pat)
@@ -520,8 +558,10 @@ class SemicolonStatement(ExplicitFunction):
 
 
 def set_tag_value(tag: Tag, m):
-    """sets tag value for current session"""
+    """Handles tag assignment"""
+    # TODO: Redo
     # TODO: Store custom tags in references
+
     if not isinstance(m, String):
         raise FunctionException('Set::set_tag', f'{tag} can ony be set to a string.')
     refs = r.refs
@@ -532,37 +572,85 @@ def set_tag_value(tag: Tag, m):
         refs.TagValues[tag] = m
 
 
-def rdp_check_eq(a, b):
-    """helper function for remove_duplicate_pattern()"""
-    if isinstance(a, ArgsPatternSymbolPlaceholder) and isinstance(b, ArgsPatternSymbolPlaceholder):
-        return a.type == b.type
-    return a == b
+def is_assignable(f) -> bool:
+    """returns True if a symbol/function can be assigned to"""
+    f = str(f)
+    return f not in r.refs.BuiltIns and \
+           f not in r.refs.Constants.Dict and \
+           f not in r.refs.Protected.Dict
 
 
-def remove_duplicate_pattern(d, check_pat):
-    """Removes duplicate ArgPatterns if present """
-    for pat in d.keys():
-        if hash(pat) == hash(check_pat) and \
-           all(rdp_check_eq(x, y) for x, y in zip(pat.prototype, check_pat.prototype)):
+def set_part_low(x, part, n):
+    """returns var to be assigned"""
 
-            del d[pat]
+    head = x.__class__
+    args = list(x.args)
+    part = LazyFunction.evaluate(part)
+    err_part = part  # for displaying errors
 
-            # only one duplicate should exist since
-            # duplicates are removed at every assignment
-            return
+    if part == s.S.Zero:
+        return Functions.call(n.name, *args)
+
+    if isinstance(part, Span):
+        part = part.slice()
+
+        part_length = ceil((part.stop - (part.start or 0)) / (part.step or 1))
+
+        # if not iterable or length does not match, assign all indices the same value
+        if not isinstance(n, iterables) or part_length != len(n):
+            n = (*(n for _ in range(part_length)),)
+
+        # TODO: make sure args has part
+    elif is_integer(part):
+        part = int(part) - 1 if part > 0 else int(part)
+    else:
+        raise FunctionException('Set::psetspec', f'{part} is not a valid Part specification.')
+
+    try:
+        args[part] = n
+    except IndexError:
+        raise FunctionException('Set::psetindex', f'{x} does not have part {err_part}')
+
+    return head(*args)
+
+
+def set_part(x, n):
+    """Handles part assignment"""
+
+    OwnValues = r.refs.OwnValues
+
+    part = x.args[1]
+    var = x.args[0]
+
+    # make sure var is a symbol
+    if not isinstance(var, s.Symbol):
+        raise FunctionException('Set::psets', f'{var} in part assignment is not a symbol.')
+
+    # check if symbol var can be assigned to
+    if not is_assignable(var.name):
+        raise FunctionException('Set::setx', f'Symbol {var} is protected and cannot be assigned to.')
+
+    # make sure var has a value
+    if var.name not in OwnValues:
+        raise FunctionException('Set::psetx', f'{var.name} does not have a value to be used in Part assignment.')
+
+    # TODO: Finish
+    if len(x.args) > 2:
+        raise NotImplementedError('Successive part assignment is not yet supported.')
+
+    # part assignment for single part
+
+    OwnValues[var.name] = set_part_low(OwnValues[var.name], part, n)
+    return n
 
 
 def do_set(x, n):
+    """Handles assignment"""
     refs = r.refs
 
     if isinstance(x, s.Symbol):
-        for ref in (
-            refs.Constants.Dict,
-            refs.BuiltIns,
-            refs.Protected.Dict
-        ):
-            if x.name in ref:
-                raise FunctionException('Set::set', f'Symbol {x} cannot be Assigned to.')
+        if not is_assignable(x.name):
+            raise FunctionException('Set::setx', f'Symbol {x} is protected and cannot be assigned to.')
 
         if isinstance(x, Tag):
             set_tag_value(x, n)
@@ -579,7 +667,14 @@ def do_set(x, n):
     if isinstance(x, s.Function):
         name = type(x).__name__
 
-        # create dict of patterns if not present
+        # handle part assignment
+        if name == "Part":
+            return set_part(x, n)
+
+        if not is_assignable(name):
+            raise FunctionException('Set::set', f'Symbol {x} cannot be Assigned to.')
+
+    # create dict of patterns if not present
         if name not in refs.DownValues:
             refs.DownValues[name] = {ArgsPattern(*x.args): n}
 
@@ -701,6 +796,7 @@ class Head(NormalFunction):
     Head [expr]
      Gives the head of expr.
     """
+
     @staticmethod
     def get_head(x):
         if x in (s.S.NegativeOne, s.S.Zero, s.S.One):
@@ -939,13 +1035,13 @@ class Functions:
     # TODO: NSolve, DSolve
     # TODO: Roots (Solve)
 
-    # TODO: Matrix Representation
     # TODO: Matrix Row Operations
     # TODO: Remaining Matrix Operations
 
     # TODO: Fix Compound Expressions (f[x][y][z])
 
     # TODO: Latex Printer
+    # TODO: Relational Functions
     # TODO: References Storage
 
     # Low Priority
@@ -1008,7 +1104,6 @@ class Functions:
                     # isn't working for some reason.
                     # TODO: Investigate
                     if str(type(ret)) == "Delay":
-
                         return LazyFunction.evaluate(ret.args[0])
 
                     return LazyFunction.evaluate(ret)

@@ -1,5 +1,5 @@
 import sympy as s
-from calc9000.functions.__init__ import Dot, Cross, Limit
+from calc9000.functions.__init__ import Dot, Cross, Limit, DefinedFunction
 from mpmath.libmp.libmpf import dps_to_prec
 from calc9000.references import FunctionWrappersReverse, refs
 from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
@@ -99,7 +99,7 @@ class Printer9000(PrettyPrinter):
             func_name = func.__name__
 
         if func_name:
-            if func_name in FunctionWrappersReverse:
+            if func_name in FunctionWrappersReverse and not issubclass(func, DefinedFunction):
                 func_name = FunctionWrappersReverse[func_name]
             prettyFunc = self._print(s.Symbol(func_name))
         else:

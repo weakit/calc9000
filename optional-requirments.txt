@@ -1,3 +1,2 @@
-prompt-toolkit>=3.0.8
 numpy
 gmpy2

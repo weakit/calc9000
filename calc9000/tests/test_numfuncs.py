@@ -1,4 +1,4 @@
-from . import s, p, p_str, f, extra_precision
+from . import s, p, p_str, f
 from calc9000.custom import List
 
 

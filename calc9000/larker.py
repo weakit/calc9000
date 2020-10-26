@@ -20,10 +20,10 @@ grammar = """
 ?expression: assign
            | span
 
-?assign: replace "=" assign -> set
-       | replace ("=" "."|"=.") -> unset
-       | replace ":=" assign -> set_delayed
-       | replace
+?assign: postfix "=" assign -> set
+       | postfix ("=" "."|"=.") -> unset
+       | postfix ":=" assign -> set_delayed
+       | postfix
 
 // makeshift span, tree is altered after parsing
 // does not work the same way as mathematica, but works decently enough
@@ -33,15 +33,16 @@ span: expression? (SPAN expression?)+
 
 SPAN: ";;"
 
-?replace: replace "/." postfix
-        | postfix
+?postfix: replace "//" postfix
+        | replace
 
-?postfix: logic "//" postfix
+?replace: replace "/." logic
         | logic
 
 ?logic: rule
       | logic ("&&" rule)+ -> and_
       | logic ("||" rule)+ -> or_
+      | "!" unary -> not_
 
 ?rule: relation "->" rule
      | relation

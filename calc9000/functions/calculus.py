@@ -57,6 +57,7 @@ class D(NormalFunction):
 
 class Integrate(NormalFunction):
     # TODO: Doc
+    # TODO: return None if cannot find integral
 
     tags = {
         'argx': 'No variable of integration was specified to integrate a multi-variate expression.'

@@ -65,7 +65,6 @@ normal_basic_ops = {
     'power': 'Power',
     'and_': 'And',
     'or_': 'Or',
-    'not_:': 'Not'
 }
 
 
@@ -86,6 +85,9 @@ def basic(operation, n, lazy_call=False):
 
     if operation == 'positive':
         return n[0]
+
+    if operation == 'not_':
+        return caller('Not', n[0])
 
     if operation == 'negative':
         return caller('Times', -1, n[0])

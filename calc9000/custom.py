@@ -184,6 +184,12 @@ class Rule(s.AtomicExpr):
     def __str__(self):
         return f'{self[0]} -> {self[1]}'
 
+    def replace(self, *args):
+        return Rule(self.lhs.replace(*args), self.rhs.replace(*args))
+
+    def xreplace(self, *args):
+        return Rule(self.lhs.xreplace(*args), self.rhs.xreplace(*args))
+
     @classmethod
     def from_dict(cls, d, head=lambda *x: tuple(x)):
         return head(*(Rule(x, d[x]) for x in d))
@@ -224,11 +230,24 @@ class Span(s.AtomicExpr):
             b = self.b
         return List(self.a, b, self.c or 1)
 
+    def slice(self):
+        a = self.a - 1 if self.a > 0 else self.a
+        b = None if self.b == s.Symbol('All') else self.b
+        if b and b < 0:
+            b -= 1
+        return slice(a, b, self.c)
+
     def atoms(self):
         a = (hasattr(self.a, 'atoms') and self.a.atoms()) or set()
         b = (hasattr(self.b, 'atoms') and self.b.atoms()) or set()
         c = (hasattr(self.c, 'atoms') and self.c.atoms()) or set()
         return a.union(b.union(c))
+
+    def replace(self, *args):
+        return Span(self.a.replace(*args), self.b.replace(*args), self.c.replace(*args))
+
+    def xreplace(self, *args):
+        return Span(self.a.xreplace(*args), self.b.xreplace(*args), self.c.xreplace(*args))
 
 
 class String(s.AtomicExpr):
