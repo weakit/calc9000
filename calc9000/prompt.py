@@ -1,5 +1,5 @@
-import platform
 import html
+import platform
 
 try:
     from prompt_toolkit import *
@@ -16,21 +16,22 @@ e = html.escape
 def setup_lexer(builtins=None):
     global lex, style
     try:
-        from pygments.style import Style
-        from pygments.lexer import RegexLexer, bygroups
         import pygments.token as tk
         from prompt_toolkit.lexers import PygmentsLexer
         from prompt_toolkit.styles import style_from_pygments_cls
+        from pygments.lexer import RegexLexer, bygroups
+        from pygments.style import Style
 
         # stupid, but works
-        builtins_regex = \
-            r'\b(' + builtins[0] + ''.join([f'|{x}' for x in builtins[1:]]) + r')\b'
+        builtins_regex = (
+            r"\b(" + builtins[0] + "".join([f"|{x}" for x in builtins[1:]]) + r")\b"
+        )
 
         class SimpleLexer(RegexLexer):
             tokens = {
-                'root': [
-                    (r'\s+', tk.Text),
-                    (r'\(\*[^(\*\))]*(\*\))?', tk.Comment),
+                "root": [
+                    (r"\s+", tk.Text),
+                    (r"\(\*[^(\*\))]*(\*\))?", tk.Comment),
                     # (builtins_regex, tk.Keyword),
                     # (r'((\d+)?(\.\d+)|(\d+)\.?)(`\d+)?', tk.Number),
                     (r'"[^"]*"?', tk.String),
@@ -43,30 +44,34 @@ def setup_lexer(builtins=None):
 
 
 def check_console():
-    from prompt_toolkit.output.win32 import NoConsoleScreenBufferError as win_err
+    from prompt_toolkit.output.win32 import \
+        NoConsoleScreenBufferError as win_err
+
     try:
-        pft('', end='')
+        pft("", end="")
     except win_err:
-        raise EnvironmentError('Fallback', -1)
+        raise EnvironmentError("Fallback", -1)
 
 
 def print_startup():
-    text = HTML(f'\n--- <b>calc9000</b> [running on {platform.python_implementation()} {platform.python_version()}] ')
-    pft(text, end='')
+    text = HTML(
+        f"\n--- <b>calc9000</b> [running on {platform.python_implementation()} {platform.python_version()}] "
+    )
+    pft(text, end="")
 
 
 def update_startup(v):
-    pft(f'\b\b, using sympy {v}]\n')
+    pft(f"\b\b, using sympy {v}]\n")
 
 
 def quit_prompt():
-    pft(HTML('\n--- <i>Have a nice day!</i>\n'))
+    pft(HTML("\n--- <i>Have a nice day!</i>\n"))
     exit(0)
 
 
 def setup_prompt_sessions(con):
-    from prompt_toolkit.completion import WordCompleter
     from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+    from prompt_toolkit.completion import WordCompleter
     from prompt_toolkit.key_binding import KeyBindings
     from prompt_toolkit.keys import Keys
 
@@ -82,7 +87,7 @@ def setup_prompt_sessions(con):
         pass
 
     def prompt_continuation(width, line_number, is_soft_wrap):
-        return HTML('<green>' + ' ' * (width - 5) + '...: </green>')
+        return HTML("<green>" + " " * (width - 5) + "...: </green>")
 
     class LimitedWordCompleter(WordCompleter):
         @staticmethod
@@ -103,13 +108,13 @@ def setup_prompt_sessions(con):
         complete_in_thread=True,
         auto_suggest=AutoSuggestFromHistory(),
         key_bindings=bindings,
-        prompt_continuation=prompt_continuation
+        prompt_continuation=prompt_continuation,
     )
     return session
 
 
 def get_input(line, prompt_session):
-    prompt_text = HTML(f'<green>In [<lime>{line}</lime>]:</green> ')
+    prompt_text = HTML(f"<green>In [<lime>{line}</lime>]:</green> ")
     return prompt_session.prompt(prompt_text, lexer=lex)
 
 
@@ -118,23 +123,23 @@ def display_output(out, line):
         pft()
         return
 
-    pft(HTML(f'<FireBrick>Out[<red>{line}</red>]: </FireBrick>'), end='')
+    pft(HTML(f"<FireBrick>Out[<red>{line}</red>]: </FireBrick>"), end="")
 
-    if '\n' in out:
+    if "\n" in out:
         # handle multiline output
         pft()
         for line in out.splitlines():
-            pft(f'\t{line}')
+            pft(f"\t{line}")
         pft()
 
     else:
-        pft(out, end='\n\n')
+        pft(out, end="\n\n")
 
 
 class PromptMessenger:
     @staticmethod
     def show(tag, message):
-        pft(HTML(f'<red>{e(str(tag))}: {e(str(message))}</red>'))
+        pft(HTML(f"<red>{e(str(tag))}: {e(str(message))}</red>"))
 
 
 def handle_prompt(con, prompt_session):
@@ -152,7 +157,9 @@ def main():
     check_console()
     print_startup()
     import sympy as s
+
     from calc9000 import converse as c
+
     update_startup(s.__version__)
     setup_lexer(c.get_builtins())
     p = setup_prompt_sessions(c)

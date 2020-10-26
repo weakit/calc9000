@@ -1,11 +1,11 @@
-import sympy as s
-from calc9000 import references as r
 from collections import OrderedDict
-from calc9000.custom import List, Rule, Tag, String, Span
-from calc9000.custom import SpecialOutput, NoOutput
-from calc9000.custom import ListException, RuleException
-
 from math import ceil
+
+import sympy as s
+
+from calc9000 import references as r
+from calc9000.custom import (List, ListException, NoOutput, Rule,
+                             RuleException, Span, SpecialOutput, String, Tag)
 
 iterables = (s.Tuple, List, s.Matrix, list, tuple)
 
@@ -26,7 +26,9 @@ def thread(func, *args, **kwargs):
         if isinstance(arg, iterables):
             if length is not None:
                 if length != len(arg):
-                    raise FunctionException('General::thread', "Cannot Thread over Lists of Unequal Length.")
+                    raise FunctionException(
+                        "General::thread", "Cannot Thread over Lists of Unequal Length."
+                    )
             else:
                 length = len(arg)
 
@@ -66,14 +68,14 @@ def threaded(name, func):
     def fun(x):
         return thread(func, x)
 
-    return type(name, (NormalFunction,), {'exec': fun})
+    return type(name, (NormalFunction,), {"exec": fun})
 
 
 def r_threaded(name, func):
     def fun(x):
         return r_thread(func, x)
 
-    return type(name, (NormalFunction,), {'exec': fun})
+    return type(name, (NormalFunction,), {"exec": fun})
 
 
 def boolean(x):
@@ -97,9 +99,9 @@ def ands(x):
 
 def is_integer(n):
     """Returns true if is integer."""
-    if hasattr(n, 'is_Integer'):
+    if hasattr(n, "is_Integer"):
         return bool(n.is_integer)
-    if hasattr(n, 'is_integer'):
+    if hasattr(n, "is_integer"):
         return bool(n.is_integer)
     if isinstance(n, int):
         return True
@@ -120,7 +122,7 @@ class FunctionException(Exception):
 
 def in_options(arg, ops):
     if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ops:
-        raise FunctionException('General::options', f"Unexpected option {arg.lhs}")
+        raise FunctionException("General::options", f"Unexpected option {arg.lhs}")
     return True
 
 
@@ -128,7 +130,7 @@ def options(args, ops: dict, defaults=None):
     ret = {}
     for arg in args:
         if not isinstance(arg.lhs, s.Symbol) or arg.lhs.name not in ops:
-            raise FunctionException('General::options', f"Unexpected option {arg.lhs}")
+            raise FunctionException("General::options", f"Unexpected option {arg.lhs}")
         if str(arg.rhs) in ("True", "False"):
             arg.rhs = boolean(arg.rhs)
         ret[ops[arg.lhs.name]] = arg.rhs
@@ -159,9 +161,9 @@ def get_tag_value(symbol, tag):
     symbol, tag = str(symbol), str(tag)
     refs = r.refs
     if symbol in refs.BuiltIns:
-        if hasattr(refs.BuiltIns[symbol], 'tags') and tag in refs.BuiltIns[symbol].tags:
+        if hasattr(refs.BuiltIns[symbol], "tags") and tag in refs.BuiltIns[symbol].tags:
             return refs.BuiltIns[symbol].tags[tag]
-    t = Tag(f'{symbol}::{tag}')
+    t = Tag(f"{symbol}::{tag}")
     if t in refs.TagValues:
         return refs.TagValues[t]
     return t
@@ -173,7 +175,7 @@ def message(tag, e):
 
 def exec_func(cls, *args, **kwargs):
     clear_cache = False
-    if hasattr(cls, 'exec'):
+    if hasattr(cls, "exec"):
         try:
             if cls.op_spec:  # check if function accepts options
 
@@ -190,13 +192,19 @@ def exec_func(cls, *args, **kwargs):
                 kws = options(args[i:], *cls.op_spec)
 
                 # check params and raise error if no of args is invalid
-                if cls.param_spec and not (cls.param_spec[0] <= len(args_to_pass) <= cls.param_spec[1]):
+                if cls.param_spec and not (
+                    cls.param_spec[0] <= len(args_to_pass) <= cls.param_spec[1]
+                ):
                     if cls.param_spec[0] == cls.param_spec[1]:
-                        st = f'{cls.__name__} takes {cls.param_spec[0]} ' \
-                             f'arguments but was given {len(args_to_pass)}.'
+                        st = (
+                            f"{cls.__name__} takes {cls.param_spec[0]} "
+                            f"arguments but was given {len(args_to_pass)}."
+                        )
                     else:
-                        st = f'{cls.__name__} takes {cls.param_spec[0]} to {cls.param_spec[1]} ' \
-                             f'arguments but was given {len(args_to_pass)}.'
+                        st = (
+                            f"{cls.__name__} takes {cls.param_spec[0]} to {cls.param_spec[1]} "
+                            f"arguments but was given {len(args_to_pass)}."
+                        )
                     raise TypeError(st)
 
                 # pass args and options as kws
@@ -210,32 +218,34 @@ def exec_func(cls, *args, **kwargs):
             return None
 
         except ValueError as v:
-            message(f'{cls.__name__}::PythonValueError', str(v))
+            message(f"{cls.__name__}::PythonValueError", str(v))
             clear_cache = True
             return None
 
         except TypeError as t:
-            if str(t).startswith('exec()'):
-                t = str(t).replace('exec()', cls.__name__)
-                t = t.translate(str.maketrans({x: str(int(x) - 1) for x in filter(str.isdigit, t)}))
-                message(f'{cls.__name__}::PythonArgs', str(t))
+            if str(t).startswith("exec()"):
+                t = str(t).replace("exec()", cls.__name__)
+                t = t.translate(
+                    str.maketrans({x: str(int(x) - 1) for x in filter(str.isdigit, t)})
+                )
+                message(f"{cls.__name__}::PythonArgs", str(t))
             else:
-                message(f'{cls.__name__}::PythonTypeError', str(t))
+                message(f"{cls.__name__}::PythonTypeError", str(t))
             clear_cache = True
             return None
 
         except NotImplementedError as e:
-            message(f'{cls.__name__}::NotImplementedError', str(e))
+            message(f"{cls.__name__}::NotImplementedError", str(e))
             clear_cache = True
             return None
 
         except ListException as e:
-            message('List', e.args[0])
+            message("List", e.args[0])
             clear_cache = True
             return None
 
         except RuleException as e:
-            message('Rule', e.args[0])
+            message("Rule", e.args[0])
             clear_cache = True
             return None
 
@@ -264,20 +274,32 @@ class DefinedFunction(NormalFunction):
     def _eval_Eq(self, other):
         from iteration_utilities import deepflatten
         from sympy.logic.boolalg import BooleanTrue
+
         # TODO: figure out something better
         try:
-            cond = isinstance(other, s.Function) and str(self.__class__) == str(other.__class__) and \
-                   all(deepflatten(thread(
-                       lambda x, y: s.Eq(x, y) in (True, BooleanTrue),
-                       self.args, other.args)))
+            cond = (
+                isinstance(other, s.Function)
+                and str(self.__class__) == str(other.__class__)
+                and all(
+                    deepflatten(
+                        thread(
+                            lambda x, y: s.Eq(x, y) in (True, BooleanTrue),
+                            self.args,
+                            other.args,
+                        )
+                    )
+                )
+            )
             return cond or None
         except FunctionException:
             return None
 
     def __eq__(self, other):
-        return isinstance(other, s.Function) and \
-               str(self.__class__) == str(other.__class__) and \
-               self.args == other.args
+        return (
+            isinstance(other, s.Function)
+            and str(self.__class__) == str(other.__class__)
+            and self.args == other.args
+        )
 
     def __hash__(self):
         return hash((self.class_key(), frozenset(self.args)))
@@ -287,6 +309,7 @@ class ExplicitFunction(s.Function):
     """
     Functions that need to be called with the arguments unevaluated.
     """
+
     op_spec = None
     param_spec = (0, s.oo)
     rule_param = False
@@ -307,12 +330,12 @@ def evaluate_no_lazy(expr):
         return List.create(evaluate_no_lazy(x) for x in expr)
 
     # if expr does not have ability to perform substitutions, return
-    if not hasattr(expr, 'xreplace'):
+    if not hasattr(expr, "xreplace"):
         return expr
 
     def extend(ex):
         # if ex is a number, return
-        if hasattr(ex, 'is_Number') and ex.is_Number:
+        if hasattr(ex, "is_Number") and ex.is_Number:
             return ex
 
         # if ex is a symbol, return definitions if present
@@ -324,7 +347,7 @@ def evaluate_no_lazy(expr):
                 return r.refs.Constants.Dict[st]
 
         # if ex does not have any arguments, return
-        if not hasattr(ex, 'args') or not isinstance(ex.args, iterables):
+        if not hasattr(ex, "args") or not isinstance(ex.args, iterables):
             return ex
 
         # ex is supposed to be a function at this point (since args are present)
@@ -369,11 +392,11 @@ class LazyFunction(s.Function):
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List.create(LazyFunction.evaluate(x) for x in expr)
 
-        if not hasattr(expr, 'subs'):
+        if not hasattr(expr, "subs"):
             return expr
 
         def extend(ex):
-            if hasattr(ex, 'is_Number') and ex.is_Number:
+            if hasattr(ex, "is_Number") and ex.is_Number:
                 return ex
 
             if isinstance(ex, s.Symbol):
@@ -383,7 +406,7 @@ class LazyFunction(s.Function):
                 elif st in r.refs.Constants.Dict:
                     return r.refs.Constants.Dict[st]
 
-            if not hasattr(ex, 'args') or not isinstance(ex.args, iterables):
+            if not hasattr(ex, "args") or not isinstance(ex.args, iterables):
                 return ex
 
             f_name = type(ex).__name__
@@ -437,10 +460,12 @@ class ArgsPatternSymbolPlaceholder:
         # self.type: type of variable required
 
         self.pat = pat
-        pat = pat.split('_')
+        pat = pat.split("_")
 
         if len(pat) > 2:
-            raise NotImplementedError(f'Patterns of type {self.pat} are not (yet) supported.')
+            raise NotImplementedError(
+                f"Patterns of type {self.pat} are not (yet) supported."
+            )
 
         if pat[0]:
             self.subs_var = s.Symbol(pat[0])
@@ -459,7 +484,9 @@ class ArgsPatternSymbolPlaceholder:
 
 def rdp_check_eq(a, b):
     """helper function for remove_duplicate_pattern()"""
-    if isinstance(a, ArgsPatternSymbolPlaceholder) and isinstance(b, ArgsPatternSymbolPlaceholder):
+    if isinstance(a, ArgsPatternSymbolPlaceholder) and isinstance(
+        b, ArgsPatternSymbolPlaceholder
+    ):
         return a.type == b.type
     return a == b
 
@@ -467,8 +494,9 @@ def rdp_check_eq(a, b):
 def remove_duplicate_pattern(d, check_pat):
     """Removes duplicate ArgPatterns if present """
     for pat in d.keys():
-        if hash(pat) == hash(check_pat) and \
-                all(rdp_check_eq(x, y) for x, y in zip(pat.prototype, check_pat.prototype)):
+        if hash(pat) == hash(check_pat) and all(
+            rdp_check_eq(x, y) for x, y in zip(pat.prototype, check_pat.prototype)
+        ):
             del d[pat]
 
             # only one duplicate should exist since
@@ -492,7 +520,7 @@ class ArgsPattern:
         for arg in args:
 
             if isinstance(arg, s.Symbol):
-                if '_' in arg.name:
+                if "_" in arg.name:
 
                     self.is_pattern = True
                     placeholder = ArgsPatternSymbolPlaceholder(arg.name)
@@ -548,7 +576,7 @@ class ArgsPattern:
         return subs_dict
 
     def __repr__(self):
-        return f'ArgsPattern{self.prototype}'
+        return f"ArgsPattern{self.prototype}"
 
 
 class SemicolonStatement(ExplicitFunction):
@@ -563,10 +591,10 @@ def set_tag_value(tag: Tag, m):
     # TODO: Store custom tags in references
 
     if not isinstance(m, String):
-        raise FunctionException('Set::set_tag', f'{tag} can ony be set to a string.')
+        raise FunctionException("Set::set_tag", f"{tag} can ony be set to a string.")
     refs = r.refs
     if tag.symbol in refs.BuiltIns:
-        if hasattr(refs.BuiltIns[tag.symbol], 'tags'):
+        if hasattr(refs.BuiltIns[tag.symbol], "tags"):
             refs.BuiltIns[tag.symbol].tags[tag.tag] = m.value
     else:
         refs.TagValues[tag] = m
@@ -575,9 +603,11 @@ def set_tag_value(tag: Tag, m):
 def is_assignable(f) -> bool:
     """returns True if a symbol/function can be assigned to"""
     f = str(f)
-    return f not in r.refs.BuiltIns and \
-           f not in r.refs.Constants.Dict and \
-           f not in r.refs.Protected.Dict
+    return (
+        f not in r.refs.BuiltIns
+        and f not in r.refs.Constants.Dict
+        and f not in r.refs.Protected.Dict
+    )
 
 
 def set_part_low(x, part, n):
@@ -604,12 +634,14 @@ def set_part_low(x, part, n):
     elif is_integer(part):
         part = int(part) - 1 if part > 0 else int(part)
     else:
-        raise FunctionException('Set::psetspec', f'{part} is not a valid Part specification.')
+        raise FunctionException(
+            "Set::psetspec", f"{part} is not a valid Part specification."
+        )
 
     try:
         args[part] = n
     except IndexError:
-        raise FunctionException('Set::psetindex', f'{x} does not have part {err_part}')
+        raise FunctionException("Set::psetindex", f"{x} does not have part {err_part}")
 
     return head(*args)
 
@@ -624,19 +656,26 @@ def set_part(x, n):
 
     # make sure var is a symbol
     if not isinstance(var, s.Symbol):
-        raise FunctionException('Set::psets', f'{var} in part assignment is not a symbol.')
+        raise FunctionException(
+            "Set::psets", f"{var} in part assignment is not a symbol."
+        )
 
     # check if symbol var can be assigned to
     if not is_assignable(var.name):
-        raise FunctionException('Set::setx', f'Symbol {var} is protected and cannot be assigned to.')
+        raise FunctionException(
+            "Set::setx", f"Symbol {var} is protected and cannot be assigned to."
+        )
 
     # make sure var has a value
     if var.name not in OwnValues:
-        raise FunctionException('Set::psetx', f'{var.name} does not have a value to be used in Part assignment.')
+        raise FunctionException(
+            "Set::psetx",
+            f"{var.name} does not have a value to be used in Part assignment.",
+        )
 
     # TODO: Finish
     if len(x.args) > 2:
-        raise NotImplementedError('Successive part assignment is not yet supported.')
+        raise NotImplementedError("Successive part assignment is not yet supported.")
 
     # part assignment for single part
 
@@ -650,7 +689,9 @@ def do_set(x, n):
 
     if isinstance(x, s.Symbol):
         if not is_assignable(x.name):
-            raise FunctionException('Set::setx', f'Symbol {x} is protected and cannot be assigned to.')
+            raise FunctionException(
+                "Set::setx", f"Symbol {x} is protected and cannot be assigned to."
+            )
 
         if isinstance(x, Tag):
             set_tag_value(x, n)
@@ -672,9 +713,9 @@ def do_set(x, n):
             return set_part(x, n)
 
         if not is_assignable(name):
-            raise FunctionException('Set::set', f'Symbol {x} cannot be Assigned to.')
+            raise FunctionException("Set::set", f"Symbol {x} cannot be Assigned to.")
 
-    # create dict of patterns if not present
+        # create dict of patterns if not present
         if name not in refs.DownValues:
             refs.DownValues[name] = {ArgsPattern(*x.args): n}
 
@@ -690,8 +731,13 @@ def do_set(x, n):
 
             # sort dict when done
             # sorting is done during assignment to keep function calls fast
-            refs.DownValues[name] = \
-                OrderedDict(sorted(refs.DownValues[name].items(), key=lambda z: z[0].importance, reverse=True))
+            refs.DownValues[name] = OrderedDict(
+                sorted(
+                    refs.DownValues[name].items(),
+                    key=lambda z: z[0].importance,
+                    reverse=True,
+                )
+            )
 
         return n
 
@@ -699,7 +745,7 @@ def do_set(x, n):
         if isinstance(n, iterables) and len(x) == len(n):
             return List.create(Set(a, b) for a, b in zip(x, n))
         else:
-            raise FunctionException('Set::shape')
+            raise FunctionException("Set::shape")
 
     return None
 
@@ -800,9 +846,9 @@ class Head(NormalFunction):
     @staticmethod
     def get_head(x):
         if x in (s.S.NegativeOne, s.S.Zero, s.S.One):
-            return 'Integer'
+            return "Integer"
         if x == s.S.Half:
-            return 'Rational'
+            return "Rational"
         return type(x).__name__
 
     @classmethod
@@ -859,7 +905,10 @@ class Replace(NormalFunction):
             if str(func) in replacement_dict:
                 expr = expr.replace(func, replacement_dict[str(func)])
             if str(func.func) in replacement_dict:
-                expr = expr.replace(func, Functions.call(str(replacement_dict[str(func.func)]), *func.args))
+                expr = expr.replace(
+                    func,
+                    Functions.call(str(replacement_dict[str(func.func)]), *func.args),
+                )
 
         # for lists
         expr = expr.replace(s.Add, Plus)
@@ -874,11 +923,19 @@ class Replace(NormalFunction):
         else:
             if isinstance(replacements[0], iterables):
                 if not all(isinstance(x, iterables) for x in replacements):
-                    raise FunctionException('Replace::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
-                return List(*(cls.exec(expr, replacement) for replacement in replacements))
+                    raise FunctionException(
+                        "Replace::subs",
+                        f"{replacements} is a mixture of Lists and Non-Lists.",
+                    )
+                return List(
+                    *(cls.exec(expr, replacement) for replacement in replacements)
+                )
             else:
                 if not all(not isinstance(x, iterables) for x in replacements):
-                    raise FunctionException('Replace::subs', f'{replacements} is a mixture of Lists and Non-Lists.')
+                    raise FunctionException(
+                        "Replace::subs",
+                        f"{replacements} is a mixture of Lists and Non-Lists.",
+                    )
 
         if isinstance(expr, iterables) and not isinstance(expr, s.Matrix):
             return List(*(cls.do_subs(x, replacements) for x in expr))
@@ -1054,13 +1111,17 @@ class Functions:
     # TODO: Implement Fully: Total, Quotient, Factor
 
     # for now, until I find something better
-    r.refs.BuiltIns.update({k: v for k, v in globals().items() if isinstance(v, type) and issubclass(v, s.Function)
-                            and not issubclass(v, LazyFunction)})
+    r.refs.BuiltIns.update(
+        {
+            k: v
+            for k, v in globals().items()
+            if isinstance(v, type)
+            and issubclass(v, s.Function)
+            and not issubclass(v, LazyFunction)
+        }
+    )
 
-    Customs = {
-        'List': List,
-        'Rule': Rule
-    }
+    Customs = {"List": List, "Rule": Rule}
 
     @classmethod
     def not_normal(cls, f: str) -> bool:

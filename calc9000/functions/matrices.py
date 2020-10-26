@@ -1,9 +1,10 @@
-from calc9000.functions.core import *
-from calc9000.functions.base import Conjugate
-from calc9000.functions.list_funcs import do_list_add_mul
-
 from functools import reduce
+
 from sympy.matrices.common import NonInvertibleMatrixError, ShapeError
+
+from calc9000.functions.base import Conjugate
+from calc9000.functions.core import *
+from calc9000.functions.list_funcs import do_list_add_mul
 
 
 def isVector(m):
@@ -28,8 +29,8 @@ def matrixToList(m):
 class Dot(NormalFunction):
 
     tags = {
-        'shap': 'Invalid matrix shapes for Dot.',
-        'rect': 'Non-rectangular tensor encountered.'
+        "shap": "Invalid matrix shapes for Dot.",
+        "rect": "Non-rectangular tensor encountered.",
     }
 
     @classmethod
@@ -49,11 +50,12 @@ class Dot(NormalFunction):
             return matrixToList(s.Matrix(a) * s.Matrix(b))
         except (ShapeError, ValueError) as e:
             if isinstance(e, ValueError):
-                if e.args[0].startswith('expecting list of lists') \
-                        or e.args[0].startswith('mismatched dimensions'):
-                    raise FunctionException('Dot::rect')
+                if e.args[0].startswith("expecting list of lists") or e.args[
+                    0
+                ].startswith("mismatched dimensions"):
+                    raise FunctionException("Dot::rect")
             # TODO: replace with more verbose info
-            raise FunctionException('Dot::shap')
+            raise FunctionException("Dot::shap")
 
     @classmethod
     def exec(cls, *args):
@@ -71,9 +73,7 @@ class Det(NormalFunction):
     Equivalent to sympy.Matrix.det().
     """
 
-    tags = {
-        'sqr': 'Cannot find determinant of non-square matrix.'
-    }
+    tags = {"sqr": "Cannot find determinant of non-square matrix."}
 
     @classmethod
     def exec(cls, x):
@@ -81,7 +81,7 @@ class Det(NormalFunction):
             m = s.Matrix(x)
             if m.is_square:
                 return m.det()
-            raise FunctionException('Det::sqr')
+            raise FunctionException("Det::sqr")
         return None
 
 
@@ -94,8 +94,8 @@ class Inverse(NormalFunction):
     """
 
     tags = {
-        'sqr': 'Cannot find inverse of non-square matrix.',
-        'val': 'Cannot find inverse of singular matrix.'
+        "sqr": "Cannot find inverse of non-square matrix.",
+        "val": "Cannot find inverse of singular matrix.",
     }
 
     @classmethod
@@ -105,9 +105,9 @@ class Inverse(NormalFunction):
                 m = s.Matrix(x)
                 if m.is_square:
                     return matrixToList(m.inv())
-                raise FunctionException('Inverse::sqr')
+                raise FunctionException("Inverse::sqr")
             except NonInvertibleMatrixError:
-                raise FunctionException('Inverse::val')
+                raise FunctionException("Inverse::val")
         return None
 
 
@@ -147,7 +147,7 @@ class ConjugateTranspose(NormalFunction):
 class Cross(NormalFunction):
 
     tags = {
-        'dim': 'Cross product of vectors greater than 3 dimensions is not supported.'
+        "dim": "Cross product of vectors greater than 3 dimensions is not supported."
     }
 
     @classmethod
@@ -159,10 +159,15 @@ class Cross(NormalFunction):
             if all(isinstance(x, iterables) for x in args):
                 if len(args[0]) == len(args[1]) == 3:
                     return List.create(s.Matrix(args[0]).cross(s.Matrix(args[1])))
-        raise FunctionException('Cross::dim')
+        raise FunctionException("Cross::dim")
 
     def _sympystr(self, printer=None):
-        return 'Cross['.join(str(i) + ', ' for i in (printer.doprint(i) for i in self.args))[:-2] + ']'
+        return (
+            "Cross[".join(
+                str(i) + ", " for i in (printer.doprint(i) for i in self.args)
+            )[:-2]
+            + "]"
+        )
 
 
 class MatrixForm(NormalFunction):
@@ -174,4 +179,3 @@ class MatrixForm(NormalFunction):
     @classmethod
     def exec(cls, x):
         return cls.MatrixOutput(x)
-

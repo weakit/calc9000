@@ -1,4 +1,5 @@
 import sympy as s
+
 from calc9000.custom import List, Primes
 
 
@@ -8,7 +9,9 @@ class Protected:
     List = None
 
 
-Protected.Dict = {x: Protected.__dict__[x] for x in dir(Protected) if not x.startswith('__')}
+Protected.Dict = {
+    x: Protected.__dict__[x] for x in dir(Protected) if not x.startswith("__")
+}
 
 
 class Constants:
@@ -37,16 +40,18 @@ class Constants:
     Real = None
     Head = None
     Complex = None
-    All = s.Symbol('All')
-    Nothing = s.Symbol('Nothing')
-    Null = s.Symbol('Null')
+    All = s.Symbol("All")
+    Nothing = s.Symbol("Nothing")
+    Null = s.Symbol("Null")
     Degree = Pi / 180
 
 
-setattr(Constants, 'True', True)
-setattr(Constants, 'False', False)
+setattr(Constants, "True", True)
+setattr(Constants, "False", False)
 
-Constants.Dict = {x: Constants.__dict__[x] for x in dir(Constants) if not x.startswith('__')}
+Constants.Dict = {
+    x: Constants.__dict__[x] for x in dir(Constants) if not x.startswith("__")
+}
 
 
 class OwnValues(dict):
@@ -64,81 +69,83 @@ class TagValues(dict):
 # Build from built-ins at startup
 FunctionWrappers = {
     # Trig Functions
-    'Sin': 'sin',
-    'Cos': 'cos',
-    'Tan': 'tan',
-    'Csc': 'csc',
-    'Sec': 'sec',
-    'Cot': 'cot',
-    'Sinh': 'sinh',
-    'Cosh': 'cosh',
-    'Tanh': 'tanh',
-    'Csch': 'csch',
-    'Sech': 'sech',
-    'Coth': 'coth',
-    'ArcSin': 'asin',
-    'ArcCos': 'acos',
-    'ArcTan': 'atan',
-    'ArcCsc': 'acsc',
-    'ArcSec': 'asec',
-    'ArcCot': 'acot',
-    'ArcSinh': 'asinh',
-    'ArcCosh': 'acosh',
-    'ArcTanh': 'atanh',
-    'ArcCsch': 'acsch',
-    'ArcSech': 'asech',
-    'ArcCoth': 'acoth',
-    'Log': 'log',
-    'Floor': 'floor',
-    'Ceiling': 'ceiling',
-    'Re': 're',
-    'Im': 'im',
-    'Arg': 'arg',
+    "Sin": "sin",
+    "Cos": "cos",
+    "Tan": "tan",
+    "Csc": "csc",
+    "Sec": "sec",
+    "Cot": "cot",
+    "Sinh": "sinh",
+    "Cosh": "cosh",
+    "Tanh": "tanh",
+    "Csch": "csch",
+    "Sech": "sech",
+    "Coth": "coth",
+    "ArcSin": "asin",
+    "ArcCos": "acos",
+    "ArcTan": "atan",
+    "ArcCsc": "acsc",
+    "ArcSec": "asec",
+    "ArcCot": "acot",
+    "ArcSinh": "asinh",
+    "ArcCosh": "acosh",
+    "ArcTanh": "atanh",
+    "ArcCsch": "acsch",
+    "ArcSech": "asech",
+    "ArcCoth": "acoth",
+    "Log": "log",
+    "Floor": "floor",
+    "Ceiling": "ceiling",
+    "Re": "re",
+    "Im": "im",
+    "Arg": "arg",
     # 'Transpose': 'transpose',
     # 'Inverse': 'inverse',
-    'Factorial': 'factorial',
-    'Factorial2': 'factorial2',
-    'Conjugate': 'conjugate',
-    'Sqrt': 'sqrt',
-    'StieltjesGamma': 'stieltjes',
-    'Gamma': 'gamma',
-    'PolyGamma': 'polygamma',
-    'Surd': 'real_root',
-    'GCD': 'gcd',
-    'LCM': 'lcm',
-    'PrimeQ': 'isprime',
-    'Equal': 'eq',
-    'Factor': 'factor',
-    'Expand': 'expand',
-    'TrigExpand': 'expand_trig',
-    'HeavisideTheta': 'Heaviside',
-    'Simplify': 'simplify',
-    'Zeta': 'zeta',
-    'LogIntegral': 'li',
-    'ExpIntegralEi': 'Ei',
-    'ExpIntegralE': 'expint',
-    'SinIntegral': 'Si',
-    'CosIntegral': 'Ci',
-    'SinhIntegral': 'Shi',
-    'CoshIntegral': 'Chi',
-    'EllipticK': 'elliptic_k',
-    'EllipticF': 'elliptic_f',
-    'EllipticE': 'elliptic_e',
-    'EllipticPi': 'elliptic_pi',
-    'Erf': 'erf',
-    'Erfc': 'erfc',
-    'Erfi': 'erfi',
-    'InverseErf': 'erfinv',
-    'InverseErfc': 'erfcinv',
-    'FresnelS': 'fresnels',
-    'FresnelC': 'fresnelc'
+    "Factorial": "factorial",
+    "Factorial2": "factorial2",
+    "Conjugate": "conjugate",
+    "Sqrt": "sqrt",
+    "StieltjesGamma": "stieltjes",
+    "Gamma": "gamma",
+    "PolyGamma": "polygamma",
+    "Surd": "real_root",
+    "GCD": "gcd",
+    "LCM": "lcm",
+    "PrimeQ": "isprime",
+    "Equal": "eq",
+    "Factor": "factor",
+    "Expand": "expand",
+    "TrigExpand": "expand_trig",
+    "HeavisideTheta": "Heaviside",
+    "Simplify": "simplify",
+    "Zeta": "zeta",
+    "LogIntegral": "li",
+    "ExpIntegralEi": "Ei",
+    "ExpIntegralE": "expint",
+    "SinIntegral": "Si",
+    "CosIntegral": "Ci",
+    "SinhIntegral": "Shi",
+    "CoshIntegral": "Chi",
+    "EllipticK": "elliptic_k",
+    "EllipticF": "elliptic_f",
+    "EllipticE": "elliptic_e",
+    "EllipticPi": "elliptic_pi",
+    "Erf": "erf",
+    "Erfc": "erfc",
+    "Erfi": "erfi",
+    "InverseErf": "erfinv",
+    "InverseErfc": "erfcinv",
+    "FresnelS": "fresnels",
+    "FresnelC": "fresnelc",
 }
 
 FunctionWrappersReverse = {v: k for k, v in FunctionWrappers.items()}
 
-FunctionWrappersReverse.update({
-    'erf2': 'Erf',
-})
+FunctionWrappersReverse.update(
+    {
+        "erf2": "Erf",
+    }
+)
 
 NoCache = [
     "Out",
@@ -156,7 +163,7 @@ NoCache = [
     "RandomComplex",
     "RandomPrime",
     "ComplexExpression",
-    "SemicolonStatement"
+    "SemicolonStatement",
 ]
 
 

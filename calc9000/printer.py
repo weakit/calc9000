@@ -1,9 +1,11 @@
 import sympy as s
-from calc9000.functions.__init__ import Dot, Cross, Limit, DefinedFunction
 from mpmath.libmp.libmpf import dps_to_prec
+from sympy.printing.pretty.pretty import (PRECEDENCE, PrettyPrinter,
+                                          precedence_traditional, pretty_atom,
+                                          prettyForm, sstr, stringPict)
+
+from calc9000.functions.__init__ import Cross, DefinedFunction, Dot, Limit
 from calc9000.references import FunctionWrappersReverse, refs
-from sympy.printing.pretty.pretty import PrettyPrinter, prettyForm, sstr, \
-    precedence_traditional, PRECEDENCE, pretty_atom, stringPict
 
 
 class ListSkip:
@@ -11,7 +13,7 @@ class ListSkip:
         self.n = n
 
     def __str__(self):
-        return f'··· {self.n} skipped elements ···'
+        return f"··· {self.n} skipped elements ···"
 
     def __repr__(self):
         return self.__str__()
@@ -22,7 +24,7 @@ class Printer9000(PrettyPrinter):
 
     def _print_Float(self, e):
         # TODO: fix float printing in List
-        e = s.Float(e, precision=max(e._prec-self._float_cutoff, 1))
+        e = s.Float(e, precision=max(e._prec - self._float_cutoff, 1))
         full_prec = self._settings["full_prec"]
         if full_prec == "auto":
             full_prec = self._print_level == 1
@@ -35,14 +37,24 @@ class Printer9000(PrettyPrinter):
 
     def _print_Dot(self, e):
         if isinstance(e, Dot):
-            return self._print_seq(e.args, None, None, '.',
-                                   parenthesize=lambda x: precedence_traditional(x) <= PRECEDENCE["Mul"])
+            return self._print_seq(
+                e.args,
+                None,
+                None,
+                ".",
+                parenthesize=lambda x: precedence_traditional(x) <= PRECEDENCE["Mul"],
+            )
         return super()._print_Dot(e)
 
     def _print_Cross(self, e):
         if isinstance(e, Cross):
-            return self._print_seq(e.args, None, None, '×',
-                                   parenthesize=lambda x: precedence_traditional(x) <= PRECEDENCE["Mul"])
+            return self._print_seq(
+                e.args,
+                None,
+                None,
+                "×",
+                parenthesize=lambda x: precedence_traditional(x) <= PRECEDENCE["Mul"],
+            )
         return super()._print_Cross(e)
 
     # def _print_Rule(self, e):
@@ -60,12 +72,19 @@ class Printer9000(PrettyPrinter):
     def _print_List(self, e):
         # for better performance
         if len(e) > 10:
-            avg_len = sum([len(pretty_print(e[x])) for x in range(0, len(e), len(e) // 10)]) / 10
+            avg_len = (
+                sum([len(pretty_print(e[x])) for x in range(0, len(e), len(e) // 10)])
+                / 10
+            )
             avg_total_len = (avg_len + 2) * len(e) + 2
             if avg_total_len > 1000:
                 m = int(75 / avg_len)
-                return self._print_seq(e.value[:m] + [ListSkip(len(e.value) - 2 * m)] + e.value[-m:], '{', '}')
-        return self._print_seq(e.value, '{', '}')
+                return self._print_seq(
+                    e.value[:m] + [ListSkip(len(e.value) - 2 * m)] + e.value[-m:],
+                    "{",
+                    "}",
+                )
+        return self._print_seq(e.value, "{", "}")
 
     def _print_Mod(self, expr):
         if len(expr.args) > 2:
@@ -89,9 +108,11 @@ class Printer9000(PrettyPrinter):
 
     @staticmethod
     def _print_ComplexInfinity(*args):
-        return prettyForm('ComplexInfinity')
+        return prettyForm("ComplexInfinity")
 
-    def _helper_print_function(self, func, args, sort=False, func_name=None, delimiter=', ', elementwise=False):
+    def _helper_print_function(
+        self, func, args, sort=False, func_name=None, delimiter=", ", elementwise=False
+    ):
         if sort:
             args = sorted(args, key=s.utilities.default_sort_key)
 
@@ -99,27 +120,31 @@ class Printer9000(PrettyPrinter):
             func_name = func.__name__
 
         if func_name:
-            if func_name in FunctionWrappersReverse and not issubclass(func, DefinedFunction):
+            if func_name in FunctionWrappersReverse and not issubclass(
+                func, DefinedFunction
+            ):
                 func_name = FunctionWrappersReverse[func_name]
             prettyFunc = self._print(s.Symbol(func_name))
         else:
-            prettyFunc = prettyForm(*self._print(func).parens(left='[', right=']'))
+            prettyFunc = prettyForm(*self._print(func).parens(left="[", right="]"))
 
         if elementwise:
             if self._use_unicode:
-                circ = pretty_atom('Modifier Letter Low Ring')
+                circ = pretty_atom("Modifier Letter Low Ring")
             else:
-                circ = '.'
+                circ = "."
             circ = self._print(circ)
             prettyFunc = prettyForm(
-                binding=prettyForm.LINE,
-                *stringPict.next(prettyFunc, circ)
+                binding=prettyForm.LINE, *stringPict.next(prettyFunc, circ)
             )
 
-        prettyArgs = prettyForm(*self._print_seq(args, delimiter=delimiter).parens(left='[', right=']'))
+        prettyArgs = prettyForm(
+            *self._print_seq(args, delimiter=delimiter).parens(left="[", right="]")
+        )
 
         pform = prettyForm(
-            binding=prettyForm.FUNC, *stringPict.next(prettyFunc, prettyArgs))
+            binding=prettyForm.FUNC, *stringPict.next(prettyFunc, prettyArgs)
+        )
 
         # store pform parts so it can be reassembled e.g. when powered
         pform.prettyFunc = prettyFunc

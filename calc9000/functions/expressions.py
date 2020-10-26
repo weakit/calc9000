@@ -10,11 +10,13 @@ class Factor(NormalFunction):
     """
 
     op_spec = (
-        {"Modulus": "modulus",
-         "Extension": "extension",
-         "GaussianIntegers": "gaussian"
-         },
-        None)
+        {
+            "Modulus": "modulus",
+            "Extension": "extension",
+            "GaussianIntegers": "gaussian",
+        },
+        None,
+    )
 
     param_spec = (1, 1)
 
@@ -31,10 +33,7 @@ class Expand(NormalFunction):
     Equivalent to sympy.expand().
     """
 
-    op_spec = (
-        {"Modulus": "modulus", "Trig": "trig"},
-        {"trig": False}
-    )
+    op_spec = ({"Modulus": "modulus", "Trig": "trig"}, {"trig": False})
 
     param_spec = (1, 1)
 
@@ -70,8 +69,10 @@ class ComplexExpand(NormalFunction):
     @classmethod
     def exec(cls, x, complexes=()):
         def exp(expr):
-            return s.refine(s.expand_complex(expr),
-                            ands(s.Q.real(a) for a in expr.atoms(s.Symbol) if a not in complexes))
+            return s.refine(
+                s.expand_complex(expr),
+                ands(s.Q.real(a) for a in expr.atoms(s.Symbol) if a not in complexes),
+            )
 
         if not isinstance(complexes, iterables):
             complexes = (complexes,)
@@ -168,9 +169,7 @@ class Collect(NormalFunction):
 
     """
 
-    tags = {
-        'head': 'Invalid Function.'
-    }
+    tags = {"head": "Invalid Function."}
 
     @staticmethod
     def collect_func(expr, v, h):
@@ -178,7 +177,7 @@ class Collect(NormalFunction):
         expr = 0
         if h:
             if not isinstance(h, (s.Symbol, s.Function)):
-                raise FunctionException('Collect::head')
+                raise FunctionException("Collect::head")
             for c in unevaluated_expr:
                 expr += Functions.call(str(h), unevaluated_expr[c]) * c
         else:

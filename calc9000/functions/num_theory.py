@@ -82,9 +82,7 @@ class Prime(NormalFunction):
     """
 
     param_spec = (1, 1)
-    tags = {
-        'int': 'A positive integer is expected as input.'
-    }
+    tags = {"int": "A positive integer is expected as input."}
 
     prime_func = s.prime
 
@@ -92,10 +90,10 @@ class Prime(NormalFunction):
     def prime(cls, n):
         if is_integer(n):
             if n < 1:
-                raise FunctionException(f'{cls.__name__}::int')
+                raise FunctionException(f"{cls.__name__}::int")
             return cls.prime_func(n)
-        if hasattr(n, 'is_number') and n.is_number:
-            raise FunctionException(f'{cls.__name__}::int')
+        if hasattr(n, "is_number") and n.is_number:
+            raise FunctionException(f"{cls.__name__}::int")
         return None
 
     @classmethod
@@ -110,6 +108,7 @@ class PrimePi(Prime):
 
     Equivalent to sympy.primepi()
     """
+
     prime_func = s.primepi
 
 
@@ -120,6 +119,7 @@ class PrimeOmega(Prime):
 
     Effectively uses sympy.factorint()
     """
+
     @staticmethod
     def prime_func(n):
         return sum(s.factorint(n).values())
@@ -132,6 +132,7 @@ class PrimeNu(Prime):
 
     Effectively uses sympy.primefactors()
     """
+
     @staticmethod
     def prime_func(n):
         return len(s.primefactors(n))
@@ -147,9 +148,7 @@ class NextPrime(NormalFunction):
 
     """
 
-    tags = {
-        'int': 'A positive integer is expected as input.'
-    }
+    tags = {"int": "A positive integer is expected as input."}
 
     prime_func = s.nextprime
 
@@ -157,11 +156,14 @@ class NextPrime(NormalFunction):
     def prime(cls, n, k):
         if is_integer(n) and is_integer(k):
             if n < 1:
-                raise FunctionException(f'{cls.__name__}::int')
+                raise FunctionException(f"{cls.__name__}::int")
             return cls.prime_func(n, k)
-        if hasattr(n, 'is_number') and n.is_number \
-                or (hasattr(k, 'is_number') and k.is_number):
-            raise FunctionException(f'{cls.__name__}::int')
+        if (
+            hasattr(n, "is_number")
+            and n.is_number
+            or (hasattr(k, "is_number") and k.is_number)
+        ):
+            raise FunctionException(f"{cls.__name__}::int")
         return None
 
     @classmethod
@@ -174,6 +176,7 @@ class PreviousPrime(Prime):
     PreviousPrime [x]
      Gives the greatest prime below x.
     """
+
     prime_func = s.prevprime
 
 
@@ -182,6 +185,7 @@ class Mobius(Prime):  # for ease of use
     Mobius [n]
      Gives the Möbius function μ(n).
     """
+
     prime_func = s.mobius
 
 
@@ -190,6 +194,7 @@ class MoebiusMu(Prime):
     MoebiusMu [n]
      Gives the Möbius function μ(n).
     """
+
     prime_func = s.mobius
 
 
@@ -203,18 +208,20 @@ class FactorInteger(NormalFunction):
 
     Equivalent to sympy.factorint()
     """
-    tags = {
-        'int': 'Inputs should be positive integers.'
-    }
+
+    tags = {"int": "Inputs should be positive integers."}
 
     @classmethod
     def factor(cls, n, k):
         if is_integer(k) or k is None:
-            if hasattr(n, 'is_Rational') and n.is_Rational:
+            if hasattr(n, "is_Rational") and n.is_Rational:
                 return List.create(List(*x) for x in s.factorrat(n, limit=k).items())
-        if hasattr(n, 'is_number') and n.is_number \
-                or (hasattr(k, 'is_number') and k.is_number):
-            raise FunctionException(f'{cls.__name__}::int')
+        if (
+            hasattr(n, "is_number")
+            and n.is_number
+            or (hasattr(k, "is_number") and k.is_number)
+        ):
+            raise FunctionException(f"{cls.__name__}::int")
         return None
 
     @classmethod
@@ -223,22 +230,20 @@ class FactorInteger(NormalFunction):
 
 
 class Divisible(NormalFunction):
-    tags = {
-        'rat': 'Rational numbers.py are expected as input.'
-    }
+    tags = {"rat": "Rational numbers.py are expected as input."}
 
     @staticmethod
     def div(n, d):
         if n.is_number and d.is_number:
             if n.is_real and d.is_real:
                 if n.is_Float or d.is_Float:  # make sure input is symbolic
-                    raise FunctionException('Divisible::rat')
+                    raise FunctionException("Divisible::rat")
                 return not bool(s.Mod(n, d))
             else:
                 div = n / d
                 if s.re(div).is_Rational and s.im(div).is_Rational:
                     return s.re(div).is_Integer and s.im(div).is_Integer
-                raise FunctionException('Divisible::rat')
+                raise FunctionException("Divisible::rat")
         return None
 
     @classmethod

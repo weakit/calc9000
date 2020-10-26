@@ -1,5 +1,5 @@
+from calc9000.functions.base import ArcTan, Sqrt, Times
 from calc9000.functions.core import *
-from calc9000.functions.base import Times, Sqrt, ArcTan
 from calc9000.functions.list_funcs import Total
 
 
@@ -43,7 +43,7 @@ class PolyGamma(NormalFunction):
     @classmethod
     def exec(cls, n, z=None):
         if z is None:
-            return Functions.call('PolyGamma', 0, n)
+            return Functions.call("PolyGamma", 0, n)
         return thread(s.polygamma, n, z)
 
 
@@ -68,7 +68,7 @@ class LogisticSigmoid(NormalFunction):  # why is this here?
 
 class Sum(NormalFunction):
 
-    tags = {'sum': 'Invalid Limits.'}
+    tags = {"sum": "Invalid Limits."}
 
     @classmethod
     def limits(cls, a, b):
@@ -84,14 +84,14 @@ class Sum(NormalFunction):
     def process(cls, s_, i):
         if isinstance(i, iterables):
             if not isinstance(i[0], s.Symbol):
-                raise FunctionException('Sum::sum')
+                raise FunctionException("Sum::sum")
             if len(i) == 2:
                 return s_, (i[0], *cls.limits(s.S.One, i[1]))
             if len(i) == 3:
                 return s_, (i[0], *cls.limits(i[1], i[2]))
             if len(i) == 4:
                 return cls.process_skip(s_, i)
-        raise FunctionException('Sum::sum')
+        raise FunctionException("Sum::sum")
 
     @classmethod
     def exec(cls, f, i, *xi):
@@ -147,7 +147,7 @@ class FromPolarCoordinates(NormalFunction):
     """
 
     tags = {
-        'dim': 'Polar Coordinates can only be defined for dimensions of 2 and greater.'
+        "dim": "Polar Coordinates can only be defined for dimensions of 2 and greater."
     }
 
     @classmethod
@@ -155,7 +155,7 @@ class FromPolarCoordinates(NormalFunction):
         # TODO: Thread
         length = len(list_)
         if length == 1:
-            raise FunctionException('FromPolarCoordinates::dim')
+            raise FunctionException("FromPolarCoordinates::dim")
         ret = List.create(list_[:1] * length)
         for pos, angle in enumerate(list_[1:]):
             ret[pos] *= s.cos(angle)
@@ -176,7 +176,7 @@ class ToPolarCoordinates(NormalFunction):
     """
 
     tags = {
-        'dim': 'Polar Coordinates can only be defined for dimensions of 2 and greater.'
+        "dim": "Polar Coordinates can only be defined for dimensions of 2 and greater."
     }
 
     @classmethod
@@ -185,7 +185,7 @@ class ToPolarCoordinates(NormalFunction):
         list_ = List(*list_)
         length = len(list_)
         if length == 1:
-            raise FunctionException('ToPolarCoordinates::dim')
+            raise FunctionException("ToPolarCoordinates::dim")
         ret = List(Sqrt(Total(list_ ** 2)))
         for x in range(length - 2):
             ret.append(s.acos(list_[x] / Sqrt(Total(list_[x:] ** 2))))
@@ -197,10 +197,11 @@ class Timing(ExplicitFunction):
     @classmethod
     def exec(cls, expr):
         import time
+
         start = time.time()
         result = LazyFunction.evaluate(expr)
         end = time.time()
         return List(
             s.Float(end) - s.Float(start),
-            result if not isinstance(result, NoOutput) else r.Constants.Null
+            result if not isinstance(result, NoOutput) else r.Constants.Null,
         )

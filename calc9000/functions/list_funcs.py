@@ -1,8 +1,10 @@
 from bisect import bisect_left
+from itertools import combinations, islice, permutations
+
+from iteration_utilities import (accumulate, deepflatten, nth_combination,
+                                 unique_everseen)
 
 from calc9000.functions.core import *
-from iteration_utilities import deepflatten, accumulate, unique_everseen, nth_combination
-from itertools import permutations, combinations, islice
 
 
 def list_to_python_list(n):
@@ -33,8 +35,10 @@ class Part(NormalFunction):
                     return expr[int(n - 1)]
                 return expr[int(n)]
             except IndexError:
-                raise FunctionException('Part::dim', f'Part {n} of {expr} does not exist.')
-        raise FunctionException('Part::part', f'{n} is not a valid Part specification.')
+                raise FunctionException(
+                    "Part::dim", f"Part {n} of {expr} does not exist."
+                )
+        raise FunctionException("Part::part", f"{n} is not a valid Part specification.")
 
     @classmethod
     def exec(cls, expr, *args):
@@ -43,11 +47,11 @@ class Part(NormalFunction):
         if not args:
             return expr
 
-        if hasattr(expr, 'args'):
+        if hasattr(expr, "args"):
             part = expr.args
             head = expr.__class__
 
-        elif hasattr(expr, '__getitem__'):
+        elif hasattr(expr, "__getitem__"):
             part = expr
             head = List
 
@@ -57,13 +61,15 @@ class Part(NormalFunction):
             return s.Symbol(type(expr).__name__)
 
         if not part:
-            raise FunctionException('Part::dim', f'{expr} does not have Part {arg}')
+            raise FunctionException("Part::dim", f"{expr} does not have Part {arg}")
 
         if arg == r.refs.Constants.All:  # TODO: add None
             arg = Span()
 
         if isinstance(arg, Span):
-            return List(*(Part(x, *args[1:]) for x in Take(expr, arg)))  # pass expr with head
+            return List(
+                *(Part(x, *args[1:]) for x in Take(expr, arg))
+            )  # pass expr with head
 
         if isinstance(arg, iterables):
             return head(*(Part(cls.get_part(part, x), *args[1:]) for x in arg))
@@ -100,9 +106,11 @@ class Take(NormalFunction):
             step = 1
             if len(seq) == 3:
                 step = seq[2]
-            if (0 in (lower, upper, step) or not (is_integer(lower) and is_integer(upper) and is_integer(step))) \
-                    or len(seq) > 3:
-                raise FunctionException('Take::dim', 'Invalid Bounds for Take.')
+            if (
+                0 in (lower, upper, step)
+                or not (is_integer(lower) and is_integer(upper) and is_integer(step))
+            ) or len(seq) > 3:
+                raise FunctionException("Take::dim", "Invalid Bounds for Take.")
             if step > 0:
                 upper, lower = cls.ul(upper, lower)
             else:
@@ -113,7 +121,9 @@ class Take(NormalFunction):
             if seq > 0:
                 return take[:seq]
             return take[seq:]
-        raise FunctionException('Take::take', f'{seq} is not a valid Take specification.')
+        raise FunctionException(
+            "Take::take", f"{seq} is not a valid Take specification."
+        )
 
     @classmethod
     def exec(cls, expr, *seqs):
@@ -121,10 +131,10 @@ class Take(NormalFunction):
 
         if not seqs:
             return expr
-        if hasattr(expr, 'args'):
+        if hasattr(expr, "args"):
             take = expr.args
             head = expr.__class__
-        elif hasattr(expr, '__getitem__'):
+        elif hasattr(expr, "__getitem__"):
             take = expr
             head = List
 
@@ -178,12 +188,11 @@ class Total(NormalFunction):
     Negative levels are not supported.
     Effectively uses sum().
     """
+
     # TODO: Proper Levels (including negative)
     # TODO: Total: AllowedHeads
 
-    tags = {
-        'level': 'A positive integer is expected as a level.'
-    }
+    tags = {"level": "A positive integer is expected as a level."}
 
     @classmethod
     def total(cls, m, level, levels, max_level):
@@ -202,10 +211,10 @@ class Total(NormalFunction):
             if levels.is_number and levels.is_integer and levels > 0:
                 levels = Range(levels)
             else:
-                raise FunctionException('Total::level')
+                raise FunctionException("Total::level")
         else:
             if not all(x.is_number and x.is_integer and x > 0 for x in levels):
-                raise FunctionException('Total::level')
+                raise FunctionException("Total::level")
 
         return cls.total(x, 1, levels, Max(levels))
 
@@ -252,9 +261,7 @@ class Range(NormalFunction):
      Uses step di.
     """
 
-    tags = {
-        'range': 'Invalid range specification.'
-    }
+    tags = {"range": "Invalid range specification."}
 
     @staticmethod
     def single_range(i, n, di):
@@ -268,9 +275,9 @@ class Range(NormalFunction):
             # try simplifying in case bounds are symbolic
             iters = s.simplify(iters)
             if not iters.is_number:  # raise if can't iterate
-                raise FunctionException('Range::range')
+                raise FunctionException("Range::range")
         if not iters >= 0:
-            raise FunctionException('Range::range')
+            raise FunctionException("Range::range")
 
         return List(*(i + x * di for x in range(int(iters) + 1)))
 
@@ -295,10 +302,7 @@ class Permutations(NormalFunction):
     Effectively uses itertools.permutations().
     """
 
-    tags = {
-        'int': '',
-        'num': 'A non-negative Integer is expected as a specification.'
-    }
+    tags = {"int": "", "num": "A non-negative Integer is expected as a specification."}
 
     @classmethod
     def permute(cls, obj, perms):
@@ -313,7 +317,7 @@ class Permutations(NormalFunction):
 
         for per in perms:
             if not is_integer(per):
-                raise FunctionException('Permutations::int')
+                raise FunctionException("Permutations::int")
             ret += [head(*x) for x in permutations(it, int(per))]
 
         return List(*unique_everseen(ret))
@@ -329,7 +333,7 @@ class Permutations(NormalFunction):
                 elif n is r.Constants.All:
                     n = Range(0, Length(li))
                 else:
-                    raise FunctionException('Permutations::num')
+                    raise FunctionException("Permutations::num")
         else:
             if len(n) > 1:
                 n = Range(*n)
@@ -367,7 +371,7 @@ class Table(ExplicitFunction):
 
     @staticmethod
     def _range_parse(expr, arg):
-        if hasattr(arg, '__len__') and len(arg) == 1:
+        if hasattr(arg, "__len__") and len(arg) == 1:
             arg = arg[0]
         if arg.is_number:
             return List(*(LazyFunction.evaluate(expr) for _ in range(arg)))
@@ -376,9 +380,11 @@ class Table(ExplicitFunction):
         elif len(arg) >= 2:
             args = Range(*arg[1:])
         else:
-            raise FunctionException('Table::range', 'Invalid Bounds.')  # TODO: Warning
+            raise FunctionException("Table::range", "Invalid Bounds.")  # TODO: Warning
         if not isinstance(arg[0], (s.Symbol, s.Function)):
-            raise FunctionException('Table::iter', f'Cannot use {arg[0]} as an Iterator.')
+            raise FunctionException(
+                "Table::iter", f"Cannot use {arg[0]} as an Iterator."
+            )
         return Table._table(expr, arg[0], args)
 
     @classmethod
@@ -393,8 +399,7 @@ class Table(ExplicitFunction):
 
         li = []
         for expr_, specs in zip(
-                cls._range_parse(expr, args[0]),
-                cls._range_parse(args[1:], args[0])
+            cls._range_parse(expr, args[0]), cls._range_parse(args[1:], args[0])
         ):
             li.append(Table(expr_, *specs))
 
@@ -414,9 +419,7 @@ class Subdivide(NormalFunction):
      Generates the list of values from subdividing the interval min to max.
     """
 
-    tags = {
-        'div': 'Number of Subdivisions should be an Integer.'
-    }
+    tags = {"div": "Number of Subdivisions should be an Integer."}
 
     @classmethod
     def exec(cls, one, two=None, three=None):
@@ -435,7 +438,7 @@ class Subdivide(NormalFunction):
             div = three
 
         if not is_integer(div):
-            raise FunctionException('Subdivide::div')
+            raise FunctionException("Subdivide::div")
 
         div = s.Number(int(div))
 
@@ -466,13 +469,14 @@ class Subsets(NormalFunction):
 
     Effectively uses itertools.combinations().
     """
+
     # TODO: Treat different occurrences of same element as distinct
     # TODO: Better error messages.
 
     tags = {
-        'int': '',
-        'num': 'A non-negative Integer is expected as a specification.',
-        'lim': 'An invalid limit was encountered.'
+        "int": "",
+        "num": "A non-negative Integer is expected as a specification.",
+        "lim": "An invalid limit was encountered.",
     }
 
     @classmethod
@@ -490,7 +494,7 @@ class Subsets(NormalFunction):
                 b = bisect_left(crs, n)
                 ret.append(List(*nth_combination(obj, perms[b], n - crs[b] - 1)))
         except (ValueError, IndexError):
-            raise FunctionException('Subsets::lim')
+            raise FunctionException("Subsets::lim")
 
         return List(*ret)
 
@@ -509,15 +513,18 @@ class Subsets(NormalFunction):
         if limit:
             for per in perms:
                 if not is_integer(per):
-                    raise FunctionException('Subsets::int')
-                ret += [head(*x) for x in islice(combinations(it, int(per)), limit - len(ret))]
+                    raise FunctionException("Subsets::int")
+                ret += [
+                    head(*x)
+                    for x in islice(combinations(it, int(per)), limit - len(ret))
+                ]
 
                 if len(ret) >= limit:
                     break
         else:
             for per in perms:
                 if not is_integer(per):
-                    raise FunctionException('Subsets::int')
+                    raise FunctionException("Subsets::int")
                 ret += [head(*x) for x in combinations(it, int(per))]
 
         return List(*unique_everseen(ret))
@@ -533,7 +540,7 @@ class Subsets(NormalFunction):
                 elif n is r.Constants.All:
                     n = Range(0, Length(li))
                 else:
-                    raise FunctionException('Subsets::num')
+                    raise FunctionException("Subsets::num")
         else:
             if len(n) > 1:
                 n = Range(*n)
@@ -546,7 +553,7 @@ class Subsets(NormalFunction):
             if limit.is_number and limit.is_Integer:
                 limit = int(limit)
             else:
-                raise FunctionException('Subsets::lim')
+                raise FunctionException("Subsets::lim")
 
         return cls.combine(li, n, limit)
 
@@ -561,7 +568,7 @@ class Length(NormalFunction):
     def exec(cls, x):
         if isinstance(x, iterables):
             return len(x)
-        if hasattr(x, 'args'):
+        if hasattr(x, "args"):
             return len(x.args)
         return 0
 
@@ -582,7 +589,9 @@ class First(ExplicitFunction):
             return Part(x, 1)
         if d is not None:
             return LazyFunction.evaluate(d)
-        raise FunctionException('First::first', f'{x} has zero length, and no first element.')
+        raise FunctionException(
+            "First::first", f"{x} has zero length, and no first element."
+        )
 
 
 class Last(ExplicitFunction):
@@ -601,7 +610,9 @@ class Last(ExplicitFunction):
             return Part(x, -1)
         if d is not None:
             return LazyFunction.evaluate(d)
-        raise FunctionException('Last::last', f'{x} has zero length, and no last element.')
+        raise FunctionException(
+            "Last::last", f"{x} has zero length, and no last element."
+        )
 
 
 class Reverse(NormalFunction):
@@ -616,15 +627,13 @@ class Reverse(NormalFunction):
      Reverses elements at levels a, b, … in expr.
     """
 
-    tags = {
-        'level': 'A positive integer is expected as a level.'
-    }
+    tags = {"level": "A positive integer is expected as a level."}
 
     @classmethod
     def reverse(cls, m, level, levels, max_level):
         # only works with Lists and (sympy-like) Functions.
 
-        if not hasattr(m, 'args') or not m.args:
+        if not hasattr(m, "args") or not m.args:
             return m
         if level > max_level:
             return m
@@ -635,7 +644,7 @@ class Reverse(NormalFunction):
         dont_go_deeper = True
 
         for x in m.args:
-            if hasattr(x, 'args') and x.args:
+            if hasattr(x, "args") and x.args:
                 dont_go_deeper = False
                 break
             rev.append(x)
@@ -646,7 +655,12 @@ class Reverse(NormalFunction):
             return head(*rev)
 
         if level in levels:
-            return head(*(cls.reverse(x, level + 1, levels, max_level) for x in reversed(m.args)))
+            return head(
+                *(
+                    cls.reverse(x, level + 1, levels, max_level)
+                    for x in reversed(m.args)
+                )
+            )
         return head(*(cls.reverse(x, level + 1, levels, max_level) for x in m.args))
 
     @classmethod
@@ -655,6 +669,6 @@ class Reverse(NormalFunction):
             levels = List(levels)
 
         if not all(x.is_number and x.is_integer and x > 0 for x in levels):
-            raise FunctionException('Reverse::level')
+            raise FunctionException("Reverse::level")
 
         return cls.reverse(x, 1, levels, Max(levels))

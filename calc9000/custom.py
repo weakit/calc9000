@@ -1,5 +1,6 @@
 import sympy as s
-from sympy.logic.boolalg import BooleanTrue, BooleanFalse
+from sympy.logic.boolalg import BooleanFalse, BooleanTrue
+
 # TODO: check others
 # TODO: LaTeX printing
 # TODO: Rule Delayed (@property)
@@ -11,11 +12,11 @@ class CustomException(Exception):
 
 
 class RuleException(CustomException):
-    message_symbol = 'Rule'
+    message_symbol = "Rule"
 
 
 class ListException(CustomException):
-    message_symbol = 'List'
+    message_symbol = "List"
 
 
 class List(s.Basic):
@@ -28,7 +29,7 @@ class List(s.Basic):
 
     def __init__(self, *args):
         if args:
-            self.value = list(filter(s.Symbol('Nothing').__ne__, args))
+            self.value = list(filter(s.Symbol("Nothing").__ne__, args))
         else:
             self.value = []
 
@@ -39,7 +40,7 @@ class List(s.Basic):
 
     def __setitem__(self, key, value):
         self.value[key] = value
-        self.value = list(filter(s.Symbol('Nothing').__ne__, self.value))
+        self.value = list(filter(s.Symbol("Nothing").__ne__, self.value))
 
     def __iter__(self):
         return self.value.__iter__()
@@ -55,7 +56,7 @@ class List(s.Basic):
     def __add__(self, other):
         if isinstance(other, List):
             if len(other) != len(self.value):
-                raise ListException(f'{self} and {other} have incompatible shapes.')
+                raise ListException(f"{self} and {other} have incompatible shapes.")
             return List(*(self.value[i] + other[i] for i in range(len(self.value))))
         return List(*(x + other for x in self.value))
 
@@ -66,7 +67,7 @@ class List(s.Basic):
         if isinstance(other, List):
             new = list(self)
             if len(other) != len(new):
-                raise ListException(f'{self} and {other} have incompatible shapes.')
+                raise ListException(f"{self} and {other} have incompatible shapes.")
             return List(*(self.value[i] - other[i] for i in range(len(self.value))))
         return List(*(x - other for x in self.value))
 
@@ -77,7 +78,7 @@ class List(s.Basic):
         if isinstance(other, List):
             new = list(self)
             if len(other) != len(new):
-                raise ListException(f'{self} and {other} have incompatible shapes.')
+                raise ListException(f"{self} and {other} have incompatible shapes.")
             return List(*(self.value[i] * other[i] for i in range(len(self.value))))
         return List(*(x * other for x in self.value))
 
@@ -88,7 +89,7 @@ class List(s.Basic):
         if isinstance(other, List):
             new = list(self)
             if len(other) != len(new):
-                raise ListException(f'{self} and {other} have incompatible shapes.')
+                raise ListException(f"{self} and {other} have incompatible shapes.")
             return List(*(self.value[i] / other[i] for i in range(len(self.value))))
         return List(*(x / other for x in self.value))
 
@@ -105,7 +106,7 @@ class List(s.Basic):
         if isinstance(other, List):
             new = list(self)
             if len(other) != len(new):
-                raise ListException(f'{self} and {other} have incompatible shapes.')
+                raise ListException(f"{self} and {other} have incompatible shapes.")
             return List(*(pow(self.value[i], other[i]) for i in range(len(self.value))))
         return List(*(pow(x, other) for x in self.value))
 
@@ -137,11 +138,11 @@ class List(s.Basic):
 
     def __str__(self):
         if not self.value:
-            return '{}'
-        string = '{' + str(self.value[0])
+            return "{}"
+        string = "{" + str(self.value[0])
         for value in self.value[1:]:
-            string += ', ' + str(value)
-        return string + '}'
+            string += ", " + str(value)
+        return string + "}"
 
     def concat(self, y):
         return List.create(self.value + list(y))
@@ -151,7 +152,7 @@ class List(s.Basic):
         """
         DO NOT USE.
         """
-        self.value += list(filter(s.Symbol('Nothing').__ne__, x))
+        self.value += list(filter(s.Symbol("Nothing").__ne__, x))
 
 
 class Rule(s.AtomicExpr):
@@ -165,7 +166,7 @@ class Rule(s.AtomicExpr):
             return self.lhs
         if item == 1:
             return self.rhs
-        raise RuleException(f'Rule does not have part {item}')
+        raise RuleException(f"Rule does not have part {item}")
 
     def __eq__(self, other):
         if isinstance(other, Rule):
@@ -182,7 +183,7 @@ class Rule(s.AtomicExpr):
         return self.__str__()
 
     def __str__(self):
-        return f'{self[0]} -> {self[1]}'
+        return f"{self[0]} -> {self[1]}"
 
     def replace(self, *args):
         return Rule(self.lhs.replace(*args), self.rhs.replace(*args))
@@ -198,11 +199,11 @@ class Rule(s.AtomicExpr):
 class Tag(s.Symbol):
     @property
     def symbol(self):
-        return self.name.split('::')[0]
+        return self.name.split("::")[0]
 
     @property
     def tag(self):
-        return self.name.split('::')[-1]
+        return self.name.split("::")[-1]
 
 
 class Span(s.AtomicExpr):
@@ -211,20 +212,20 @@ class Span(s.AtomicExpr):
         if a is None:
             a = 1
         if b is None:
-            b = s.Symbol('All')
+            b = s.Symbol("All")
 
         self.a, self.b, self.c = a, b, c
 
     def __str__(self):
         if self.c:
-            return f'{self.a};;{self.b};;{self.c}'
-        return f'{self.a};;{self.b}'
+            return f"{self.a};;{self.b};;{self.c}"
+        return f"{self.a};;{self.b}"
 
     def __repr__(self):
         return self.__str__()
 
     def take_spec(self):
-        if self.b == s.Symbol('All'):
+        if self.b == s.Symbol("All"):
             b = -1
         else:
             b = self.b
@@ -232,22 +233,24 @@ class Span(s.AtomicExpr):
 
     def slice(self):
         a = self.a - 1 if self.a > 0 else self.a
-        b = None if self.b == s.Symbol('All') else self.b
+        b = None if self.b == s.Symbol("All") else self.b
         if b and b < 0:
             b -= 1
         return slice(a, b, self.c)
 
     def atoms(self):
-        a = (hasattr(self.a, 'atoms') and self.a.atoms()) or set()
-        b = (hasattr(self.b, 'atoms') and self.b.atoms()) or set()
-        c = (hasattr(self.c, 'atoms') and self.c.atoms()) or set()
+        a = (hasattr(self.a, "atoms") and self.a.atoms()) or set()
+        b = (hasattr(self.b, "atoms") and self.b.atoms()) or set()
+        c = (hasattr(self.c, "atoms") and self.c.atoms()) or set()
         return a.union(b.union(c))
 
     def replace(self, *args):
         return Span(self.a.replace(*args), self.b.replace(*args), self.c.replace(*args))
 
     def xreplace(self, *args):
-        return Span(self.a.xreplace(*args), self.b.xreplace(*args), self.c.xreplace(*args))
+        return Span(
+            self.a.xreplace(*args), self.b.xreplace(*args), self.c.xreplace(*args)
+        )
 
 
 class String(s.AtomicExpr):

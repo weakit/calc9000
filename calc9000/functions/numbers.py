@@ -1,6 +1,6 @@
-from calc9000.functions.core import *
 from calc9000.functions.base import Factorial
-from calc9000.functions.list_funcs import Min, Max
+from calc9000.functions.core import *
+from calc9000.functions.list_funcs import Max, Min
 
 
 class Round(NormalFunction):
@@ -81,7 +81,7 @@ class Clip(NormalFunction):
             limit_return = limits
         if x.is_number:
             if not x.is_extended_real:
-                raise FunctionException('Clip::com', 'Cannot clip complex values.')
+                raise FunctionException("Clip::com", "Cannot clip complex values.")
             if x < limits[0]:
                 return limit_return[0]
             if x > limits[1]:
@@ -106,7 +106,7 @@ class Clip(NormalFunction):
         return s.Piecewise(
             (x, s.And(limits[0] <= x, x <= limits[1])),
             (limit_return[0], x < limits[0]),
-            (limit_return[1], x > limits[1])
+            (limit_return[1], x > limits[1]),
         )
 
     def _eval_derivative(self, x):
@@ -119,9 +119,7 @@ class Clip(NormalFunction):
 class Rescale(NormalFunction):
     # TODO: clean
 
-    tags = {
-        'rescale': 'Invalid Arguments for Rescale.'
-    }
+    tags = {"rescale": "Invalid Arguments for Rescale."}
 
     @classmethod
     def exec(cls, x, x_range=None, y_range=None):
@@ -133,11 +131,15 @@ class Rescale(NormalFunction):
                 x[i] = cls.eval(x[i], List(_min, _max))
             return List(*x)
         if isinstance(x_range, iterables) and len(x_range) == 2:
-            if y_range is None or (isinstance(y_range, iterables) and len(y_range) == 2):
+            if y_range is None or (
+                isinstance(y_range, iterables) and len(y_range) == 2
+            ):
                 if y_range is None:
                     y_range = (0, 1)
-                return ((x - x_range[0]) * y_range[1] + (x_range[1] - x) * y_range[0]) / (x_range[1] - x_range[0])
-        raise FunctionException('Rescale::rescale')  # TODO: ?
+                return (
+                    (x - x_range[0]) * y_range[1] + (x_range[1] - x) * y_range[0]
+                ) / (x_range[1] - x_range[0])
+        raise FunctionException("Rescale::rescale")  # TODO: ?
 
 
 class Unitize(NormalFunction):
@@ -238,7 +240,7 @@ class Rationalize(NormalFunction):
             return rat
         return x
 
-    op_spec = ({'ForceRational': 'rat'}, {'rat': True})
+    op_spec = ({"ForceRational": "rat"}, {"rat": True})
     param_spec = (1, 2)
 
     @classmethod
@@ -291,7 +293,10 @@ class IntegerPart(NormalFunction):
             return s.ceiling(n)
 
         if hasattr(x, "is_number") and x.is_number:
-            return non_complex_integer_part(s.re(x)) + non_complex_integer_part(s.im(x)) * s.I
+            return (
+                non_complex_integer_part(s.re(x))
+                + non_complex_integer_part(s.im(x)) * s.I
+            )
 
     @classmethod
     def exec(cls, x):

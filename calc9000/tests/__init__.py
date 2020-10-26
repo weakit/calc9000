@@ -1,4 +1,5 @@
 import sympy as s
+
 from calc9000.converse import process as p
 from calc9000.references import refs
 

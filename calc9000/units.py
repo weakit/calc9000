@@ -7,4 +7,3 @@ def from_str_find_unit(s):
     if s in units:
         return units[s]
     return None
-

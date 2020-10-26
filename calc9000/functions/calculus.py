@@ -22,8 +22,8 @@ class D(NormalFunction):
     """
 
     tags = {
-        'argx': 'No variable of differentiation was specified to differentiate a multi-variate expression.',
-        'spec': 'Invalid specification for D.'
+        "argx": "No variable of differentiation was specified to differentiate a multi-variate expression.",
+        "spec": "Invalid specification for D.",
     }
 
     @classmethod
@@ -37,7 +37,7 @@ class D(NormalFunction):
             try:
                 return s.diff(f)
             except ValueError:
-                raise FunctionException('D::argx')
+                raise FunctionException("D::argx")
 
         for arg in args:
             if isinstance(arg, iterables):
@@ -45,11 +45,13 @@ class D(NormalFunction):
                     return List.create(threaded_diff(f, element) for element in arg[0])
                 if len(arg) == 2:
                     if isinstance(arg[0], iterables):
-                        f = List.create(threaded_diff(f, (element, arg[1])) for element in arg[0])
+                        f = List.create(
+                            threaded_diff(f, (element, arg[1])) for element in arg[0]
+                        )
                     else:
                         f = threaded_diff(f, (arg[0], arg[1]))
                 else:
-                    raise FunctionException('D::spec')
+                    raise FunctionException("D::spec")
             else:
                 f = threaded_diff(f, arg)
         return f
@@ -60,7 +62,7 @@ class Integrate(NormalFunction):
     # TODO: return None if cannot find integral
 
     tags = {
-        'argx': 'No variable of integration was specified to integrate a multi-variate expression.'
+        "argx": "No variable of integration was specified to integrate a multi-variate expression."
     }
 
     @classmethod
@@ -74,47 +76,44 @@ class Integrate(NormalFunction):
             try:
                 return s.integrate(f)
             except ValueError:
-                raise FunctionException('Integrate::argx')
+                raise FunctionException("Integrate::argx")
 
         return threaded_int(f, *args)
 
 
 class Limit(NormalFunction):
-    tags = {
-        'lim': 'Invalid Limit.',
-        'dir': 'Invalid Limit Direction.'
-    }
+    tags = {"lim": "Invalid Limit.", "dir": "Invalid Limit Direction."}
 
     @staticmethod
-    def lim(expr, lim, d='+-'):
+    def lim(expr, lim, d="+-"):
         if not isinstance(lim, Rule):
-            raise FunctionException('Limit::lim')
+            raise FunctionException("Limit::lim")
         try:
             return s.limit(expr, lim.lhs, lim.rhs, d)
         except ValueError as e:
             if e.args[0].startswith("The limit does not exist"):
                 return s.nan
 
-    op_spec = ({'Direction': 'd'}, {'d': '+-'})
+    op_spec = ({"Direction": "d"}, {"d": "+-"})
     param_spec = (2, 2)
     rule_param = True
 
     @classmethod
-    def exec(cls, expr, lim, d='+-'):
+    def exec(cls, expr, lim, d="+-"):
         if isinstance(d, String):
             if d.value in ("Reals", "TwoSided"):
-                d = '+-'
+                d = "+-"
             elif d.value in ("FromAbove", "Right") or d == -1:
-                d = '+'
+                d = "+"
             elif d.value in ("FromBelow", "Left") or d == 1:
-                d = '-'
+                d = "-"
         elif is_integer(d):
             if d == -1:
-                d = '+'
+                d = "+"
             elif d == 1:
-                d = '-'
-        if d not in ('+', '-', '+-'):
-            raise FunctionException('Limit::dir')
+                d = "-"
+        if d not in ("+", "-", "+-"):
+            raise FunctionException("Limit::dir")
         return thread(lambda x: Limit.lim(x, lim, d), expr)
 
 
@@ -125,6 +124,7 @@ class LogIntegral(NormalFunction):
 
     Equivalent to sympy.li().
     """
+
     @classmethod
     def exec(cls, z):
         return thread(s.li, z)
@@ -137,6 +137,7 @@ class ExpIntegralEi(NormalFunction):
 
     Equivalent to sympy.Ei().
     """
+
     @classmethod
     def exec(cls, z):
         return thread(s.Ei, z)
@@ -297,6 +298,7 @@ class Erf(NormalFunction):
 
     Equivalent to sympy.erf() and sympy.erf2().
     """
+
     @classmethod
     def exec(cls, x, y=None):
         if y is not None:  # TODO: fix over at sympy
@@ -356,6 +358,5 @@ class InverseErfc(NormalFunction):
         return thread(s.erfcinv, x)
 
 
-FresnelS = threaded('FresnelS', s.fresnels)
-FresnelC = threaded('FresnelC', s.fresnelc)
-
+FresnelS = threaded("FresnelS", s.fresnels)
+FresnelC = threaded("FresnelC", s.fresnelc)

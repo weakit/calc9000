@@ -2,30 +2,30 @@ from calc9000.functions.core import *
 
 # Trig Functions
 
-Sinc = threaded('Sinc', s.sinc)
-Sin = threaded('Sin', s.sin)
-Cos = threaded('Cos', s.cos)
-Tan = threaded('Tan', s.tan)
-Csc = threaded('Csc', s.csc)
-Sec = threaded('Sec', s.sec)
-Cot = threaded('Cot', s.cot)
-Sinh = threaded('Sinh', s.sinh)
-Cosh = threaded('Cosh', s.cosh)
-Tanh = threaded('Tanh', s.tanh)
-Csch = threaded('Csch', s.csch)
-Sech = threaded('Sech', s.sech)
-Coth = threaded('Coth', s.coth)
-ArcSin = threaded('ArcSin', s.asin)
-ArcCos = threaded('ArcCos', s.acos)
-ArcCsc = threaded('ArcCsc', s.acsc)
-ArcSec = threaded('ArcSec', s.asec)
-ArcCot = threaded('ArcCot', s.acot)
-ArcSinh = threaded('ArcSinh', s.asinh)
-ArcCosh = threaded('ArcCosh', s.acosh)
-ArcTanh = threaded('ArcTanh', s.atanh)
-ArcCsch = threaded('ArcCsch', s.acsch)
-ArcSech = threaded('ArcSech', s.asech)
-ArcCoth = threaded('ArcCoth', s.acoth)
+Sinc = threaded("Sinc", s.sinc)
+Sin = threaded("Sin", s.sin)
+Cos = threaded("Cos", s.cos)
+Tan = threaded("Tan", s.tan)
+Csc = threaded("Csc", s.csc)
+Sec = threaded("Sec", s.sec)
+Cot = threaded("Cot", s.cot)
+Sinh = threaded("Sinh", s.sinh)
+Cosh = threaded("Cosh", s.cosh)
+Tanh = threaded("Tanh", s.tanh)
+Csch = threaded("Csch", s.csch)
+Sech = threaded("Sech", s.sech)
+Coth = threaded("Coth", s.coth)
+ArcSin = threaded("ArcSin", s.asin)
+ArcCos = threaded("ArcCos", s.acos)
+ArcCsc = threaded("ArcCsc", s.acsc)
+ArcSec = threaded("ArcSec", s.asec)
+ArcCot = threaded("ArcCot", s.acot)
+ArcSinh = threaded("ArcSinh", s.asinh)
+ArcCosh = threaded("ArcCosh", s.acosh)
+ArcTanh = threaded("ArcTanh", s.atanh)
+ArcCsch = threaded("ArcCsch", s.acsch)
+ArcSech = threaded("ArcSech", s.asech)
+ArcCoth = threaded("ArcCoth", s.acoth)
 
 
 class ArcTan(NormalFunction):
@@ -182,9 +182,7 @@ class Mod(NormalFunction):
     Effectively uses sympy.Mod().
     """
 
-    tags = {
-        'complex': 'Mod does not support complex arguments.'
-    }
+    tags = {"complex": "Mod does not support complex arguments."}
 
     @classmethod
     def exec(cls, a, n, d=s.S.Zero):
@@ -192,7 +190,7 @@ class Mod(NormalFunction):
             return thread(Mod, a, n, d)
 
         if any(not x.is_extended_real for x in (a, n, d)):
-            raise FunctionException('Mod::complex')
+            raise FunctionException("Mod::complex")
 
         if d:
             if a.is_number and n.is_number and d.is_number:
@@ -233,18 +231,18 @@ class Factorial2(NormalFunction):
     Effectively uses sympy.factorial2().
     """
 
-    tags = {
-        'int': 'Factorial2 is defined only for odd and non-negative even integers.'
-    }
+    tags = {"int": "Factorial2 is defined only for odd and non-negative even integers."}
 
     @classmethod
     def exec(cls, x):
         try:
             return thread(s.factorial2, x)
         except ValueError as e:
-            if not e.args[0].startswith('argument must be nonnegative integer or negative'):
+            if not e.args[0].startswith(
+                "argument must be nonnegative integer or negative"
+            ):
                 raise e
-            raise FunctionException('int')
+            raise FunctionException("int")
 
 
 class Conjugate(NormalFunction):
@@ -283,7 +281,7 @@ class Sign(NormalFunction):
 
     @staticmethod
     def _sign(n):
-        if hasattr(n, 'is_real') and n.is_real:
+        if hasattr(n, "is_real") and n.is_real:
             return s.sign(n)
         if n == s.oo:
             return 1

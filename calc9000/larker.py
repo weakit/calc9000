@@ -1,6 +1,7 @@
+from lark import Lark, Token, Transformer
+
 from calc9000 import forge as op
-from lark import Lark, Transformer, Token
-from calc9000.custom import String, CustomException
+from calc9000.custom import CustomException, String
 
 # TODO: fix 1/.2
 grammar = """
@@ -124,7 +125,6 @@ OUT: "%"
 
 
 class AssignTransformer(Transformer):
-
     @staticmethod
     def INT(n):
         return op.numeric(n)
@@ -150,7 +150,7 @@ class AssignTransformer(Transformer):
 class SymbolTransformer(AssignTransformer):
     def __init__(self):
         super().__init__()
-        self.parser = Lark(grammar, start='start', parser="lalr")
+        self.parser = Lark(grammar, start="start", parser="lalr")
 
     def evaluate(self, t):
         parsed = self.parser.parse(t)
@@ -158,6 +158,6 @@ class SymbolTransformer(AssignTransformer):
         return result
 
 
-if 'larker' in __name__:
+if "larker" in __name__:
     assigner = AssignTransformer()
     parser = SymbolTransformer()
