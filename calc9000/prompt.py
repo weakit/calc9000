@@ -44,8 +44,9 @@ def setup_lexer(builtins=None):
 
 
 def check_console():
-    from prompt_toolkit.output.win32 import \
-        NoConsoleScreenBufferError as win_err
+    from prompt_toolkit.output.win32 import (
+        NoConsoleScreenBufferError as win_err,
+    )
 
     try:
         pft("", end="")

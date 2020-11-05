@@ -6,11 +6,14 @@
 
 `calc9000` aims to be a small and portable, general-purpose computer algebra system.
 
-It is heavily based off [Mathematica/WolframScript](https://www.wolfram.com/mathematica/).
+It is heavily based off of [Mathematica/WolframScript](https://www.wolfram.com/mathematica/).
 
 `calc9000` internally uses [`sympy`](https://github.com/sympy/sympy) to perform most CAS functions.
 
 ## `installation + usage`
+
+Python 3.9 as of yet is not supported. \
+It is recommended to use a 3.8.x release to avoid any problems.
 
 To install, simply clone the repo and run directly.
 

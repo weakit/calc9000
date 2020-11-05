@@ -4,8 +4,17 @@ from math import ceil
 import sympy as s
 
 from calc9000 import references as r
-from calc9000.custom import (List, ListException, NoOutput, Rule,
-                             RuleException, Span, SpecialOutput, String, Tag)
+from calc9000.custom import (
+    List,
+    ListException,
+    NoOutput,
+    Rule,
+    RuleException,
+    Span,
+    SpecialOutput,
+    String,
+    Tag,
+)
 
 iterables = (s.Tuple, List, s.Matrix, list, tuple)
 
@@ -27,7 +36,8 @@ def thread(func, *args, **kwargs):
             if length is not None:
                 if length != len(arg):
                     raise FunctionException(
-                        "General::thread", "Cannot Thread over Lists of Unequal Length."
+                        "General::thread",
+                        "Cannot Thread over Lists of Unequal Length.",
                     )
             else:
                 length = len(arg)
@@ -668,7 +678,8 @@ def set_part(x, n):
     # check if symbol var can be assigned to
     if not is_assignable(var.name):
         raise FunctionException(
-            "Set::setx", f"Symbol {var} is protected and cannot be assigned to."
+            "Set::setx",
+            f"Symbol {var} is protected and cannot be assigned to.",
         )
 
     # make sure var has a value
@@ -695,7 +706,8 @@ def do_set(x, n):
     if isinstance(x, s.Symbol):
         if not is_assignable(x.name):
             raise FunctionException(
-                "Set::setx", f"Symbol {x} is protected and cannot be assigned to."
+                "Set::setx",
+                f"Symbol {x} is protected and cannot be assigned to.",
             )
 
         if isinstance(x, Tag):

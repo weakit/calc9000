@@ -1,8 +1,12 @@
 from bisect import bisect_left
 from itertools import combinations, islice, permutations
 
-from iteration_utilities import (accumulate, deepflatten, nth_combination,
-                                 unique_everseen)
+from iteration_utilities import (
+    accumulate,
+    deepflatten,
+    nth_combination,
+    unique_everseen,
+)
 
 from calc9000.functions.core import *
 
@@ -302,7 +306,10 @@ class Permutations(NormalFunction):
     Effectively uses itertools.permutations().
     """
 
-    tags = {"int": "", "num": "A non-negative Integer is expected as a specification."}
+    tags = {
+        "int": "",
+        "num": "A non-negative Integer is expected as a specification.",
+    }
 
     @classmethod
     def permute(cls, obj, perms):
@@ -399,7 +406,8 @@ class Table(ExplicitFunction):
 
         li = []
         for expr_, specs in zip(
-            cls._range_parse(expr, args[0]), cls._range_parse(args[1:], args[0])
+            cls._range_parse(expr, args[0]),
+            cls._range_parse(args[1:], args[0]),
         ):
             li.append(Table(expr_, *specs))
 

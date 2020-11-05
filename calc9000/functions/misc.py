@@ -78,7 +78,10 @@ class Sum(NormalFunction):
 
     @classmethod
     def process_skip(cls, s_, i):
-        return s_.subs(i[0], i[0] * i[3]), (i[0], *cls.limits(i[1] / i[3], i[2] / i[3]))
+        return s_.subs(i[0], i[0] * i[3]), (
+            i[0],
+            *cls.limits(i[1] / i[3], i[2] / i[3]),
+        )
 
     @classmethod
     def process(cls, s_, i):

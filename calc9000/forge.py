@@ -191,7 +191,8 @@ def lazy(tree: Tree):
         return basic(tree.data, [lazy(x) for x in tree.children], lazy_call=True)
     if tree.data == "function":
         return Functions.lazy_call(
-            str(tree.children[0].children[0]), *(lazy(x) for x in tree.children[1:])
+            str(tree.children[0].children[0]),
+            *(lazy(x) for x in tree.children[1:]),
         )
     if tree.data == "list":
         return List(*(lazy(x) for x in tree.children))
@@ -221,7 +222,8 @@ def lazy(tree: Tree):
         )
     if tree.data == "postfix":
         return Functions.lazy_call(
-            str(tree.children[-1].children[0]), *(lazy(x) for x in tree.children[:-1])
+            str(tree.children[-1].children[0]),
+            *(lazy(x) for x in tree.children[:-1]),
         )
     if tree.data == "RELATIONAL":
         return str(tree.children[0])

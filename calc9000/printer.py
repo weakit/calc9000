@@ -1,8 +1,14 @@
 import sympy as s
 from mpmath.libmp.libmpf import dps_to_prec
-from sympy.printing.pretty.pretty import (PRECEDENCE, PrettyPrinter,
-                                          precedence_traditional, pretty_atom,
-                                          prettyForm, sstr, stringPict)
+from sympy.printing.pretty.pretty import (
+    PRECEDENCE,
+    PrettyPrinter,
+    precedence_traditional,
+    pretty_atom,
+    prettyForm,
+    sstr,
+    stringPict,
+)
 
 from calc9000.functions.__init__ import Cross, DefinedFunction, Dot, Limit
 from calc9000.references import FunctionWrappersReverse, refs
@@ -130,7 +136,13 @@ class Printer9000(PrettyPrinter):
         return prettyForm("ComplexInfinity")
 
     def _helper_print_function(
-        self, func, args, sort=False, func_name=None, delimiter=", ", elementwise=False
+        self,
+        func,
+        args,
+        sort=False,
+        func_name=None,
+        delimiter=", ",
+        elementwise=False,
     ):
         if sort:
             args = sorted(args, key=s.utilities.default_sort_key)

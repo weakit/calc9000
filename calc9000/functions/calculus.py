@@ -209,7 +209,7 @@ class CoshIntegral(NormalFunction):
 
 
 class EllipticK(NormalFunction):
-    """
+    r"""
     EllipticK [m]
      Gives the complete elliptic integral of the first kind
 
@@ -373,9 +373,7 @@ class Series(NormalFunction):
     Equivalent to sympy.series().
     """
 
-    tags = {
-        'specx': 'Invalid series specification given.'
-    }
+    tags = {"specx": "Invalid series specification given."}
 
     @classmethod
     def exec(cls, f, n):
@@ -384,15 +382,15 @@ class Series(NormalFunction):
             terms = 1
         elif isinstance(n, iterables):
             if len(n) != 3:
-                raise FunctionException('Series::specx')
+                raise FunctionException("Series::specx")
             x, x0, terms = n
             terms += 1
         else:
-            raise FunctionException('Series::specx')
+            raise FunctionException("Series::specx")
         try:
             if isinstance(f, iterables):
                 return List(*(s.series(a, x, x0, terms) for a in f))
             return s.series(f, x, x0, terms)
 
         except s.PoleError or NotImplementedError as e:
-            raise FunctionException('Series::sympyx', e.args[0].strip())
+            raise FunctionException("Series::sympyx", e.args[0].strip())

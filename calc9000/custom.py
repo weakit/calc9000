@@ -249,7 +249,9 @@ class Span(s.AtomicExpr):
 
     def xreplace(self, *args):
         return Span(
-            self.a.xreplace(*args), self.b.xreplace(*args), self.c.xreplace(*args)
+            self.a.xreplace(*args),
+            self.b.xreplace(*args),
+            self.c.xreplace(*args),
         )
 
 

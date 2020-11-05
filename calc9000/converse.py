@@ -33,7 +33,7 @@ def process(input_text: str):
     try:
         input_text = _pre_process(input_text)
     except SyntaxError as e:
-        refs.add_message(Tag("Synatx::err"), str(e))
+        refs.add_message(Tag("Syntax::err"), str(e))
         return None
 
     if not input_text or input_text.isspace():
@@ -44,7 +44,7 @@ def process(input_text: str):
         out = parser.evaluate(input_text)
     except (LarkError, SyntaxError) as e:
         e = "".join((x + "\n\t" for x in str(e).split("\n")[:4] if x)).rstrip("\n\t")
-        refs.add_message(Tag("Synatx::err"), e)
+        refs.add_message(Tag("Syntax::err"), e)
         return None
 
     if isinstance(out, SpecialOutput):
